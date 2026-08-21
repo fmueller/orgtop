@@ -1,6 +1,22 @@
-# Specs
+# OrgTop Specifications
 
-	This repository uses versioned specs under `specs/`.
+This directory contains versioned normative product contracts for OrgTop.
 
-	- Add the active release spec as `specs/v0.1.0.md`.
-	- Keep `planning/tasks/` linked to live spec headings.
+## Reading Order
+
+1. Read `v0.1.0.md`, the active contract for the first useful local release.
+
+Later versions inherit shipped invariants only when their own contracts say so.
+Roadmap ideas are not implementation requirements until represented by an active
+versioned spec and eligible Taskrail work.
+
+## Authoring Conventions
+
+- `Draft` specs are exploratory, `In Progress` is the active implementation
+  baseline, and `Done` is contract-locked.
+- Keep functional requirements, non-functional requirements, acceptance scenarios,
+  and explicit non-goals distinguishable.
+- `###` headings under `## Potential Features` are Taskrail coverable areas.
+- Tasks must reference live headings reported by `taskrail spec show --anchors`.
+- Change active versions and managed execution state through Taskrail, not manual
+  state edits.
