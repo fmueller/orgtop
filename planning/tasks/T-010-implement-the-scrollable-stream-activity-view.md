@@ -1,0 +1,40 @@
+---
+id: T-010-implement-the-scrollable-stream-activity-view
+title: Implement the scrollable Stream activity view
+status: todo
+priority: medium
+spec_ref: specs/v0.1.0.md#stream-view
+dependencies:
+    - T-007-implement-the-asynchronous-refresh-lifecycle
+updated_at: "2026-08-21T22:39:23Z"
+---
+
+# T-010-implement-the-scrollable-stream-activity-view Implement the scrollable Stream activity view
+
+## Description
+
+Replace the Stream placeholder through its existing state/update/render seams with
+reverse-chronological Event rendering and manual bounded scrolling. Limit changes to
+Stream files/tests; do not modify root navigation, source, or snapshot calculation.
+
+## Acceptance
+
+- Each row contains timestamp, repository, non-color category encoding, optional
+  actor, and domain description in snapshot order.
+- Up/down/page scrolling clamps after input, refresh shrinkage, and resize.
+- View switches preserve Stream position and loaded state.
+- Empty, loading, first-error, stale-with-data, and current states compose with chrome.
+- `40x10` retains required context/content; no filter, clustering, signals, Inspect,
+  Rain, or unjustified Bubbles dependency appears.
+
+## Test Expectations
+
+- Cover row content/order, actor absence, category encoding, scroll/page bounds,
+  refresh clamping, preserved position, degraded/empty states, and `40x10`.
+- Run focused Stream tests and `task check`.
+
+## Verification Notes
+
+- Record exact commands, exit status, and named Stream update/render cases.
+
+## Implementation Notes

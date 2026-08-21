@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-updated_at: "2026-08-21T22:22:38Z"
+updated_at: "2026-08-21T22:39:23Z"
 active_spec_version: v0.1.0
 active_spec_path: specs/v0.1.0.md
 current_task: ""
@@ -47,3 +47,11 @@ continuation_notes:
 ## Notes
 
 - This repository is using manual Taskrail-style workflow scaffolding until the product replaces more of the bootstrap steps.
+
+## Task Counts
+
+- todo: 11
+- in_progress: 0
+- completed: 0
+- blocked: 0
+- cancelled: 0
