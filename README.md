@@ -28,10 +28,15 @@ task lint
 task vet
 task check
 task clean
+task hooks-install
 ```
 
 The corresponding direct Go commands remain available, including `go build
 ./cmd/orgtop`, `go test ./...`, and `go vet ./...`.
+
+`task hooks-install` enables the opt-in Lefthook checks for formatting, vet,
+Taskrail validation, commit-message policy, and pre-push tests. CI remains the
+authoritative gate.
 
 ## Taskrail
 

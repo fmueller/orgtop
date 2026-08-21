@@ -1,0 +1,35 @@
+# Local git hooks for OrgTop (opt-in).
+#
+# Install with `task hooks-install`. The hooks mirror fast CI checks; CI remains
+# authoritative. Lefthook is pinned in mise.toml.
+pre-commit:
+  parallel: true
+  commands:
+    gofmt:
+      glob: "*.go"
+      run: |
+        unformatted="$(gofmt -l {staged_files})"
+        if [ -n "$unformatted" ]; then
+          echo "gofmt needed on:" >&2
+          echo "$unformatted" >&2
+          exit 1
+        fi
+    vet:
+      glob: "*.go"
+      run: task vet
+    taskrail-validate:
+      glob: "{planning/**,specs/**,.taskrail/**}"
+      run: task taskrail-validate
+    commit-message-checker:
+      glob: "{lefthook.yml,Taskfile.yml,scripts/check-commit-msg.sh,scripts/check-commit-msg-test.sh}"
+      run: task test-commit-msg
+
+commit-msg:
+  commands:
+    message-policy:
+      run: bash scripts/check-commit-msg.sh {1}
+
+pre-push:
+  commands:
+    tests:
+      run: task test

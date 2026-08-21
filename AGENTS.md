@@ -52,6 +52,7 @@ Guidance for coding agents working in the OrgTop repository.
 - Vet/static analysis: `task vet` (`go vet ./...`).
 - Full local gate: `task check`.
 - Taskrail validation: `task taskrail-validate` (`taskrail validate`).
+- Install opt-in hooks: `task hooks-install`.
 
 ## Go conventions
 
@@ -77,6 +78,8 @@ Guidance for coding agents working in the OrgTop repository.
 
 - Prefer small, cohesive changes that preserve clear package ownership.
 - Use Conventional Commits with imperative subjects.
+- Include a descriptive body after the subject, wrap body lines at 72 characters,
+  and suffix tracked-task subjects with the short key, for example `(T-001)`.
 - Keep tracked tasks focused and include objective verification evidence.
 - Do not mix unrelated refactors or formatting churn into feature changes.
 - Do not rewrite shared history or bypass CI-equivalent checks.

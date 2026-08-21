@@ -15,6 +15,11 @@ tasks:
     cmds:
       - go test ./...
 
+  test-commit-msg:
+    desc: Test the commit-message policy
+    cmds:
+      - scripts/check-commit-msg-test.sh
+
   format:
     aliases: [fmt]
     desc: Format all Go files
@@ -68,3 +73,8 @@ tasks:
     desc: Remove generated build and release artifacts
     cmds:
       - rm -rf orgtop bin dist
+
+  hooks-install:
+    desc: Install opt-in Lefthook git hooks
+    cmds:
+      - lefthook install
