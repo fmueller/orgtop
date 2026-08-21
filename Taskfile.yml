@@ -20,6 +20,20 @@ tasks:
     cmds:
       - scripts/check-commit-msg-test.sh
 
+  test:mutate:
+    desc: Run mutation tests for changes since BASE (default main)
+    vars:
+      BASE: '{{.BASE | default "main"}}'
+    cmds:
+      - go clean -testcache
+      - go run github.com/go-gremlins/gremlins/cmd/gremlins@v0.6.0 unleash --diff '{{.BASE}}' --exclude-files 'cmd/.*' --output-statuses lt --workers 2
+
+  test:mutate:gate:
+    desc: Run the full weekly mutation gate
+    cmds:
+      - go clean -testcache
+      - go run github.com/go-gremlins/gremlins/cmd/gremlins@v0.6.0 unleash --exclude-files 'cmd/.*' --output-statuses lt --workers 2 --threshold-efficacy 70
+
   format:
     aliases: [fmt]
     desc: Format all Go files

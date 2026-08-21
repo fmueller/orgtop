@@ -29,6 +29,7 @@ task vet
 task check
 task clean
 task hooks-install
+task test:mutate
 ```
 
 The corresponding direct Go commands remain available, including `go build
@@ -37,6 +38,10 @@ The corresponding direct Go commands remain available, including `go build
 `task hooks-install` enables the opt-in Lefthook checks for formatting, vet,
 Taskrail validation, commit-message policy, and pre-push tests. CI remains the
 authoritative gate.
+
+`task test:mutate` runs differential Gremlins mutation testing against `main`
+(`BASE=<ref>` overrides it). The full `task test:mutate:gate` runs weekly in CI
+and on manual dispatch rather than on every pull request.
 
 ## Taskrail
 

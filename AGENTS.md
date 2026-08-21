@@ -53,6 +53,9 @@ Guidance for coding agents working in the OrgTop repository.
 - Full local gate: `task check`.
 - Taskrail validation: `task taskrail-validate` (`taskrail validate`).
 - Install opt-in hooks: `task hooks-install`.
+- Differential mutation tests: `task test:mutate` (override with `BASE=<ref>`).
+- Full mutation gate: `task test:mutate:gate`; run it deliberately, while CI runs
+  it weekly and on manual dispatch.
 
 ## Go conventions
 
@@ -73,6 +76,8 @@ Guidance for coding agents working in the OrgTop repository.
 - Test domain behavior and important TUI states separately.
 - Add tests with behavior changes rather than postponing all testing to an integration task.
 - Run targeted tests while iterating and `task check` before handing off a completed change.
+- Use differential mutation testing for logic-heavy changes; do not put the full
+  gate on routine pull-request CI.
 
 ## Changes and commits
 

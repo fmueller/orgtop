@@ -1,0 +1,100 @@
+name: Mutation tests
+
+# Gremlins re-runs the unit suite once per mutant, so the full gate runs weekly
+# and on demand rather than on every pull request. Use `task test:mutate` for a
+# differential local run.
+on:
+  schedule:
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: mutation-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  mutation-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup toolchain
+        uses: ./.github/actions/setup
+
+      - name: Run mutation tests
+        id: mutation
+        continue-on-error: true
+        env:
+          GREMLINS_UNLEASH_OUTPUT: mutation-results.json
+        run: task test:mutate:gate
+
+      - name: Summarize mutation results
+        if: always()
+        run: |
+          if [ ! -f mutation-results.json ]; then
+            printf '## Mutation testing\n\nNo JSON report was produced. See the job log.\n' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          {
+            printf '## Mutation testing\n\n'
+            printf '| Metric | Result |\n|---|---:|\n'
+            jq -r '"| Test efficacy | \(.test_efficacy * 100 | round / 100)% |", "| Mutator coverage | \(.mutations_coverage * 100 | round / 100)% |", "| Killed | \(.mutants_killed) |", "| Lived | \(.mutants_lived) |", "| Timed out | \([.files[].mutations[] | select(.status == \"TIMED OUT\")] | length) |", "| Not covered | \(.mutants_not_covered) |"' mutation-results.json
+            printf '\nCommit: `%s`\n' "$GITHUB_SHA"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload mutation report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: mutation-results-${{ github.sha }}
+          path: mutation-results.json
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Reconcile mutation failure issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MUTATION_OUTCOME: ${{ steps.mutation.outcome }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title='Mutation testing gate failure'
+          issue_number=$(gh issue list --state open --label github_actions --json number,title --jq "map(select(.title == \"$title\"))[0].number // empty")
+
+          if [ "$MUTATION_OUTCOME" = success ]; then
+            if [ -n "$issue_number" ]; then
+              gh issue close "$issue_number" --comment "Mutation testing recovered in $RUN_URL."
+            fi
+            exit 0
+          fi
+
+          body=$(mktemp)
+          {
+            printf 'The weekly mutation gate failed for `%s`.\n\n' "$GITHUB_SHA"
+            printf -- '- Workflow run: %s\n' "$RUN_URL"
+            if [ -f mutation-results.json ]; then
+              jq -r '"- Test efficacy: \(.test_efficacy * 100 | round / 100)%", "- Mutator coverage: \(.mutations_coverage * 100 | round / 100)%", "- Killed: \(.mutants_killed)", "- Lived: \(.mutants_lived)", "- Timed out: \([.files[].mutations[] | select(.status == \"TIMED OUT\")] | length)", "- Not covered: \(.mutants_not_covered)"' mutation-results.json
+              printf '\n### Lived mutants\n\n'
+              jq -r '.files[] | .file_name as $file | .mutations[] | select(.status == "LIVED") | "- `\($file):\(.line):\(.column)` \(.type)"' mutation-results.json
+            else
+              printf -- '- No JSON report was produced; inspect the workflow log.\n'
+            fi
+            printf '\nRun `task test:mutate:gate` locally, fix or classify survivors, then manually dispatch this workflow.\n'
+          } > "$body"
+
+          if [ -n "$issue_number" ]; then
+            gh issue edit "$issue_number" --body-file "$body"
+          else
+            gh issue create --title "$title" --label github_actions --body-file "$body"
+          fi
+
+      - name: Enforce mutation gate
+        if: always() && steps.mutation.outcome != 'success'
+        run: exit 1
