@@ -1,0 +1,18 @@
+# Optional pinned developer toolchain for OrgTop. Direct Go commands and the
+# Taskfile targets remain canonical; CI provisions these exact versions.
+[tools]
+go = "1.26.7"
+task = "3.53.1"
+golangci-lint = "2.13.1"
+goreleaser = "2.17.1"
+"go:github.com/tessariq/taskrail/cmd/taskrail" = "0.4.0"
+
+[env]
+_.path = ["{{config_root}}/bin"]
+
+[tasks.setup]
+description = "Provision the pinned toolchain and build orgtop onto PATH"
+run = [
+  "mise install",
+  "go build -trimpath -o bin/orgtop ./cmd/orgtop",
+]

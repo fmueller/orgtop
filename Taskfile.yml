@@ -1,0 +1,70 @@
+version: "3"
+
+# Task targets are the developer and CI interface. Direct Go commands remain
+# canonical and work without Task or mise.
+tasks:
+  build:
+    desc: Build the orgtop CLI
+    env:
+      CGO_ENABLED: "0"
+    cmds:
+      - go build ./cmd/orgtop
+
+  test:
+    desc: Run all tests
+    cmds:
+      - go test ./...
+
+  format:
+    aliases: [fmt]
+    desc: Format all Go files
+    cmds:
+      - gofmt -w .
+
+  format-check:
+    aliases: [fmt:check]
+    desc: Fail if any Go file needs formatting
+    cmds:
+      - |
+        out="$(gofmt -l .)"
+        if [ -n "$out" ]; then
+          echo "The following files need gofmt:" >&2
+          echo "$out" >&2
+          exit 1
+        fi
+
+  lint:
+    desc: Run golangci-lint across all packages
+    cmds:
+      - golangci-lint run ./...
+
+  vet:
+    desc: Run Go static analysis
+    cmds:
+      - go vet ./...
+
+  taskrail-validate:
+    desc: Validate Taskrail specs, tasks, and managed state
+    cmds:
+      - taskrail validate
+
+  release-check:
+    desc: Validate the GoReleaser configuration
+    cmds:
+      - goreleaser check
+
+  check:
+    desc: Run the local CI checks
+    cmds:
+      - task: format-check
+      - task: vet
+      - task: lint
+      - task: test
+      - task: build
+      - task: taskrail-validate
+      - task: release-check
+
+  clean:
+    desc: Remove generated build and release artifacts
+    cmds:
+      - rm -rf orgtop bin dist
