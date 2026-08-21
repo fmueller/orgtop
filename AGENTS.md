@@ -1,0 +1,83 @@
+# AGENTS.md
+
+Guidance for coding agents working in the OrgTop repository.
+
+## Scope and intent
+
+- This is a Go CLI/TUI repository: `github.com/fmueller/orgtop`.
+- The executable entry point is `./cmd/orgtop`; the binary name is `orgtop`.
+- Internal application packages belong under `./internal/...` only when they have a current responsibility.
+- Product specifications live under `./specs/...`; tracked work lives under `./planning/...`.
+- Keep changes small and cohesive. Do not scaffold roadmap architecture without an active requirement.
+
+## Source of truth
+
+- Taskrail is the execution and specification system for product work.
+- Before implementing behavior, run `taskrail status` and inspect the active spec named in `planning/STATE.md`.
+- Treat the active versioned spec and the selected task's acceptance criteria as normative.
+- `Taskfile.yml` defines standard local and CI commands.
+- `mise.toml` pins the developer and CI toolchain.
+- `.github/workflows/ci.yml` defines required CI validation.
+- `README.md` is the repository-level product and contributor introduction.
+
+## Taskrail lifecycle
+
+- Run `taskrail validate` before selecting or changing tracked work.
+- Use `taskrail next`, `taskrail start`, `taskrail complete`, and `taskrail verify` for lifecycle transitions.
+- Inspect `taskrail <command> --help` rather than guessing flags.
+- Do not manually modify Taskrail-managed execution state, including `planning/STATE.md` frontmatter or task status fields.
+- Create and mutate tracked tasks through Taskrail's supported commands and installed skills.
+- Inspect the diff and run `taskrail validate` after every Taskrail state-changing operation.
+- Do not start work on an ineligible task or implement future roadmap phases unless the active spec requires them.
+
+## Architecture boundaries
+
+- Keep GitHub API payload and transport types in the source adapter. They must not become OrgTop domain or TUI models.
+- Normalize source data before filtering, aggregation, application state, or rendering.
+- Keep domain calculations out of Bubble Tea rendering functions.
+- Keep source, domain, application, and TUI responsibilities distinct without inventing unused abstraction layers.
+- Prefer the standard library for flags while OrgTop remains a single command. Do not add Cobra without a real subcommand hierarchy.
+- Do not add Bubbles unless a concrete component is needed. Do not add Harmonica unless an active future spec requires it.
+
+## Toolchain and commands
+
+- Go is pinned in `go.mod` and `mise.toml`.
+- Bubble Tea v2 and Lip Gloss v2 are the intended TUI framework and styling layer.
+- Direct Go commands are canonical; Task targets provide a consistent developer and CI interface.
+- Build: `task build` (`go build ./cmd/orgtop`).
+- Test: `task test` (`go test ./...`).
+- Format: `task format` (`gofmt -w .`).
+- Format check: `task format-check`.
+- Lint: `task lint` (`golangci-lint run ./...`).
+- Vet/static analysis: `task vet` (`go vet ./...`).
+- Full local gate: `task check`.
+- Taskrail validation: `task taskrail-validate` (`taskrail validate`).
+
+## Go conventions
+
+- Run `gofmt` on changed Go files.
+- Keep functions focused and prefer early returns on error paths.
+- Return errors rather than panicking; wrap causes with context using `%w`.
+- Error strings should be lowercase and should not end in punctuation.
+- Pass `context.Context` first for cancelable operations and bind network/process work to it.
+- Prefer typed structs over `map[string]any` for product flows.
+- Package names should be short, lowercase, and noun-like.
+- Add dependencies only when they solve a current requirement.
+
+## Testing
+
+- Use the standard `testing` package and table-driven tests where useful.
+- Keep ordinary unit tests deterministic and independent of live GitHub or user credentials.
+- Use fixtures or fakes for GitHub payloads, failures, pagination, and cancellation.
+- Test domain behavior and important TUI states separately.
+- Add tests with behavior changes rather than postponing all testing to an integration task.
+- Run targeted tests while iterating and `task check` before handing off a completed change.
+
+## Changes and commits
+
+- Prefer small, cohesive changes that preserve clear package ownership.
+- Use Conventional Commits with imperative subjects.
+- Keep tracked tasks focused and include objective verification evidence.
+- Do not mix unrelated refactors or formatting churn into feature changes.
+- Do not rewrite shared history or bypass CI-equivalent checks.
+- Update public documentation when user-visible behavior or setup changes.
