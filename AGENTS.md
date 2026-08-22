@@ -82,6 +82,8 @@ Guidance for coding agents working in the OrgTop repository.
 ## Changes and commits
 
 - Prefer small, cohesive changes that preserve clear package ownership.
+- Coding agents must run `task hooks-install` before creating their first commit
+  in a worktree; do not assume the local `commit-msg` hook is already installed.
 - Use Conventional Commits with imperative subjects.
 - Include a descriptive body after the subject, wrap body lines at 72 characters,
   and suffix tracked-task subjects with the short key, for example `(T-001)`.
