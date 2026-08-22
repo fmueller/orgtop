@@ -74,6 +74,9 @@ jobs:
       - name: Validate release configuration
         run: task release:check
 
+      - name: Test the changelog release guards
+        run: task test:changelog
+
   build-test:
     needs: checks
     runs-on: ${{ matrix.runner }}

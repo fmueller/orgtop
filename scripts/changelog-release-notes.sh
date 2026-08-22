@@ -4,8 +4,9 @@
 # Usage: scripts/changelog-release-notes.sh <tag> [changelog-path]
 #
 # Prints the body of the matching `## [<version>]` section (heading line
-# excluded, leading and trailing blank lines trimmed) to stdout. If no matching
-# section is found, prints the tag name so a release always carries notes.
+# excluded, leading and trailing blank lines trimmed) to stdout. Exits non-zero
+# when the section is missing or empty, so a release can never publish
+# manufactured notes in place of documented ones.
 #
 # CHANGELOG.md follows Keep a Changelog: a tag `v0.1.0` matches a heading
 # `## [0.1.0]` or `## [0.1.0] - 2026-08-22`, but not `## [0.1.0-rc1]`.
@@ -19,31 +20,34 @@ if [ -z "$tag" ]; then
   exit 2
 fi
 
+if [ ! -f "$changelog" ]; then
+  echo "guard: $changelog not found" >&2
+  exit 1
+fi
+
 # Normalize: strip a leading 'v' from the tag to match the bracketed version.
 version="${tag#v}"
 
-notes=""
-if [ -f "$changelog" ]; then
-  notes="$(
-    awk -v version="$version" '
-      /^## / {
-        if (capture) { capture = 0 }
-        if ($0 ~ /^## \[/) {
-          token = $0
-          sub(/^## \[/, "", token)
-          sub(/\].*$/, "", token)
-          if (token == version) { capture = 1; next }
-        }
+notes="$(
+  awk -v version="$version" '
+    /^## / {
+      if (capture) { capture = 0 }
+      if ($0 ~ /^## \[/) {
+        token = $0
+        sub(/^## \[/, "", token)
+        sub(/\].*$/, "", token)
+        if (token == version) { capture = 1; next }
       }
-      capture { print }
-    ' "$changelog"
-  )"
-  # Trim leading and trailing blank lines.
-  notes="$(printf '%s\n' "$notes" | sed -e '/./,$!d' | sed -e ':a' -e '/^[[:space:]]*$/{$d;N;ba}')"
-fi
+    }
+    capture { print }
+  ' "$changelog"
+)"
+# Trim leading and trailing blank lines.
+notes="$(printf '%s\n' "$notes" | sed -e '/[^[:space:]]/,$!d' | sed -e ':a' -e '/^[[:space:]]*$/{$d;N;ba}')"
 
 if [ -z "$notes" ]; then
-  printf '%s\n' "$tag"
-else
-  printf '%s\n' "$notes"
+  echo "guard: no non-empty '## [$version]' section found in $changelog" >&2
+  exit 1
 fi
+
+printf '%s\n' "$notes"

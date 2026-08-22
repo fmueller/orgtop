@@ -29,6 +29,8 @@ var (
 	taskfile         = filepath.Join(repoRoot, "Taskfile.yml")
 	miseConfig       = filepath.Join(repoRoot, "mise.toml")
 	goreleaserConfig = filepath.Join(repoRoot, ".goreleaser.yml")
+	changelogGuard   = filepath.Join(repoRoot, "scripts", "check-changelog-version.sh")
+	changelogNotes   = filepath.Join(repoRoot, "scripts", "changelog-release-notes.sh")
 )
 
 // Traversal works on yaml.Node rather than a decoded map because GitHub resolves

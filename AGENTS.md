@@ -22,7 +22,9 @@ Guidance for coding agents working in the OrgTop repository.
   skill changes; its `paths:` set must stay an exact mirror of the `paths-ignore`
   in `ci.yml`, and `TestWorkflowPathLanesAreExactMirrors` fails when it does not.
 - `.github/workflows/release.yml` publishes tags; `CHANGELOG.md` is the source of
-  release notes and a tag without a matching `## [<version>]` section is refused.
+  release notes and a tag whose `## [<version>]` section is missing or empty is
+  refused.
+- `docs/changelog.md` is the changelog authoring policy.
 - `internal/toolchain` holds no production code: it guards the repository's own
   CI, release, and toolchain configuration.
 - `README.md` is the repository-level product and contributor introduction.
@@ -53,6 +55,7 @@ Guidance for coding agents working in the OrgTop repository.
 - Direct Go commands are canonical; Task targets provide a consistent developer and CI interface.
 - Build: `task build` (`go build ./cmd/orgtop`).
 - Test: `task test` (`go test ./...`).
+- Changelog guard tests: `task test:changelog`.
 - Cross-compile smoke: `task build:cross` (every platform `.goreleaser.yml` publishes).
 - Startup smoke: `task run:smoke`.
 - Format: `task fmt` (`gofmt -w .`).
@@ -97,6 +100,9 @@ Guidance for coding agents working in the OrgTop repository.
 ## Changes and commits
 
 - Prefer small, cohesive changes that preserve clear package ownership.
+- Update `CHANGELOG.md` under `## [Unreleased]` for user-visible behavior
+  changes, in the same commit as the change; policy and examples in
+  `docs/changelog.md`.
 - Coding agents must run `task hooks-install` before creating their first commit
   in a worktree; do not assume the local `commit-msg` hook is already installed.
 - Use Conventional Commits with imperative subjects.

@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
-# Pre-publish guard: fail unless CHANGELOG.md has a heading for the release tag.
+# Pre-publish guard: fail unless CHANGELOG.md documents the release tag.
 #
 # Usage: scripts/check-changelog-version.sh <tag> [changelog-path]
 #
 # CHANGELOG.md is the source of truth for release notes, so a tag without a
-# documented section must not publish. CHANGELOG.md follows Keep a Changelog: a
-# tag `v0.1.0` maps to a `## [0.1.0]` heading (optionally `## [0.1.0] -
-# 2026-08-22`). Exits non-zero when the heading is missing.
+# documented section must not publish — and neither must a tag whose section
+# exists but says nothing. CHANGELOG.md follows Keep a Changelog: a tag `v0.1.0`
+# maps to a `## [0.1.0]` heading (optionally `## [0.1.0] - 2026-08-22`). Exits
+# non-zero when the heading is missing or its section is empty.
 set -euo pipefail
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 tag="${1:-}"
 changelog="${2:-CHANGELOG.md}"
@@ -42,4 +45,12 @@ if [ "$found" != "yes" ]; then
   exit 1
 fi
 
-echo "guard: found '## [$version]' heading in $changelog"
+# A heading alone is not release notes. Extraction is the same step the release
+# workflow runs, so this fails here rather than shipping a blank release body.
+if ! "$script_dir/changelog-release-notes.sh" "$tag" "$changelog" >/dev/null; then
+  echo "guard: '## [$version]' in $changelog has no entries" >&2
+  echo "Describe the release under '## [$version]' before tagging $tag." >&2
+  exit 1
+fi
+
+echo "guard: found non-empty '## [$version]' section in $changelog"

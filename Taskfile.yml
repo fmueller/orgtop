@@ -36,6 +36,11 @@ tasks:
     cmds:
       - scripts/check-commit-msg-test.sh
 
+  test:changelog:
+    desc: Test the changelog release guards
+    cmds:
+      - scripts/check-changelog-test.sh
+
   test:mutate:
     desc: Run mutation tests for changes since BASE (default main)
     vars:
@@ -122,6 +127,7 @@ tasks:
       - task: vet
       - task: lint
       - task: test
+      - task: test:changelog
       - task: build
       - task: run:smoke
       - task: licenses:check

@@ -284,6 +284,37 @@ func TestReleaseWorkflowGuardsChangelogNotes(t *testing.T) {
 	}
 }
 
+// TestChangelogGuardsRejectAnEmptySection keeps a documented-but-empty section
+// from publishing. Extraction must fail instead of substituting the tag name,
+// and the pre-publish guard must reach that failure rather than stopping at the
+// heading. The shell tests behind `task test:changelog` cover the behavior; this
+// pins the wiring that makes them run.
+func TestChangelogGuardsRejectAnEmptySection(t *testing.T) {
+	t.Parallel()
+
+	if notes := readFile(t, changelogNotes); !strings.Contains(notes, "no non-empty") {
+		t.Error("changelog-release-notes.sh must fail on a missing or empty section, not fall back to the tag name")
+	}
+	if guard := readFile(t, changelogGuard); !strings.Contains(guard, "changelog-release-notes.sh") {
+		t.Error("check-changelog-version.sh must extract the notes so an empty section fails before publishing")
+	}
+
+	tasks := readFile(t, taskfile)
+	if !strings.Contains(tasks, "scripts/check-changelog-test.sh") {
+		t.Fatal("Taskfile.yml must run the changelog guard tests")
+	}
+
+	var wired bool
+	for _, command := range jobStepValues(loadYAML(t, ciWorkflow), "checks", "run") {
+		if strings.TrimSpace(command) == "task test:changelog" {
+			wired = true
+		}
+	}
+	if !wired {
+		t.Error("the CI checks job must run `task test:changelog`")
+	}
+}
+
 // TestLocalCheckMirrorsTheCIChecksJob keeps `task check` a faithful local rehearsal
 // of the CI checks job. A gate that only exists in the workflow is one a
 // contributor first meets after pushing.

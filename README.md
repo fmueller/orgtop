@@ -69,6 +69,7 @@ request.
 `CHANGELOG.md` follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 is the source of release notes. Add a `## [<version>]` section before tagging: the
 release workflow refuses to publish a tag whose section is missing or empty.
+`docs/changelog.md` is the authoring policy for entries.
 Pushing a `v*` tag builds and publishes through GoReleaser; a manual dispatch
 builds a local snapshot and publishes nothing.
 

@@ -23,6 +23,9 @@ pre-commit:
     commit-message-checker:
       glob: "{lefthook.yml,Taskfile.yml,scripts/check-commit-msg.sh,scripts/check-commit-msg-test.sh}"
       run: task test-commit-msg
+    changelog-guard-checker:
+      glob: "{lefthook.yml,Taskfile.yml,scripts/check-changelog-version.sh,scripts/changelog-release-notes.sh,scripts/check-changelog-test.sh}"
+      run: task test:changelog
 
 commit-msg:
   commands:
