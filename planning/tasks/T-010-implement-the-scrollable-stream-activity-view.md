@@ -1,12 +1,12 @@
 ---
 id: T-010-implement-the-scrollable-stream-activity-view
 title: Implement the scrollable Stream activity view
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.1.0.md#stream-view
 dependencies:
     - T-007-implement-the-asynchronous-refresh-lifecycle
-updated_at: "2026-08-21T22:39:23Z"
+updated_at: "2026-08-22T13:35:15Z"
 ---
 
 # T-010-implement-the-scrollable-stream-activity-view Implement the scrollable Stream activity view
@@ -45,3 +45,4 @@ Stream files/tests; do not modify root navigation, source, or snapshot calculati
 - T-006 handoff: `stream.offset` is preserved across mode switches but no key
   moves it and only `renderBody` windows on it. Add the scroll/page keys and the
   upper bound here, and cover clamping after refresh shrinkage and resize.
+- 2026-08-22T13:35:11Z: verification pass

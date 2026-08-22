@@ -45,3 +45,17 @@ checks; change it only for a real mismatch. Do not add deferred features.
   CI-command comparison, and explicit future-scope audit.
 
 ## Implementation Notes
+
+- T-010 handoff: `layoutStreamRows` in `internal/tui/stream.go` formats event times
+  as `event.OccurredAt.Local()`, matching the header's local `updated HH:MM:SS`
+  clock, but no test distinguishes that from a regression that dropped `.Local()`
+  and rendered the source's UTC instants. `streamBase` in
+  `internal/tui/stream_test.go` is already a `time.Local` instant, so the
+  conversion is a no-op there. Cover it with a timezone-parameterized render
+  during integration polish.
+- T-010 handoff: `TestStreamMeasuresWideRunesByTheirRenderedWidth` in
+  `internal/tui/stream_test.go` guards Stream rows against byte-wise measurement
+  and truncation of wide runes. `internal/tui/overview_test.go` has no equivalent,
+  so `padRight`, `widestWidth`, and `truncate` stay unguarded for wide runes on the
+  Overview path. Extend the coverage to Overview rows and to the shared header
+  candidates.

@@ -76,7 +76,8 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 
 // handleKey applies navigation and quit keystrokes.
 func (m Model) handleKey(message tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	switch message.String() {
+	keystroke := message.String()
+	switch keystroke {
 	case "q", "ctrl+c":
 		m.cancel()
 		return m, tea.Quit
@@ -86,8 +87,21 @@ func (m Model) handleKey(message tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.mode = ModeStream
 	case "tab":
 		m.mode = m.mode.toggled()
+	case "up", "down", "pgup", "pgdown":
+		m = m.scroll(keystroke)
 	}
 	return m, nil
+}
+
+// scroll delegates a scrolling keystroke to the active view within the content
+// area the shared chrome leaves. Only Stream scrolls in v0.1.0 (FR-010).
+func (m Model) scroll(keystroke string) Model {
+	if m.mode != ModeStream {
+		return m
+	}
+	width, height := m.budget()
+	m.stream = m.stream.scrolled(keystroke, m.state, width, height-chromeLines)
+	return m
 }
 
 // View implements tea.Model. OrgTop owns the whole terminal while it runs, so

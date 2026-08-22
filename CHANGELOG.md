@@ -21,5 +21,8 @@ workflow refuses to publish otherwise.
 - Overview now lists every selected repository with its recent event,
   pull-request, and push counts, and says so explicitly when a refresh returns
   no activity at all.
+- Stream now lists recent events newest first with their time, repository,
+  text-encoded category, actor, and description, and scrolls with the up, down,
+  page up, and page down keys.
 
 [Unreleased]: https://github.com/fmueller/orgtop/commits/main

@@ -1,14 +1,14 @@
 ---
 schema_version: 1
-updated_at: "2026-08-22T13:16:46Z"
+updated_at: "2026-08-22T13:35:15Z"
 active_spec_version: v0.1.0
 active_spec_path: specs/v0.1.0.md
 current_task: ""
 current_task_title: ""
 status_summary: idle
 blockers: []
-next_action: 'Start task T-010-implement-the-scrollable-stream-activity-view: Implement the scrollable Stream activity view'
-last_verification_result: pass for T-009-implement-the-overview-activity-view at 2026-08-22T13:10:54Z
+next_action: Select the next eligible task
+last_verification_result: pass for T-010-implement-the-scrollable-stream-activity-view at 2026-08-22T13:35:11Z
 relevant_artifacts: []
 continuation_notes:
     - This repository is using manual Taskrail-style workflow scaffolding until the product replaces more of the bootstrap steps.
@@ -34,11 +34,11 @@ continuation_notes:
 
 ## Last Verification
 
-- pass for T-009-implement-the-overview-activity-view at 2026-08-22T13:10:54Z
+- pass for T-010-implement-the-scrollable-stream-activity-view at 2026-08-22T13:35:11Z
 
 ## Next Action
 
-- Start task T-010-implement-the-scrollable-stream-activity-view: Implement the scrollable Stream activity view
+- Select the next eligible task
 
 ## Relevant Artifacts
 
@@ -50,8 +50,8 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 7
+- todo: 6
 - in_progress: 0
-- completed: 9
+- completed: 10
 - blocked: 0
 - cancelled: 0

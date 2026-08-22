@@ -181,9 +181,9 @@ func TestNarrowTerminalRetainsRequiredContext(t *testing.T) {
 		wantBody map[Mode]string
 	}{
 		{name: "loading", freshness: FreshnessLoading, wantBody: map[Mode]string{ModeOverview: "Loading", ModeStream: "Loading"}},
-		{name: "current", freshness: FreshnessCurrent, wantBody: map[Mode]string{ModeOverview: "No recent activity", ModeStream: "not rendered yet"}},
+		{name: "current", freshness: FreshnessCurrent, wantBody: map[Mode]string{ModeOverview: noRecentActivity, ModeStream: noRecentActivity}},
 		{name: "error", freshness: FreshnessError, cause: "refreshing acme/backend: request failed", wantBody: map[Mode]string{ModeOverview: "unavailable", ModeStream: "unavailable"}},
-		{name: "stale", freshness: FreshnessStale, cause: "refreshing acme/backend: request failed", wantBody: map[Mode]string{ModeOverview: "No recent activity", ModeStream: "not rendered yet"}},
+		{name: "stale", freshness: FreshnessStale, cause: "refreshing acme/backend: request failed", wantBody: map[Mode]string{ModeOverview: noRecentActivity, ModeStream: noRecentActivity}},
 	}
 
 	for _, testCase := range cases {
