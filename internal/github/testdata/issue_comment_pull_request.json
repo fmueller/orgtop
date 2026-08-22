@@ -1,0 +1,14 @@
+[
+  {
+    "id": "5001",
+    "type": "IssueCommentEvent",
+    "actor": {"login": "commenter"},
+    "repo": {"name": "acme/backend"},
+    "payload": {
+      "action": "created",
+      "issue": {"number": 42, "pull_request": {"url": "https://api.github.com/repos/acme/backend/pulls/42"}},
+      "comment": {"id": 11}
+    },
+    "created_at": "2026-08-22T06:00:00Z"
+  }
+]

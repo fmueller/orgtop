@@ -1,0 +1,10 @@
+[
+  {
+    "id": "6001",
+    "type": "WatchEvent",
+    "actor": {"login": "stargazer"},
+    "repo": {"name": "acme/backend"},
+    "payload": {"action": "started"},
+    "created_at": "2026-08-22T05:00:00Z"
+  }
+]

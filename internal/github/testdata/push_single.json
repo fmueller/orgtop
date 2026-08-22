@@ -1,0 +1,10 @@
+[
+  {
+    "id": "1002",
+    "type": "PushEvent",
+    "actor": {"login": "octocat"},
+    "repo": {"name": "acme/backend"},
+    "payload": {"size": 1, "ref": "refs/heads/release/1.0", "head": "aaaabbbbccccdddd"},
+    "created_at": "2026-08-22T10:31:00Z"
+  }
+]

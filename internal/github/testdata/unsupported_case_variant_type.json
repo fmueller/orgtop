@@ -1,0 +1,10 @@
+[
+  {
+    "id": "6002",
+    "type": "pushevent",
+    "actor": {"login": "stargazer"},
+    "repo": {"name": "acme/backend"},
+    "payload": {"size": 3, "ref": "refs/heads/main"},
+    "created_at": "2026-08-22T05:01:00Z"
+  }
+]

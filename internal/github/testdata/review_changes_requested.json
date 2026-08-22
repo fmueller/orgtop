@@ -1,0 +1,10 @@
+[
+  {
+    "id": "3002",
+    "type": "PullRequestReviewEvent",
+    "actor": {"login": "reviewer"},
+    "repo": {"name": "acme/backend"},
+    "payload": {"action": "created", "review": {"state": "changes_requested"}, "pull_request": {"number": 42}},
+    "created_at": "2026-08-22T08:01:00Z"
+  }
+]

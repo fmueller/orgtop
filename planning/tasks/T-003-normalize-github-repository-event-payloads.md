@@ -1,12 +1,12 @@
 ---
 id: T-003-normalize-github-repository-event-payloads
 title: Normalize GitHub repository event payloads
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.1.0.md#github-activity-source
 dependencies:
     - T-001-implement-the-event-domain-and-repository-scope
-updated_at: "2026-08-21T22:39:23Z"
+updated_at: "2026-08-22T09:18:12Z"
 ---
 
 # T-003-normalize-github-repository-event-payloads Normalize GitHub repository event payloads
@@ -40,3 +40,5 @@ only, not HTTP retrieval or polling.
 - Record exact commands, exit status, and normalization fixture cases.
 
 ## Implementation Notes
+
+- 2026-08-22T09:18:07Z: verification pass

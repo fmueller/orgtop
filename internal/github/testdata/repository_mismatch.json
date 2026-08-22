@@ -1,0 +1,10 @@
+[
+  {
+    "id": "7002",
+    "type": "PushEvent",
+    "actor": {"login": "octocat"},
+    "repo": {"name": "acme/frontend"},
+    "payload": {"size": 2, "ref": "refs/heads/main", "head": "beef"},
+    "created_at": "2026-08-22T04:01:00Z"
+  }
+]

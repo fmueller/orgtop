@@ -1,0 +1,9 @@
+[
+  {
+    "id": "2005",
+    "type": "PullRequestEvent",
+    "repo": {"name": "acme/backend"},
+    "payload": {"action": "opened", "pull_request": {"number": 0}},
+    "created_at": "2026-08-22T09:04:00Z"
+  }
+]

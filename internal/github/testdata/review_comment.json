@@ -1,0 +1,10 @@
+[
+  {
+    "id": "4001",
+    "type": "PullRequestReviewCommentEvent",
+    "actor": {"login": "reviewer"},
+    "repo": {"name": "acme/backend"},
+    "payload": {"action": "created", "pull_request": {"number": 42}, "comment": {"id": 9}},
+    "created_at": "2026-08-22T07:00:00Z"
+  }
+]

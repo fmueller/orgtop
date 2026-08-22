@@ -1,14 +1,14 @@
 ---
 schema_version: 1
-updated_at: "2026-08-22T09:01:12Z"
+updated_at: "2026-08-22T09:18:27Z"
 active_spec_version: v0.1.0
 active_spec_path: specs/v0.1.0.md
 current_task: ""
 current_task_title: ""
 status_summary: idle
 blockers: []
-next_action: Select the next eligible task
-last_verification_result: pass for T-002-implement-cli-configuration-and-github-credential at 2026-08-22T08:57:00Z
+next_action: 'Start task T-004-implement-the-bounded-github-activity-source: Implement the bounded GitHub activity source'
+last_verification_result: pass for T-003-normalize-github-repository-event-payloads at 2026-08-22T09:18:07Z
 relevant_artifacts: []
 continuation_notes:
     - This repository is using manual Taskrail-style workflow scaffolding until the product replaces more of the bootstrap steps.
@@ -34,11 +34,11 @@ continuation_notes:
 
 ## Last Verification
 
-- pass for T-002-implement-cli-configuration-and-github-credential at 2026-08-22T08:57:00Z
+- pass for T-003-normalize-github-repository-event-payloads at 2026-08-22T09:18:07Z
 
 ## Next Action
 
-- Select the next eligible task
+- Start task T-004-implement-the-bounded-github-activity-source: Implement the bounded GitHub activity source
 
 ## Relevant Artifacts
 
@@ -50,8 +50,8 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 10
+- todo: 9
 - in_progress: 0
-- completed: 2
+- completed: 3
 - blocked: 0
 - cancelled: 0
