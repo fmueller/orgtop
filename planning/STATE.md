@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-updated_at: "2026-08-22T11:16:03Z"
+updated_at: "2026-08-22T11:38:15Z"
 active_spec_version: v0.1.0
 active_spec_path: specs/v0.1.0.md
 current_task: ""
@@ -8,7 +8,7 @@ current_task_title: ""
 status_summary: idle
 blockers: []
 next_action: Select the next eligible task
-last_verification_result: pass for T-006-build-the-bubble-tea-application-shell at 2026-08-22T11:15:59Z
+last_verification_result: pass for T-007-implement-the-asynchronous-refresh-lifecycle at 2026-08-22T11:37:39Z
 relevant_artifacts: []
 continuation_notes:
     - This repository is using manual Taskrail-style workflow scaffolding until the product replaces more of the bootstrap steps.
@@ -34,7 +34,7 @@ continuation_notes:
 
 ## Last Verification
 
-- pass for T-006-build-the-bubble-tea-application-shell at 2026-08-22T11:15:59Z
+- pass for T-007-implement-the-asynchronous-refresh-lifecycle at 2026-08-22T11:37:39Z
 
 ## Next Action
 
@@ -50,8 +50,8 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 7
+- todo: 8
 - in_progress: 0
-- completed: 6
+- completed: 7
 - blocked: 0
 - cancelled: 0

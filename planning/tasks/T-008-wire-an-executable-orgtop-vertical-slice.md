@@ -41,3 +41,13 @@ early.
 - Record exact commands/exit status and launch/cancellation/redaction tests.
 
 ## Implementation Notes
+
+- T-007 handoff: `tui.New` takes the root context and derives the context every
+  refresh runs under. The quit keystroke cancels it, but nothing else does yet,
+  so wire the program's signal handling into the same context here; otherwise
+  shutdown cancellation stays keystroke-only.
+- T-007 handoff: the shell declares its own `tui.Source` and `tui.Result` seam
+  because `internal/tui` must not import `internal/github`. Wire
+  `github.Source.Refresh` through a thin adapter that maps `github.Refresh` to
+  `tui.Result` and puts `(*github.RefreshError).RetryDelay` into
+  `tui.Result.Delay` on the failure path.

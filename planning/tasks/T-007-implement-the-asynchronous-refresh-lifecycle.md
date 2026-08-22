@@ -1,13 +1,13 @@
 ---
 id: T-007-implement-the-asynchronous-refresh-lifecycle
 title: Implement the asynchronous refresh lifecycle
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.1.0.md#application-shell-and-refresh-lifecycle
 dependencies:
     - T-006-build-the-bubble-tea-application-shell
     - T-004-implement-the-bounded-github-activity-source
-updated_at: "2026-08-21T22:39:23Z"
+updated_at: "2026-08-22T11:38:15Z"
 ---
 
 # T-007-implement-the-asynchronous-refresh-lifecycle Implement the asynchronous refresh lifecycle
@@ -50,3 +50,4 @@ view-specific rendering to T-009 and T-010.
   prefers the cause over the repository count. Revisit that ordering once this
   task produces real sanitized cause strings, and confirm the `40x10`
   `STALE`-with-cause layout still reads well.
+- 2026-08-22T11:37:39Z: verification pass

@@ -4,6 +4,7 @@
 package tui
 
 import (
+	"context"
 	"strings"
 	"testing"
 	"time"
@@ -26,6 +27,13 @@ func testScope(t *testing.T, values ...string) domain.Scope {
 		t.Fatalf("building the test scope %v failed: %v", values, err)
 	}
 	return scope
+}
+
+// newModel builds the root model for the scope with a source that is never
+// driven, so the shell renders its pending first refresh.
+func newModel(t *testing.T, values ...string) Model {
+	t.Helper()
+	return New(context.Background(), testScope(t, values...), &fakeSource{})
 }
 
 // press builds the key press message for a keystroke the shell reacts to.
@@ -56,7 +64,7 @@ func apply(t *testing.T, model Model, messages ...tea.Msg) (Model, tea.Cmd) {
 }
 
 func TestOverviewIsTheInitialViewAndRendersLoadingImmediately(t *testing.T) {
-	model := New(testScope(t, "acme/backend"))
+	model := newModel(t, "acme/backend")
 
 	if model.mode != ModeOverview {
 		t.Errorf("initial mode is %v, want ModeOverview", model.mode)
@@ -90,7 +98,7 @@ func TestModeKeysAndTabSwitchViews(t *testing.T) {
 
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
-			model := New(testScope(t, "acme/backend"))
+			model := newModel(t, "acme/backend")
 			for _, keystroke := range testCase.keystrokes {
 				model, _ = apply(t, model, press(keystroke))
 			}
@@ -110,10 +118,9 @@ func TestModeKeysAndTabSwitchViews(t *testing.T) {
 }
 
 func TestModeSwitchPreservesPerViewStateAndSnapshot(t *testing.T) {
-	scope := testScope(t, "acme/backend")
-	snapshot := domain.NewSnapshot(scope, nil)
+	snapshot := domain.NewSnapshot(testScope(t, "acme/backend"), nil)
 
-	model := New(scope)
+	model := newModel(t, "acme/backend")
 	model.state.Snapshot = snapshot
 	model.state.Freshness = FreshnessCurrent
 	model.overview.offset = 2
@@ -135,7 +142,7 @@ func TestModeSwitchPreservesPerViewStateAndSnapshot(t *testing.T) {
 func TestQuitKeysRequestQuit(t *testing.T) {
 	for _, keystroke := range []string{"q", "ctrl+c"} {
 		t.Run(keystroke, func(t *testing.T) {
-			_, cmd := apply(t, New(testScope(t, "acme/backend")), press(keystroke))
+			_, cmd := apply(t, newModel(t, "acme/backend"), press(keystroke))
 			if cmd == nil {
 				t.Fatalf("%q returned no command, want quit", keystroke)
 			}
@@ -148,14 +155,14 @@ func TestQuitKeysRequestQuit(t *testing.T) {
 
 func TestNonQuitKeysRequestNoCommand(t *testing.T) {
 	for _, keystroke := range []string{"1", "2", "tab", "x"} {
-		if _, cmd := apply(t, New(testScope(t, "acme/backend")), press(keystroke)); cmd != nil {
+		if _, cmd := apply(t, newModel(t, "acme/backend"), press(keystroke)); cmd != nil {
 			t.Errorf("%q produced command %T, want none", keystroke, cmd())
 		}
 	}
 }
 
 func TestResizeUpdatesDimensionsAndBoundsTheRender(t *testing.T) {
-	model := New(testScope(t, "acme/backend", "acme/frontend"))
+	model := newModel(t, "acme/backend", "acme/frontend")
 	model, _ = apply(t, model, tea.WindowSizeMsg{Width: 100, Height: 24}, tea.WindowSizeMsg{Width: narrowWidth, Height: narrowHeight})
 
 	if model.width != narrowWidth || model.height != narrowHeight {
@@ -180,7 +187,7 @@ func TestNarrowTerminalRetainsRequiredContext(t *testing.T) {
 	for _, testCase := range cases {
 		for _, mode := range []Mode{ModeOverview, ModeStream} {
 			t.Run(testCase.name+"/"+mode.Label(), func(t *testing.T) {
-				model := New(testScope(t, "acme/backend", "acme/frontend"))
+				model := newModel(t, "acme/backend", "acme/frontend")
 				model.mode = mode
 				model.state.Freshness = testCase.freshness
 				model.state.Cause = testCase.cause
@@ -216,7 +223,7 @@ func TestHeaderSeparatesTransportFromFreshness(t *testing.T) {
 
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
-			model := New(testScope(t, "acme/backend"))
+			model := newModel(t, "acme/backend")
 			model.state.Freshness = testCase.freshness
 			content := model.View().Content
 
@@ -241,7 +248,7 @@ func TestHeaderSeparatesTransportFromFreshness(t *testing.T) {
 
 func TestHeaderKeepsScopeContextAndLastSuccess(t *testing.T) {
 	lastSuccess := time.Date(2026, time.August, 22, 12, 34, 56, 0, time.UTC)
-	model := New(testScope(t, "acme/backend", "acme/frontend"))
+	model := newModel(t, "acme/backend", "acme/frontend")
 	model.state.Freshness = FreshnessCurrent
 	model.state.LastSuccess = lastSuccess
 
@@ -265,7 +272,7 @@ func TestHeaderKeepsScopeContextAndLastSuccess(t *testing.T) {
 }
 
 func TestFooterAdvertisesOnlyImplementedControls(t *testing.T) {
-	model, _ := apply(t, New(testScope(t, "acme/backend")), tea.WindowSizeMsg{Width: 120, Height: 24})
+	model, _ := apply(t, newModel(t, "acme/backend"), tea.WindowSizeMsg{Width: 120, Height: 24})
 	content := model.View().Content
 
 	for _, want := range []string{"1 overview", "2 stream", "tab switch", "q quit"} {
@@ -293,7 +300,7 @@ func TestSmallPositiveSizesRenderWithinBounds(t *testing.T) {
 
 	for _, size := range sizes {
 		for _, mode := range []Mode{ModeOverview, ModeStream} {
-			model := New(testScope(t, "acme/backend"))
+			model := newModel(t, "acme/backend")
 			model.mode = mode
 			model, _ = apply(t, model, size)
 			assertFits(t, model.View().Content, size.Width, size.Height)
@@ -310,7 +317,7 @@ func TestReportedZeroDimensionsBoundTheRender(t *testing.T) {
 
 	for _, size := range sizes {
 		for _, mode := range []Mode{ModeOverview, ModeStream} {
-			model := New(testScope(t, "acme/backend"))
+			model := newModel(t, "acme/backend")
 			model.mode = mode
 			model, _ = apply(t, model, size)
 			assertFits(t, model.View().Content, size.Width, size.Height)
@@ -319,7 +326,7 @@ func TestReportedZeroDimensionsBoundTheRender(t *testing.T) {
 }
 
 func TestUnknownTerminalSizeRendersUnbounded(t *testing.T) {
-	content := New(testScope(t, "acme/backend")).View().Content
+	content := newModel(t, "acme/backend").View().Content
 
 	if lines := strings.Split(content, "\n"); len(lines) != 3 {
 		t.Fatalf("unsized render used %d lines, want header, body, and footer:\n%s", len(lines), content)
@@ -332,17 +339,11 @@ func TestUnknownTerminalSizeRendersUnbounded(t *testing.T) {
 }
 
 func TestRenderIsRepeatable(t *testing.T) {
-	model, _ := apply(t, New(testScope(t, "acme/backend")), tea.WindowSizeMsg{Width: 80, Height: 20})
+	model, _ := apply(t, newModel(t, "acme/backend"), tea.WindowSizeMsg{Width: 80, Height: 20})
 
 	first := model.View().Content
 	if second := model.View().Content; first != second {
 		t.Errorf("repeated render differs:\nfirst:\n%s\nsecond:\n%s", first, second)
-	}
-}
-
-func TestInitStartsNoShellWork(t *testing.T) {
-	if cmd := New(testScope(t, "acme/backend")).Init(); cmd != nil {
-		t.Errorf("Init returned command %T; refresh scheduling belongs to the refresh lifecycle", cmd())
 	}
 }
 

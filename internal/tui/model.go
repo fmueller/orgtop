@@ -1,7 +1,9 @@
 package tui
 
 import (
+	"context"
 	"strings"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 
@@ -12,8 +14,8 @@ import (
 const chromeLines = 2
 
 // Model is OrgTop's root Bubble Tea model. It owns the active mode, the
-// terminal dimensions, the shared state both views read, and each view's own
-// state slot. Rendering only formats that state.
+// terminal dimensions, the shared state both views read, each view's own state
+// slot, and the refresh lifecycle. Rendering only formats that state.
 type Model struct {
 	state    State
 	mode     Mode
@@ -22,16 +24,40 @@ type Model struct {
 	sized    bool
 	overview overview
 	stream   stream
+	// ctx bounds every refresh. Bubble Tea drives the model by message, so the
+	// cancelable root of the source work has to live with the model itself.
+	ctx context.Context
+	// cancel stops in-flight source work at shutdown.
+	cancel context.CancelFunc
+	// source performs one atomic refresh of the Scope.
+	source Source
+	// now supplies the instant a success is recorded at.
+	now func() time.Time
+	// tick schedules the next attempt after a delay.
+	tick func(time.Duration) tea.Cmd
+	// pending reports whether a refresh is in flight.
+	pending bool
 }
 
 // New returns the root model for the selected scope in its initial loading
-// state. Issuing the first refresh belongs to the refresh lifecycle.
-func New(scope domain.Scope) Model {
-	return Model{state: State{Scope: scope, Freshness: FreshnessLoading}}
+// state, with its first refresh already owned by Init. The source must not be
+// nil, and ctx bounds every refresh the model starts.
+func New(ctx context.Context, scope domain.Scope, source Source) Model {
+	refreshCtx, cancel := context.WithCancel(ctx)
+	return Model{
+		state:   State{Scope: scope, Freshness: FreshnessLoading},
+		ctx:     refreshCtx,
+		cancel:  cancel,
+		source:  source,
+		now:     time.Now,
+		tick:    tickAfter,
+		pending: true,
+	}
 }
 
-// Init implements tea.Model. The shell itself starts no work.
-func (m Model) Init() tea.Cmd { return nil }
+// Init implements tea.Model. The first refresh runs as a command, so the
+// initial LOADING render is never delayed by source I/O (FR-007).
+func (m Model) Init() tea.Cmd { return m.refresh() }
 
 // Update implements tea.Model.
 func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
@@ -40,6 +66,10 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.width, m.height, m.sized = max(message.Width, 0), max(message.Height, 0), true
 	case tea.KeyPressMsg:
 		return m.handleKey(message)
+	case refreshDueMsg:
+		return m.startRefresh()
+	case refreshedMsg:
+		return m.applyRefresh(message)
 	}
 	return m, nil
 }
@@ -48,6 +78,7 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 func (m Model) handleKey(message tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch message.String() {
 	case "q", "ctrl+c":
+		m.cancel()
 		return m, tea.Quit
 	case "1":
 		m.mode = ModeOverview
