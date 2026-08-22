@@ -161,3 +161,31 @@ func assertUsage(t *testing.T, output string) {
 		t.Errorf("usage output %q does not document the owner/repository form", output)
 	}
 }
+
+// TestParseArgsReportsItsOwnRejectionsExactlyOnce keeps reporting in one place.
+// The flag package reports the causes it raises itself, so ParseArgs reports the
+// causes it raises itself and the caller only decides the exit code.
+func TestParseArgsReportsItsOwnRejectionsExactlyOnce(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{name: "no repository", args: nil},
+		{name: "invalid repository", args: []string{"--repo", "acme/*"}},
+		{name: "positional argument", args: []string{"--repo", "acme/backend", "extra"}},
+		{name: "unknown flag", args: []string{"--repos", "acme/backend"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var output bytes.Buffer
+			_, err := cli.ParseArgs("orgtop", tt.args, &output)
+			if err == nil {
+				t.Fatalf("ParseArgs(%v) returned no error", tt.args)
+			}
+			if got := strings.Count(output.String(), err.Error()); got != 1 {
+				t.Errorf("output reports %q %d times, want once:\n%s", err.Error(), got, output.String())
+			}
+		})
+	}
+}

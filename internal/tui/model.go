@@ -90,8 +90,14 @@ func (m Model) handleKey(message tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// View implements tea.Model.
-func (m Model) View() tea.View { return tea.NewView(m.render()) }
+// View implements tea.Model. OrgTop owns the whole terminal while it runs, so
+// the shell renders on the alternate screen and leaves the caller's screen
+// untouched on exit (FR-001).
+func (m Model) View() tea.View {
+	view := tea.NewView(m.render())
+	view.AltScreen = true
+	return view
+}
 
 // render composes the shared chrome around the active view's body. The header
 // wins the tightest budgets, then the quit hint, then the body.

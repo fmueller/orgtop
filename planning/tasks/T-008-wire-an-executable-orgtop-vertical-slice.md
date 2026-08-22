@@ -1,13 +1,13 @@
 ---
 id: T-008-wire-an-executable-orgtop-vertical-slice
 title: Wire an executable OrgTop vertical slice
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.1.0.md#integration-documentation-and-release-readiness
 dependencies:
     - T-002-implement-cli-configuration-and-github-credential
     - T-007-implement-the-asynchronous-refresh-lifecycle
-updated_at: "2026-08-21T22:39:23Z"
+updated_at: "2026-08-22T12:42:57Z"
 ---
 
 # T-008-wire-an-executable-orgtop-vertical-slice Wire an executable OrgTop vertical slice
@@ -51,3 +51,4 @@ early.
   `github.Source.Refresh` through a thin adapter that maps `github.Refresh` to
   `tui.Result` and puts `(*github.RefreshError).RetryDelay` into
   `tui.Result.Delay` on the failure path.
+- 2026-08-22T12:42:53Z: verification pass

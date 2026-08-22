@@ -55,9 +55,10 @@ tasks:
     # Runs the command rather than only compiling it, so a binary that panics
     # before reaching its first output reds CI. `go run` keeps the target
     # identical on the native Windows matrix leg, where the built artifact is
-    # orgtop.exe. Switch to `--help` once T-008 gives the command a flag surface.
+    # orgtop.exe. `--help` is the only launch that exits cleanly without a
+    # terminal, a credential, or a selected Scope.
     cmds:
-      - go run ./cmd/orgtop
+      - go run ./cmd/orgtop --help
 
   fmt:
     aliases: [format]

@@ -363,3 +363,11 @@ func assertFits(t *testing.T, content string, width, height int) {
 		}
 	}
 }
+
+// TestTheShellRendersOnTheAlternateScreen guards FR-001: a valid launch owns
+// the whole terminal and restores the caller's screen on exit.
+func TestTheShellRendersOnTheAlternateScreen(t *testing.T) {
+	if !newModel(t, "acme/backend").View().AltScreen {
+		t.Error("the shell does not render on the alternate screen")
+	}
+}

@@ -28,7 +28,8 @@ type Config struct {
 }
 
 // ParseArgs parses args, which excludes the program name, into a Config. Every
-// rejected configuration writes usage to output and returns an actionable error.
+// rejected configuration writes usage plus one actionable cause to output and
+// returns that cause; a help request writes usage and reports flag.ErrHelp.
 func ParseArgs(name string, args []string, output io.Writer) (Config, error) {
 	flags := flag.NewFlagSet(name, flag.ContinueOnError)
 	flags.SetOutput(output)
@@ -41,19 +42,26 @@ func ParseArgs(name string, args []string, output io.Writer) (Config, error) {
 		return Config{}, err
 	}
 	if flags.NArg() > 0 {
-		flags.Usage()
-		return Config{}, fmt.Errorf("unexpected argument %q", flags.Arg(0))
+		return Config{}, reject(output, flags, fmt.Errorf("unexpected argument %q", flags.Arg(0)))
 	}
 
 	scope, err := domain.NewScope(values)
 	if err != nil {
-		flags.Usage()
 		if errors.Is(err, domain.ErrEmptyScope) {
-			return Config{}, ErrMissingRepository
+			return Config{}, reject(output, flags, ErrMissingRepository)
 		}
-		return Config{}, fmt.Errorf("--%s: %w", repoFlag, err)
+		return Config{}, reject(output, flags, fmt.Errorf("--%s: %w", repoFlag, err))
 	}
 	return Config{Scope: scope}, nil
+}
+
+// reject writes usage and the actionable cause, then returns that cause. The
+// flag package already reports the causes it raises itself, so every rejection
+// reaches output exactly once and the caller only decides the exit code.
+func reject(output io.Writer, flags *flag.FlagSet, err error) error {
+	flags.Usage()
+	_, _ = fmt.Fprintln(output, err)
+	return err
 }
 
 func writeUsage(output io.Writer, name string) {

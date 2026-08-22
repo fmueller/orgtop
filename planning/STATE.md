@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-updated_at: "2026-08-22T11:38:15Z"
+updated_at: "2026-08-22T12:42:57Z"
 active_spec_version: v0.1.0
 active_spec_path: specs/v0.1.0.md
 current_task: ""
@@ -8,7 +8,7 @@ current_task_title: ""
 status_summary: idle
 blockers: []
 next_action: Select the next eligible task
-last_verification_result: pass for T-007-implement-the-asynchronous-refresh-lifecycle at 2026-08-22T11:37:39Z
+last_verification_result: pass for T-008-wire-an-executable-orgtop-vertical-slice at 2026-08-22T12:42:53Z
 relevant_artifacts: []
 continuation_notes:
     - This repository is using manual Taskrail-style workflow scaffolding until the product replaces more of the bootstrap steps.
@@ -34,7 +34,7 @@ continuation_notes:
 
 ## Last Verification
 
-- pass for T-007-implement-the-asynchronous-refresh-lifecycle at 2026-08-22T11:37:39Z
+- pass for T-008-wire-an-executable-orgtop-vertical-slice at 2026-08-22T12:42:53Z
 
 ## Next Action
 
@@ -50,8 +50,8 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 8
+- todo: 7
 - in_progress: 0
-- completed: 7
+- completed: 8
 - blocked: 0
 - cancelled: 0
