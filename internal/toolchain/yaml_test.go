@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"testing"
 
 	"gopkg.in/yaml.v3"
@@ -55,6 +56,11 @@ func loadYAML(t *testing.T, path string) *yaml.Node {
 	return document.Content[0]
 }
 
+// readFile returns a file's contents with line endings normalized to LF. A
+// Windows checkout with core.autocrlf enabled hands these files back with CRLF
+// endings, which silently breaks every guard that scans for a multi-line
+// pattern. Normalizing here keeps the guards independent of checkout
+// configuration rather than repeating the fix at each call site.
 func readFile(t *testing.T, path string) string {
 	t.Helper()
 
@@ -62,7 +68,7 @@ func readFile(t *testing.T, path string) string {
 	if err != nil {
 		t.Fatalf("reading %s failed: %v", path, err)
 	}
-	return string(data)
+	return strings.ReplaceAll(string(data), "\r\n", "\n")
 }
 
 // child returns the value node for key in a mapping, or nil when it is absent.
