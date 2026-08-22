@@ -5,6 +5,10 @@ This directory contains versioned normative product contracts for OrgTop.
 ## Reading Order
 
 1. Read `v0.1.0.md`, the active contract for the first useful local release.
+2. Read `v0.2.0.md`, the Draft contract for monorepo Scopes and Rain.
+3. Read `v0.3.0.md`, the Draft contract for explainable intelligence.
+4. Read `v0.5.0.md`, the Draft contract for shared real-time architecture.
+5. Read `v1.0.0.md`, the non-normative validation and product-vision contract.
 
 Later versions inherit shipped invariants only when their own contracts say so.
 Roadmap ideas are not implementation requirements until represented by an active
