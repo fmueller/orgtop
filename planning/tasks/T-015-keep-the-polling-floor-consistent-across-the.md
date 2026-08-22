@@ -1,12 +1,12 @@
 ---
 id: T-015-keep-the-polling-floor-consistent-across-the
 title: Keep the polling floor consistent across the source and the lifecycle
-status: todo
+status: completed
 priority: low
 spec_ref: specs/v0.1.0.md#application-shell-and-refresh-lifecycle
 dependencies:
     - T-007-implement-the-asynchronous-refresh-lifecycle
-updated_at: "2026-08-22T11:37:45Z"
+updated_at: "2026-08-22T15:29:42Z"
 ---
 
 # T-015-keep-the-polling-floor-consistent-across-the Keep the polling floor consistent across the source and the lifecycle
@@ -37,3 +37,4 @@ Follow-up derived from T-007-implement-the-asynchronous-refresh-lifecycle's veri
 - go-reviewer finding on T-007 (low): `defaultDelay` in
   `internal/tui/refresh.go` duplicates `defaultInterval` in
   `internal/github/schedule.go`; the duplication is deliberate but undefended.
+- 2026-08-22T15:29:38Z: verification pass
