@@ -36,6 +36,9 @@ implement the Bubble Tea polling loop here.
 - Use injected HTTP transport/fixture server for exact requests, atomicity, display
   identity, status classes, malformed/empty data, cancellation, and headers.
 - Use a sentinel credential and assert it is absent from captured output/errors.
+- Cover the normalization verb branches deferred from T-003: a `reopened`
+  pull request and a present but unrecognized review state such as `dismissed`
+  or `commented` fall back to their generic verbs.
 - Run focused source tests and `task check`.
 
 ## Verification Notes
@@ -43,3 +46,9 @@ implement the Bubble Tea polling loop here.
 - Record exact commands, exit status, and request/atomicity/delay/redaction tests.
 
 ## Implementation Notes
+
+- Display identity builds on T-003: `github.NormalizeEvents` keeps the returned
+  repository spelling on every event and fails the whole page on a
+  case-insensitive mismatch (FR-002). Selecting one display identity per Scope
+  entry is this task's work: use the first normalized event's repository
+  spelling, and the requested spelling when the page is empty.
