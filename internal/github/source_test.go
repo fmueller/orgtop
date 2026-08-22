@@ -160,7 +160,13 @@ func refreshExpectingError(t *testing.T, response stubResponse) *github.RefreshE
 	t.Helper()
 	server := newFixtureServer(t, map[string]stubResponse{"/repos/acme/backend/events": response})
 	source, _ := newTestSource(t, server)
+	return refreshSourceExpectingError(t, source)
+}
 
+// refreshSourceExpectingError refreshes one repository through source, whose
+// response must fail, and asserts that no consumable partial data is returned.
+func refreshSourceExpectingError(t *testing.T, source github.Source) *github.RefreshError {
+	t.Helper()
 	refresh, err := source.Refresh(context.Background(), mustScope(t, "acme/backend"))
 	if err == nil {
 		t.Fatalf("refresh succeeded with %d repositories, want an error", len(refresh.Repositories))
@@ -623,5 +629,81 @@ func TestRefreshRejectsAnEmptyScope(t *testing.T) {
 	assertNoPartialData(t, refresh)
 	if len(client.recorded()) != 0 {
 		t.Errorf("got %d requests for an empty scope, want none", len(client.recorded()))
+	}
+}
+
+// instrumentedBody records how much of a response body was read and whether the
+// read happened before Close.
+type instrumentedBody struct {
+	reader         io.Reader
+	read           int64
+	closed         bool
+	readAfterClose bool
+}
+
+func (b *instrumentedBody) Read(buffer []byte) (int, error) {
+	if b.closed {
+		b.readAfterClose = true
+	}
+	n, err := b.reader.Read(buffer)
+	b.read += int64(n)
+	return n, err
+}
+
+func (b *instrumentedBody) Close() error {
+	b.closed = true
+	return nil
+}
+
+// stubClient answers every request with one canned response.
+type stubClient struct{ response *http.Response }
+
+func (c stubClient) Do(*http.Request) (*http.Response, error) { return c.response, nil }
+
+// TestRefreshDrainsNon2xxBodiesWithinABound covers the keep-alive nit from the
+// T-004 review: net/http can only reuse an idle connection once the body is
+// consumed, and a hostile error body must not force an unbounded read.
+func TestRefreshDrainsNon2xxBodiesWithinABound(t *testing.T) {
+	const drainLimit = 4 << 10
+
+	tests := []struct {
+		name     string
+		size     int
+		wantRead int64
+	}{
+		{name: "a short error body is drained completely", size: 128, wantRead: 128},
+		{name: "an oversized error body is bounded", size: 1 << 20, wantRead: drainLimit},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			header := http.Header{}
+			header.Set("X-RateLimit-Remaining", "42")
+			body := &instrumentedBody{reader: strings.NewReader(strings.Repeat("x", test.size))}
+			source := github.Source{
+				Client: stubClient{response: &http.Response{
+					StatusCode: http.StatusForbidden,
+					Header:     header,
+					Body:       body,
+				}},
+				BaseURL:    "https://api.test.invalid",
+				Credential: sentinelCredential(t),
+				Now:        func() time.Time { return testNow },
+			}
+
+			failure := refreshSourceExpectingError(t, source)
+			if !errors.Is(failure, github.ErrAccessDenied) {
+				t.Errorf("error %v does not match ErrAccessDenied", failure)
+			}
+			if body.read != test.wantRead {
+				t.Errorf("drained %d bytes, want %d", body.read, test.wantRead)
+			}
+			if !body.closed {
+				t.Error("the response body was not closed")
+			}
+			if body.readAfterClose {
+				t.Error("the response body was read after it was closed")
+			}
+		})
 	}
 }

@@ -1,12 +1,12 @@
 ---
 id: T-013-drain-non-2xx-github-response-bodies-before
 title: Drain non-2xx GitHub response bodies before closing
-status: todo
+status: completed
 priority: low
 spec_ref: specs/v0.1.0.md#github-activity-source
 dependencies:
     - T-004-implement-the-bounded-github-activity-source
-updated_at: "2026-08-22T10:36:51Z"
+updated_at: "2026-08-22T14:58:45Z"
 ---
 
 # T-013-drain-non-2xx-github-response-bodies-before Drain non-2xx GitHub response bodies before closing
@@ -35,3 +35,4 @@ connection-reuse nit raised during the T-004 review.
 - The affected call site is `Source.fetch` in `internal/github/source.go`.
 - The v0.1.0 poll floor is 60 seconds per repository, so the practical impact is
   small; keep the change minimal and do not add retries or pooling configuration.
+- 2026-08-22T14:58:22Z: verification pass

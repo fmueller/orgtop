@@ -24,6 +24,11 @@ const (
 	requestTimeout  = 30 * time.Second
 )
 
+// errorBodyDrainLimit bounds how much of a non-2xx body is consumed so the idle
+// keep-alive connection can be reused. It is large enough for a GitHub error
+// document and small enough that a hostile body cannot force a long read.
+const errorBodyDrainLimit = 4 << 10
+
 // Failure classes a repository refresh reports. None of them carries a
 // credential value or an authenticated request header (NFR-003).
 var (
@@ -142,6 +147,9 @@ func (s Source) fetch(ctx context.Context, repository domain.Repository) (Reposi
 
 	rateLimited, statusErr := s.statusError(response)
 	if statusErr != nil {
+		// net/http only reuses the connection once the body is consumed, so
+		// drain a bounded prefix before the deferred Close.
+		_, _ = io.Copy(io.Discard, io.LimitReader(response.Body, errorBodyDrainLimit))
 		return RepositoryActivity{}, 0, s.failure(repository, response.Header, rateLimited, statusErr)
 	}
 
