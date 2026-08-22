@@ -1,11 +1,11 @@
 ---
 id: T-001-implement-the-event-domain-and-repository-scope
 title: Implement the event domain and repository Scope
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.1.0.md#event-domain-and-repository-scope
 dependencies: []
-updated_at: "2026-08-21T22:39:23Z"
+updated_at: "2026-08-22T08:35:57Z"
 ---
 
 # T-001-implement-the-event-domain-and-repository-scope Implement the event domain and repository Scope
@@ -40,3 +40,5 @@ payload and Bubble Tea types out of this package.
 - Record exact commands, exit status, and relevant named tests during implementation.
 
 ## Implementation Notes
+
+- 2026-08-22T08:35:52Z: verification pass

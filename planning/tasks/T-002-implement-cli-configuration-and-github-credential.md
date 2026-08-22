@@ -42,3 +42,14 @@ wiring to T-008.
 - Record exact commands, exit status, and named parser/auth/redaction tests.
 
 ## Implementation Notes
+
+- Carried over from T-001: `domain.NewScope` rejects an empty value list with the
+  sentinel `domain.ErrEmptyScope` ("no repository selected"). That sentinel is a
+  domain invariant, not FR-001 user-facing copy. The CLI boundary owns the FR-001
+  message: launching without `--repo` must exit non-zero and print usage plus an
+  actionable "at least one --repo is required" remediation. Match with
+  `errors.Is(err, domain.ErrEmptyScope)` and translate; never surface the raw
+  sentinel text to the user.
+- Invalid `--repo` values wrap `domain.ErrInvalidRepository` through
+  `domain.NewScope`; translate them the same way and keep the rejected value in the
+  message.
