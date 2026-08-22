@@ -48,6 +48,14 @@ authoritative gate.
 (`BASE=<ref>` overrides it). The full `task test:mutate:gate` runs weekly in CI
 and on manual dispatch rather than on every pull request.
 
+## Releases
+
+`CHANGELOG.md` follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
+is the source of release notes. Add a `## [<version>]` section before tagging: the
+release workflow refuses to publish a tag whose section is missing or empty.
+Pushing a `v*` tag builds and publishes through GoReleaser; a manual dispatch
+builds a local snapshot and publishes nothing.
+
 ## Taskrail
 
 Versioned product contracts live in `specs/`, and implementation tasks live in

@@ -18,6 +18,8 @@ Guidance for coding agents working in the OrgTop repository.
 - `Taskfile.yml` defines standard local and CI commands.
 - `mise.toml` pins the developer and CI toolchain.
 - `.github/workflows/ci.yml` defines required CI validation.
+- `.github/workflows/release.yml` publishes tags; `CHANGELOG.md` is the source of
+  release notes and a tag without a matching `## [<version>]` section is refused.
 - `README.md` is the repository-level product and contributor introduction.
 
 ## Taskrail lifecycle
