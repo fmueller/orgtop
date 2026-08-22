@@ -6,6 +6,7 @@ task = "3.53.1"
 golangci-lint = "2.13.1"
 goreleaser = "2.17.1"
 lefthook = "2.1.10"
+"go:github.com/google/go-licenses/v2" = "2.0.1"
 "go:github.com/tessariq/taskrail/cmd/taskrail" = "0.4.0"
 
 [env]

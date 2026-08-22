@@ -1,7 +1,8 @@
 version: "3"
 
 # Task targets are the developer and CI interface. Direct Go commands remain
-# canonical and work without Task or mise.
+# canonical and work without Task or mise. Target names follow a `group:verb`
+# convention; the older flat names survive as aliases.
 tasks:
   build:
     desc: Build the orgtop CLI
@@ -9,6 +10,21 @@ tasks:
       CGO_ENABLED: "0"
     cmds:
       - go build ./cmd/orgtop
+
+  build:cross:
+    desc: Cross-compile ./cmd/orgtop for every release target (compile smoke; publishes nothing)
+    # Pure GOOS/GOARCH compile check for the platforms .goreleaser.yml ships to.
+    # `-o /dev/null` keeps it a smoke rather than an artifact build. Guarded by
+    # TestTaskfileCrossTargetsCoverReleasePlatforms.
+    env:
+      CGO_ENABLED: "0"
+    cmds:
+      - GOOS=linux GOARCH=amd64 go build -o /dev/null ./cmd/orgtop
+      - GOOS=linux GOARCH=arm64 go build -o /dev/null ./cmd/orgtop
+      - GOOS=darwin GOARCH=amd64 go build -o /dev/null ./cmd/orgtop
+      - GOOS=darwin GOARCH=arm64 go build -o /dev/null ./cmd/orgtop
+      - GOOS=windows GOARCH=amd64 go build -o /dev/null ./cmd/orgtop
+      - GOOS=windows GOARCH=arm64 go build -o /dev/null ./cmd/orgtop
 
   test:
     desc: Run all tests
@@ -34,14 +50,23 @@ tasks:
       - go clean -testcache
       - go run github.com/go-gremlins/gremlins/cmd/gremlins@v0.6.0 unleash --exclude-files 'cmd/.*' --output-statuses lt --workers 2 --threshold-efficacy 70
 
-  format:
-    aliases: [fmt]
+  run:smoke:
+    desc: Start orgtop and require a clean exit (startup smoke)
+    # Runs the command rather than only compiling it, so a binary that panics
+    # before reaching its first output reds CI. `go run` keeps the target
+    # identical on the native Windows matrix leg, where the built artifact is
+    # orgtop.exe. Switch to `--help` once T-008 gives the command a flag surface.
+    cmds:
+      - go run ./cmd/orgtop
+
+  fmt:
+    aliases: [format]
     desc: Format all Go files
     cmds:
       - gofmt -w .
 
-  format-check:
-    aliases: [fmt:check]
+  fmt:check:
+    aliases: [format-check]
     desc: Fail if any Go file needs formatting
     cmds:
       - |
@@ -62,31 +87,51 @@ tasks:
     cmds:
       - go vet ./...
 
-  taskrail-validate:
+  licenses:check:
+    desc: Fail if any dependency license is outside the allowed set
+    cmds:
+      - go-licenses check ./... --allowed_licenses=Apache-2.0,MIT,BSD-2-Clause,BSD-3-Clause,ISC
+
+  workflow:validate:
+    aliases: [taskrail-validate]
     desc: Validate Taskrail specs, tasks, and managed state
     cmds:
       - taskrail validate
 
-  release-check:
+  workflow:verify:spec:
+    desc: Report advisory tracked-work coverage against the active milestone spec
+    cmds:
+      - taskrail coverage
+
+  release:check:
+    aliases: [release-check]
     desc: Validate the GoReleaser configuration
     cmds:
       - goreleaser check
 
+  release:dry:
+    desc: Build a local release snapshot without publishing anything
+    cmds:
+      - goreleaser release --snapshot --clean
+
   check:
     desc: Run the local CI checks
     cmds:
-      - task: format-check
+      - task: fmt:check
       - task: vet
       - task: lint
       - task: test
       - task: build
-      - task: taskrail-validate
-      - task: release-check
+      - task: run:smoke
+      - task: licenses:check
+      - task: workflow:validate
+      - task: workflow:verify:spec
+      - task: release:check
 
   clean:
     desc: Remove generated build and release artifacts
     cmds:
-      - rm -rf orgtop bin dist
+      - rm -rf orgtop orgtop.exe bin dist
 
   hooks-install:
     desc: Install opt-in Lefthook git hooks

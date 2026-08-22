@@ -26,7 +26,7 @@ jobs:
         uses: ./.github/actions/setup
 
       - name: Check formatting
-        run: task format-check
+        run: task fmt:check
 
       - name: Vet
         run: task vet
@@ -40,8 +40,17 @@ jobs:
       - name: Build
         run: task build
 
-      - name: Validate Taskrail
-        run: task taskrail-validate
+      - name: Startup smoke
+        run: task run:smoke
+
+      - name: Check dependency licenses
+        run: task licenses:check
+
+      - name: Validate Taskrail tracked-work state  # hard failure gate
+        run: task workflow:validate
+
+      - name: Report active spec coverage  # advisory
+        run: task workflow:verify:spec
 
       - name: Validate release configuration
-        run: task release-check
+        run: task release:check

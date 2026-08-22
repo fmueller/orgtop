@@ -46,16 +46,24 @@ Guidance for coding agents working in the OrgTop repository.
 - Direct Go commands are canonical; Task targets provide a consistent developer and CI interface.
 - Build: `task build` (`go build ./cmd/orgtop`).
 - Test: `task test` (`go test ./...`).
-- Format: `task format` (`gofmt -w .`).
-- Format check: `task format-check`.
+- Cross-compile smoke: `task build:cross` (every platform `.goreleaser.yml` publishes).
+- Startup smoke: `task run:smoke`.
+- Format: `task fmt` (`gofmt -w .`).
+- Format check: `task fmt:check`.
 - Lint: `task lint` (`golangci-lint run ./...`).
 - Vet/static analysis: `task vet` (`go vet ./...`).
-- Full local gate: `task check`.
-- Taskrail validation: `task taskrail-validate` (`taskrail validate`).
+- Dependency licenses: `task licenses:check`.
+- Full local gate: `task check`; it mirrors the CI `checks` job step for step, and
+  `TestLocalCheckMirrorsTheCIChecksJob` fails if the two drift apart.
+- Taskrail validation: `task workflow:validate` (`taskrail validate`).
+- Advisory spec coverage: `task workflow:verify:spec` (`taskrail coverage`).
+- Release configuration: `task release:check`; local snapshot: `task release:dry`.
 - Install opt-in hooks: `task hooks-install`.
 - Differential mutation tests: `task test:mutate` (override with `BASE=<ref>`).
 - Full mutation gate: `task test:mutate:gate`; run it deliberately, while CI runs
   it weekly and on manual dispatch.
+- The flat legacy names (`format`, `format-check`, `taskrail-validate`,
+  `release-check`) survive as aliases; prefer the `group:verb` names.
 
 ## Go conventions
 

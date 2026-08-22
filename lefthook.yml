@@ -17,9 +17,9 @@ pre-commit:
     vet:
       glob: "*.go"
       run: task vet
-    taskrail-validate:
+    workflow-validate:
       glob: "{planning/**,specs/**,.taskrail/**}"
-      run: task taskrail-validate
+      run: task workflow:validate
     commit-message-checker:
       glob: "{lefthook.yml,Taskfile.yml,scripts/check-commit-msg.sh,scripts/check-commit-msg-test.sh}"
       run: task test-commit-msg

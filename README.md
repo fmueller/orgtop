@@ -21,17 +21,22 @@ tools through another mechanism.
 
 ```bash
 task build
+task build:cross
 task test
-task format
-task format-check
+task run:smoke
+task fmt
+task fmt:check
 task lint
 task vet
+task licenses:check
+task workflow:validate
 task check
 task clean
 task hooks-install
 task test:mutate
 ```
 
+`task check` is the full local gate and mirrors the CI `checks` job step for step.
 The corresponding direct Go commands remain available, including `go build
 ./cmd/orgtop`, `go test ./...`, and `go vet ./...`.
 
