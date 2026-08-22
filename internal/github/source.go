@@ -67,13 +67,10 @@ type Source struct {
 	Now func() time.Time
 }
 
-// RepositoryActivity is the successful result for one Scope entry. Repository is
-// the display identity for this refresh: the first matching returned spelling,
-// or the requested spelling when the page is empty (FR-002).
-type RepositoryActivity struct {
-	Repository domain.Repository
-	Events     []domain.Event
-}
+// RepositoryActivity is the successful result for one Scope entry. It aliases the
+// domain aggregation input, so a refresh needs no conversion step, and the FR-002
+// display identity rule stays documented with the domain type.
+type RepositoryActivity = domain.RepositoryActivity
 
 // Refresh is one completely successful multi-repository refresh. Repositories
 // holds exactly one entry per Scope entry in request order. PollDelay is

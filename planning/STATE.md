@@ -1,14 +1,14 @@
 ---
 schema_version: 1
-updated_at: "2026-08-22T10:38:42Z"
+updated_at: "2026-08-22T10:51:31Z"
 active_spec_version: v0.1.0
 active_spec_path: specs/v0.1.0.md
 current_task: ""
 current_task_title: ""
 status_summary: idle
 blockers: []
-next_action: 'Start task T-005-build-filtered-activity-snapshots-and-repository: Build filtered activity snapshots and repository aggregates'
-last_verification_result: pass for T-004-implement-the-bounded-github-activity-source at 2026-08-22T10:36:38Z
+next_action: Select the next eligible task
+last_verification_result: pass for T-005-build-filtered-activity-snapshots-and-repository at 2026-08-22T10:51:26Z
 relevant_artifacts: []
 continuation_notes:
     - This repository is using manual Taskrail-style workflow scaffolding until the product replaces more of the bootstrap steps.
@@ -34,11 +34,11 @@ continuation_notes:
 
 ## Last Verification
 
-- pass for T-004-implement-the-bounded-github-activity-source at 2026-08-22T10:36:38Z
+- pass for T-005-build-filtered-activity-snapshots-and-repository at 2026-08-22T10:51:26Z
 
 ## Next Action
 
-- Start task T-005-build-filtered-activity-snapshots-and-repository: Build filtered activity snapshots and repository aggregates
+- Select the next eligible task
 
 ## Relevant Artifacts
 
@@ -50,8 +50,8 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 9
+- todo: 8
 - in_progress: 0
-- completed: 4
+- completed: 5
 - blocked: 0
 - cancelled: 0
