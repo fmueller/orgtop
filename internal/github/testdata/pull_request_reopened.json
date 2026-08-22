@@ -1,0 +1,10 @@
+[
+  {
+    "id": "2004",
+    "type": "PullRequestEvent",
+    "actor": {"login": "hubot"},
+    "repo": {"name": "acme/backend"},
+    "payload": {"action": "reopened", "pull_request": {"number": 42, "merged": false}},
+    "created_at": "2026-08-22T09:03:00Z"
+  }
+]

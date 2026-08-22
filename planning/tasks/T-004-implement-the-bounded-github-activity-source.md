@@ -1,12 +1,12 @@
 ---
 id: T-004-implement-the-bounded-github-activity-source
 title: Implement the bounded GitHub activity source
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.1.0.md#github-activity-source
 dependencies:
     - T-003-normalize-github-repository-event-payloads
-updated_at: "2026-08-21T22:39:23Z"
+updated_at: "2026-08-22T10:37:10Z"
 ---
 
 # T-004-implement-the-bounded-github-activity-source Implement the bounded GitHub activity source
@@ -52,3 +52,4 @@ implement the Bubble Tea polling loop here.
   case-insensitive mismatch (FR-002). Selecting one display identity per Scope
   entry is this task's work: use the first normalized event's repository
   spelling, and the requested spelling when the page is empty.
+- 2026-08-22T10:36:38Z: verification pass
