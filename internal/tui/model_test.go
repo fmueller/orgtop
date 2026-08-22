@@ -176,12 +176,14 @@ func TestNarrowTerminalRetainsRequiredContext(t *testing.T) {
 		name      string
 		freshness Freshness
 		cause     string
-		wantBody  string
+		// wantBody is the content line each view retains, because the views
+		// state the same freshness in their own words.
+		wantBody map[Mode]string
 	}{
-		{name: "loading", freshness: FreshnessLoading, wantBody: "Loading"},
-		{name: "current", freshness: FreshnessCurrent, wantBody: "not rendered yet"},
-		{name: "error", freshness: FreshnessError, cause: "refreshing acme/backend: request failed", wantBody: "unavailable"},
-		{name: "stale", freshness: FreshnessStale, cause: "refreshing acme/backend: request failed", wantBody: "not rendered yet"},
+		{name: "loading", freshness: FreshnessLoading, wantBody: map[Mode]string{ModeOverview: "Loading", ModeStream: "Loading"}},
+		{name: "current", freshness: FreshnessCurrent, wantBody: map[Mode]string{ModeOverview: "No recent activity", ModeStream: "not rendered yet"}},
+		{name: "error", freshness: FreshnessError, cause: "refreshing acme/backend: request failed", wantBody: map[Mode]string{ModeOverview: "unavailable", ModeStream: "unavailable"}},
+		{name: "stale", freshness: FreshnessStale, cause: "refreshing acme/backend: request failed", wantBody: map[Mode]string{ModeOverview: "No recent activity", ModeStream: "not rendered yet"}},
 	}
 
 	for _, testCase := range cases {
@@ -195,7 +197,7 @@ func TestNarrowTerminalRetainsRequiredContext(t *testing.T) {
 
 				content := model.View().Content
 				assertFits(t, content, narrowWidth, narrowHeight)
-				for _, want := range []string{mode.Label(), transportLabel, "q quit", testCase.wantBody} {
+				for _, want := range []string{mode.Label(), transportLabel, "q quit", testCase.wantBody[mode]} {
 					if !strings.Contains(content, want) {
 						t.Errorf("narrow render does not contain %q:\n%s", want, content)
 					}

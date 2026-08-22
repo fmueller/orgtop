@@ -1,12 +1,12 @@
 ---
 id: T-009-implement-the-overview-activity-view
 title: Implement the Overview activity view
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.1.0.md#overview-view
 dependencies:
     - T-007-implement-the-asynchronous-refresh-lifecycle
-updated_at: "2026-08-21T22:39:23Z"
+updated_at: "2026-08-22T13:10:58Z"
 ---
 
 # T-009-implement-the-overview-activity-view Implement the Overview activity view
@@ -45,3 +45,4 @@ modify root navigation or refresh orchestration.
   the aggregate rows; the placeholder must not survive into a release.
 - T-006 handoff: `overview.offset` exists as a preserved state slot but nothing
   moves it yet. Clamp and drive it here if Overview scrolls.
+- 2026-08-22T13:10:54Z: verification pass

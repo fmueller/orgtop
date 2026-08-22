@@ -18,5 +18,8 @@ workflow refuses to publish otherwise.
 - A bounded GitHub activity source with payload normalization.
 - Filtered activity snapshots and per-repository aggregates.
 - A Bubble Tea application shell with an asynchronous refresh lifecycle.
+- Overview now lists every selected repository with its recent event,
+  pull-request, and push counts, and says so explicitly when a refresh returns
+  no activity at all.
 
 [Unreleased]: https://github.com/fmueller/orgtop/commits/main
