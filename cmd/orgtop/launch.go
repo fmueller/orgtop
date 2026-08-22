@@ -26,8 +26,13 @@ func launchProgram(ctx context.Context, scope domain.Scope, source tui.Source, o
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+	model, err := tui.New(ctx, scope, source)
+	if err != nil {
+		return fmt.Errorf("building the terminal ui: %w", err)
+	}
+
 	programOptions := append([]tea.ProgramOption{tea.WithContext(ctx)}, options...)
-	program := tea.NewProgram(tui.New(ctx, scope, source), programOptions...)
+	program := tea.NewProgram(model, programOptions...)
 	if _, err := program.Run(); err != nil && !isShutdown(err) {
 		return fmt.Errorf("running the terminal ui: %w", err)
 	}

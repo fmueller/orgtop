@@ -219,9 +219,13 @@ func newFlow(t *testing.T, endpoint *eventsEndpoint, args ...string) *flow {
 	}
 
 	adapter := serveEndpoint(t, endpoint)
+	model, err := tui.New(t.Context(), config.Scope, adapter)
+	if err != nil {
+		t.Fatalf("building the shell for %v failed: %v", args, err)
+	}
 	return &flow{
 		t:       t,
-		model:   tui.New(t.Context(), config.Scope, adapter),
+		model:   model,
 		adapter: adapter,
 	}
 }

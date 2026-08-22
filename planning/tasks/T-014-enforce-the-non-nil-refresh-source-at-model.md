@@ -1,12 +1,12 @@
 ---
 id: T-014-enforce-the-non-nil-refresh-source-at-model
 title: Enforce the non-nil refresh source at model construction
-status: todo
+status: completed
 priority: low
 spec_ref: specs/v0.1.0.md#application-shell-and-refresh-lifecycle
 dependencies:
     - T-007-implement-the-asynchronous-refresh-lifecycle
-updated_at: "2026-08-22T11:37:45Z"
+updated_at: "2026-08-22T15:12:20Z"
 ---
 
 # T-014-enforce-the-non-nil-refresh-source-at-model Enforce the non-nil refresh source at model construction
@@ -35,3 +35,4 @@ Follow-up derived from T-007-implement-the-asynchronous-refresh-lifecycle's veri
 - go-reviewer finding on T-007 (low): `New`'s "the source must not be nil"
   precondition at `internal/tui/model.go` is unenforced and untested, and the
   panic surfaces at `internal/tui/refresh.go` inside the refresh command.
+- 2026-08-22T15:12:15Z: verification pass

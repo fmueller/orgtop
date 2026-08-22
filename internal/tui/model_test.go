@@ -5,6 +5,7 @@ package tui
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -33,7 +34,11 @@ func testScope(t *testing.T, values ...string) domain.Scope {
 // driven, so the shell renders its pending first refresh.
 func newModel(t *testing.T, values ...string) Model {
 	t.Helper()
-	return New(context.Background(), testScope(t, values...), &fakeSource{})
+	model, err := New(context.Background(), testScope(t, values...), &fakeSource{})
+	if err != nil {
+		t.Fatalf("building the test model failed: %v", err)
+	}
+	return model
 }
 
 // press builds the key press message for a keystroke the shell reacts to.
@@ -61,6 +66,14 @@ func apply(t *testing.T, model Model, messages ...tea.Msg) (Model, tea.Cmd) {
 		model, last = updated, cmd
 	}
 	return model, last
+}
+
+func TestNewRejectsAMissingSource(t *testing.T) {
+	_, err := New(context.Background(), testScope(t, "acme/backend"), nil)
+
+	if !errors.Is(err, ErrNoSource) {
+		t.Fatalf("New without a source returned %v, want ErrNoSource", err)
+	}
 }
 
 func TestOverviewIsTheInitialViewAndRendersLoadingImmediately(t *testing.T) {

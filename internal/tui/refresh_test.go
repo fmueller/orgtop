@@ -56,7 +56,10 @@ func (r *recorder) tick(delay time.Duration) tea.Cmd {
 // lifecycle builds a model whose clock and timer are deterministic.
 func lifecycle(t *testing.T, source Source, at time.Time, timer *recorder, values ...string) Model {
 	t.Helper()
-	model := New(context.Background(), testScope(t, values...), source)
+	model, err := New(context.Background(), testScope(t, values...), source)
+	if err != nil {
+		t.Fatalf("building the lifecycle model failed: %v", err)
+	}
 	model.now = func() time.Time { return at }
 	model.tick = timer.tick
 	return model

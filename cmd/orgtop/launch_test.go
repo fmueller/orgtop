@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"io"
 	"testing"
 	"time"
@@ -76,6 +77,14 @@ func awaitCancellation(t *testing.T, source blockingSource) {
 		}
 	case <-time.After(launchTimeout):
 		t.Fatal("shutdown left the in-flight source request running")
+	}
+}
+
+func TestLaunchWithoutASourceFailsBeforeTakingTheTerminal(t *testing.T) {
+	err := launchProgram(context.Background(), mustScope(t, "acme/backend"), nil)
+
+	if !errors.Is(err, tui.ErrNoSource) {
+		t.Fatalf("launchProgram without a source returned %v, want tui.ErrNoSource", err)
 	}
 }
 

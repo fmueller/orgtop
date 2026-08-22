@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
@@ -12,6 +13,11 @@ import (
 
 // chromeLines is the number of shared header and footer lines the body yields.
 const chromeLines = 2
+
+// ErrNoSource reports that the root model was constructed without a refresh
+// source. The model cannot refresh without one, so New rejects it instead of
+// building a model whose first refresh is guaranteed to fail.
+var ErrNoSource = errors.New("no refresh source provided")
 
 // Model is OrgTop's root Bubble Tea model. It owns the active mode, the
 // terminal dimensions, the shared state both views read, each view's own state
@@ -40,9 +46,17 @@ type Model struct {
 }
 
 // New returns the root model for the selected scope in its initial loading
-// state, with its first refresh already owned by Init. The source must not be
-// nil, and ctx bounds every refresh the model starts.
-func New(ctx context.Context, scope domain.Scope, source Source) Model {
+// state, with its first refresh already owned by Init. ctx bounds every refresh
+// the model starts.
+//
+// A missing source is rejected here, at the construction seam the caller still
+// owns, and reported as ErrNoSource. Deferring it would surface the failure
+// inside the refresh command Bubble Tea runs on its own goroutine, where the
+// caller that built the model is no longer on the stack.
+func New(ctx context.Context, scope domain.Scope, source Source) (Model, error) {
+	if source == nil {
+		return Model{}, ErrNoSource
+	}
 	refreshCtx, cancel := context.WithCancel(ctx)
 	return Model{
 		state:   State{Scope: scope, Freshness: FreshnessLoading},
@@ -52,7 +66,7 @@ func New(ctx context.Context, scope domain.Scope, source Source) Model {
 		now:     time.Now,
 		tick:    tickAfter,
 		pending: true,
-	}
+	}, nil
 }
 
 // Init implements tea.Model. The first refresh runs as a command, so the
