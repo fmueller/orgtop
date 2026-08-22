@@ -1,13 +1,13 @@
 ---
 schema_version: 1
-updated_at: "2026-08-22T14:06:16Z"
+updated_at: "2026-08-22T14:13:25Z"
 active_spec_version: v0.1.0
 active_spec_path: specs/v0.1.0.md
 current_task: ""
 current_task_title: ""
 status_summary: idle
 blockers: []
-next_action: Select the next eligible task
+next_action: 'Start task T-016-share-the-stream-scrolling-mechanism-with-the: Share the Stream scrolling mechanism with the Overview rows'
 last_verification_result: pass for T-011-complete-v0-1-integration-and-release-readiness at 2026-08-22T14:06:12Z
 relevant_artifacts: []
 continuation_notes:
@@ -38,7 +38,7 @@ continuation_notes:
 
 ## Next Action
 
-- Select the next eligible task
+- Start task T-016-share-the-stream-scrolling-mechanism-with-the: Share the Stream scrolling mechanism with the Overview rows
 
 ## Relevant Artifacts
 
@@ -50,7 +50,7 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 5
+- todo: 6
 - in_progress: 0
 - completed: 11
 - blocked: 0
