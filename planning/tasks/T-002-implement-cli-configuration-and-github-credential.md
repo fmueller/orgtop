@@ -1,12 +1,12 @@
 ---
 id: T-002-implement-cli-configuration-and-github-credential
 title: Implement CLI configuration and GitHub credential resolution
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.1.0.md#cli-and-authentication-boundary
 dependencies:
     - T-001-implement-the-event-domain-and-repository-scope
-updated_at: "2026-08-21T22:39:23Z"
+updated_at: "2026-08-22T08:57:26Z"
 ---
 
 # T-002-implement-cli-configuration-and-github-credential Implement CLI configuration and GitHub credential resolution
@@ -53,3 +53,4 @@ wiring to T-008.
 - Invalid `--repo` values wrap `domain.ErrInvalidRepository` through
   `domain.NewScope`; translate them the same way and keep the rejected value in the
   message.
+- 2026-08-22T08:57:00Z: verification pass
