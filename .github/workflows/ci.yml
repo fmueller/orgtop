@@ -1,11 +1,39 @@
 name: CI
 
+# Full pipeline (checks + cross-platform build/test matrix + cross-compile smoke).
+# Skips changes that touch only planning, spec, doc, or agent-skill paths — those
+# are gated by the cheap fast lane in planning.yml, whose `paths:` set is the exact
+# mirror of the `paths-ignore` below. Keep the two lists identical; they are
+# guarded by TestWorkflowPathLanesAreExactMirrors. Full mutation testing lives in
+# mutation.yml (weekly), never here. release.yml (tags-only) is unaffected.
 on:
+  # Manual trigger to run the full pipeline on demand — e.g. to force CI on a
+  # branch whose changes are all in the paths-ignore set below.
   workflow_dispatch:
   pull_request:
+    paths-ignore:
+      - '.agents/skills/**'
+      - '.claude/skills/**'
+      - '.taskrail/**'
+      - 'planning/**'
+      - 'specs/**'
+      - 'docs/**'
+      - 'AGENTS.md'
+      - 'CHANGELOG.md'
+      - 'README.md'
   push:
     branches:
       - main
+    paths-ignore:
+      - '.agents/skills/**'
+      - '.claude/skills/**'
+      - '.taskrail/**'
+      - 'planning/**'
+      - 'specs/**'
+      - 'docs/**'
+      - 'AGENTS.md'
+      - 'CHANGELOG.md'
+      - 'README.md'
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -34,15 +62,6 @@ jobs:
       - name: Lint
         run: task lint
 
-      - name: Test
-        run: task test
-
-      - name: Build
-        run: task build
-
-      - name: Startup smoke
-        run: task run:smoke
-
       - name: Check dependency licenses
         run: task licenses:check
 
@@ -54,3 +73,48 @@ jobs:
 
       - name: Validate release configuration
         run: task release:check
+
+  build-test:
+    needs: checks
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      # Pull requests run Linux-only for fast feedback; pushes to main and manual
+      # dispatch run the full matrix, so cross-platform breaks are caught at merge.
+      # The matrix mirrors the platforms .goreleaser.yml publishes, Windows
+      # included — the TUI's terminal handling is the most platform-sensitive code
+      # in the repository and is not exercised by a compile check alone.
+      matrix:
+        runner: ${{ github.event_name == 'pull_request'
+          && fromJSON('["ubuntu-latest"]')
+          || fromJSON('["ubuntu-latest","ubuntu-24.04-arm","windows-latest","macos-latest"]') }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup toolchain
+        uses: ./.github/actions/setup
+
+      - name: Build
+        run: task build
+
+      - name: Test
+        run: task test
+
+      - name: Startup smoke
+        run: task run:smoke
+
+  cross-compile:
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup toolchain
+        uses: ./.github/actions/setup
+
+      - name: Cross-compile smoke (every release target)
+        run: task build:cross

@@ -48,6 +48,22 @@ authoritative gate.
 (`BASE=<ref>` overrides it). The full `task test:mutate:gate` runs weekly in CI
 and on manual dispatch rather than on every pull request.
 
+## Continuous integration
+
+Two lanes split the work by what changed:
+
+- `CI` runs formatting, vet, lint, licenses, Taskrail validation, and release-config
+  checks, then a build/test matrix across Linux (x86-64 and arm64), Windows, and
+  macOS, plus a cross-compile smoke over every platform the release publishes.
+  Pull requests run the matrix on Linux only for fast feedback; pushes to `main`
+  and manual dispatch run all of it.
+- `Planning checks` is the fast lane for planning, spec, doc, and agent-skill
+  changes. It keeps the Taskrail and skill-mirror gates without starting the
+  matrix. Its trigger paths are the exact mirror of the paths `CI` ignores.
+
+Mutation testing runs weekly and on demand in its own workflow, never on a pull
+request.
+
 ## Releases
 
 `CHANGELOG.md` follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
