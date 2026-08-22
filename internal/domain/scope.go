@@ -2,7 +2,6 @@ package domain
 
 import (
 	"errors"
-	"fmt"
 	"slices"
 )
 
@@ -18,7 +17,9 @@ type Scope struct {
 }
 
 // NewScope validates the requested identifiers and collapses case-insensitive
-// duplicates, retaining the first requested spelling and the request order.
+// duplicates, retaining the first requested spelling and the request order. A
+// rejected identifier is reported as the ParseRepository reason itself, so callers
+// add their own context without stacking a second prefix on it.
 func NewScope(values []string) (Scope, error) {
 	if len(values) == 0 {
 		return Scope{}, ErrEmptyScope
@@ -28,7 +29,7 @@ func NewScope(values []string) (Scope, error) {
 	for _, value := range values {
 		repository, err := ParseRepository(value)
 		if err != nil {
-			return Scope{}, fmt.Errorf("repository scope: %w", err)
+			return Scope{}, err
 		}
 		key := repository.Key()
 		if _, duplicate := keys[key]; duplicate {

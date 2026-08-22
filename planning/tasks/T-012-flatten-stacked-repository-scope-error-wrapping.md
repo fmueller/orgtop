@@ -1,12 +1,12 @@
 ---
 id: T-012-flatten-stacked-repository-scope-error-wrapping
 title: Flatten stacked repository scope error wrapping
-status: todo
+status: completed
 priority: low
 spec_ref: specs/v0.1.0.md#cli-and-authentication-boundary
 dependencies:
     - T-002-implement-cli-configuration-and-github-credential
-updated_at: "2026-08-22T09:01:12Z"
+updated_at: "2026-08-22T14:38:21Z"
 ---
 
 # T-012-flatten-stacked-repository-scope-error-wrapping Flatten stacked repository scope error wrapping
@@ -58,3 +58,4 @@ the wording is settled once against real output rather than twice.
   `domain.ErrInvalidRepository` into its own message instead of wrapping the
   domain text. Prefer whichever keeps the domain error useful standalone.
 - Purely cosmetic. Do not bundle behavior changes into it.
+- 2026-08-22T14:38:16Z: verification pass

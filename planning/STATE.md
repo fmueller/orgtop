@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-updated_at: "2026-08-22T14:27:54Z"
+updated_at: "2026-08-22T14:38:21Z"
 active_spec_version: v0.1.0
 active_spec_path: specs/v0.1.0.md
 current_task: ""
@@ -8,7 +8,7 @@ current_task_title: ""
 status_summary: idle
 blockers: []
 next_action: Select the next eligible task
-last_verification_result: pass for T-016-share-the-stream-scrolling-mechanism-with-the at 2026-08-22T14:27:50Z
+last_verification_result: pass for T-012-flatten-stacked-repository-scope-error-wrapping at 2026-08-22T14:38:16Z
 relevant_artifacts: []
 continuation_notes:
     - This repository is using manual Taskrail-style workflow scaffolding until the product replaces more of the bootstrap steps.
@@ -34,7 +34,7 @@ continuation_notes:
 
 ## Last Verification
 
-- pass for T-016-share-the-stream-scrolling-mechanism-with-the at 2026-08-22T14:27:50Z
+- pass for T-012-flatten-stacked-repository-scope-error-wrapping at 2026-08-22T14:38:16Z
 
 ## Next Action
 
@@ -50,8 +50,8 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 5
+- todo: 4
 - in_progress: 0
-- completed: 12
+- completed: 13
 - blocked: 0
 - cancelled: 0

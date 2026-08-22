@@ -103,7 +103,7 @@ func TestRejectedConfigurationReportsUsageBeforeAnyAuthenticationWork(t *testing
 		want string
 	}{
 		{name: "no repository", args: nil, want: cli.ErrMissingRepository.Error()},
-		{name: "invalid repository", args: []string{"--repo", "acme/back end"}, want: `--repo: repository scope: invalid repository identifier "acme/back end"`},
+		{name: "invalid repository", args: []string{"--repo", "acme/back end"}, want: `--repo: invalid repository identifier "acme/back end": repository contains an unsupported character " "`},
 		{name: "positional argument", args: []string{"--repo", "acme/backend", "stray"}, want: `unexpected argument "stray"`},
 		{name: "malformed flag", args: []string{"--bogus"}, want: "flag provided but not defined: -bogus"},
 	}

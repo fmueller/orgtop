@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"flag"
+	"fmt"
 	"slices"
 	"strings"
 	"testing"
@@ -77,18 +78,19 @@ func TestParseArgsRequiresAtLeastOneRepository(t *testing.T) {
 
 func TestParseArgsRejectsInvalidRepositoryValues(t *testing.T) {
 	tests := []struct {
-		name  string
-		value string
+		name   string
+		value  string
+		reason string
 	}{
-		{name: "missing owner separator", value: "backend"},
-		{name: "empty owner", value: "/backend"},
-		{name: "empty repository", value: "acme/"},
-		{name: "extra separator", value: "acme/team/backend"},
-		{name: "glob repository", value: "acme/*"},
-		{name: "glob owner", value: "*/backend"},
-		{name: "exclusion pattern", value: "!acme/backend"},
-		{name: "url form", value: "https://github.com/acme/backend"},
-		{name: "empty value", value: ""},
+		{name: "missing owner separator", value: "backend", reason: "expected exactly one owner/repository separator"},
+		{name: "empty owner", value: "/backend", reason: "owner is empty"},
+		{name: "empty repository", value: "acme/", reason: "repository is empty"},
+		{name: "extra separator", value: "acme/team/backend", reason: "expected exactly one owner/repository separator"},
+		{name: "glob repository", value: "acme/*", reason: `repository contains an unsupported character "*"`},
+		{name: "glob owner", value: "*/backend", reason: `owner contains an unsupported character "*"`},
+		{name: "exclusion pattern", value: "!acme/backend", reason: `owner contains an unsupported character "!"`},
+		{name: "url form", value: "https://github.com/acme/backend", reason: "expected exactly one owner/repository separator"},
+		{name: "empty value", value: "", reason: "expected exactly one owner/repository separator"},
 	}
 
 	for _, tt := range tests {
@@ -98,11 +100,9 @@ func TestParseArgsRejectsInvalidRepositoryValues(t *testing.T) {
 			if !errors.Is(err, domain.ErrInvalidRepository) {
 				t.Fatalf("ParseArgs(--repo %q) error = %v, want %v", tt.value, err, domain.ErrInvalidRepository)
 			}
-			if got := err.Error(); !strings.Contains(got, tt.value) {
-				t.Errorf("error %q does not keep the rejected value %q", got, tt.value)
-			}
-			if got := err.Error(); !strings.Contains(got, "--repo") {
-				t.Errorf("error %q does not mention the --repo flag", got)
+			want := fmt.Sprintf("--repo: invalid repository identifier %q: %s", tt.value, tt.reason)
+			if got := err.Error(); got != want {
+				t.Errorf("ParseArgs(--repo %q) error = %q, want %q", tt.value, got, want)
 			}
 			assertUsage(t, output.String())
 		})

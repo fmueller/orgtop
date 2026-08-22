@@ -88,6 +88,20 @@ func TestNewScopeInvalidIdentifierWrapsErrInvalidRepository(t *testing.T) {
 	}
 }
 
+// TestNewScopeInvalidIdentifierKeepsTheParseReason pins the domain error as the
+// standalone parse reason: it names the rejected value and why it failed, and adds
+// no scope prefix for callers to stack their own context on.
+func TestNewScopeInvalidIdentifierKeepsTheParseReason(t *testing.T) {
+	_, want := domain.ParseRepository("acme/*")
+	_, err := domain.NewScope([]string{"owner/repo", "acme/*"})
+	if err == nil {
+		t.Fatal("NewScope returned no error, want error")
+	}
+	if got := err.Error(); got != want.Error() {
+		t.Errorf("NewScope error = %q, want %q", got, want.Error())
+	}
+}
+
 func TestScopeContainsIsCaseInsensitive(t *testing.T) {
 	scope := mustNewScope(t, "Owner/Repo")
 
