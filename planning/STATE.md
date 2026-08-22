@@ -1,14 +1,14 @@
 ---
 schema_version: 1
-updated_at: "2026-08-22T14:13:25Z"
+updated_at: "2026-08-22T14:27:54Z"
 active_spec_version: v0.1.0
 active_spec_path: specs/v0.1.0.md
 current_task: ""
 current_task_title: ""
 status_summary: idle
 blockers: []
-next_action: 'Start task T-016-share-the-stream-scrolling-mechanism-with-the: Share the Stream scrolling mechanism with the Overview rows'
-last_verification_result: pass for T-011-complete-v0-1-integration-and-release-readiness at 2026-08-22T14:06:12Z
+next_action: Select the next eligible task
+last_verification_result: pass for T-016-share-the-stream-scrolling-mechanism-with-the at 2026-08-22T14:27:50Z
 relevant_artifacts: []
 continuation_notes:
     - This repository is using manual Taskrail-style workflow scaffolding until the product replaces more of the bootstrap steps.
@@ -34,11 +34,11 @@ continuation_notes:
 
 ## Last Verification
 
-- pass for T-011-complete-v0-1-integration-and-release-readiness at 2026-08-22T14:06:12Z
+- pass for T-016-share-the-stream-scrolling-mechanism-with-the at 2026-08-22T14:27:50Z
 
 ## Next Action
 
-- Start task T-016-share-the-stream-scrolling-mechanism-with-the: Share the Stream scrolling mechanism with the Overview rows
+- Select the next eligible task
 
 ## Relevant Artifacts
 
@@ -50,8 +50,8 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 6
+- todo: 5
 - in_progress: 0
-- completed: 11
+- completed: 12
 - blocked: 0
 - cancelled: 0

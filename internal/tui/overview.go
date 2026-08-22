@@ -20,14 +20,20 @@ const rowGap = "  "
 // overview is the Overview view's state slot and rendering seam. Repository
 // aggregate rows replace the placeholder body without changing this seam.
 type overview struct {
-	// offset is the first rendered row. The shell preserves it across mode
-	// switches so a view keeps its scroll position (FR-007).
-	offset int
+	// viewport is the Overview's own scroll position, moved and clamped by the
+	// mechanism both views share.
+	viewport
 }
 
 // render returns the Overview body for the shared content area.
 func (o overview) render(state State, width, height int) string {
-	return renderBody(overviewLines(state, width), o.offset, width, height)
+	return renderBody(overviewLines(state, width), o.viewport, width, height)
+}
+
+// scrolled returns the view moved by one scrolling keystroke.
+func (o overview) scrolled(keystroke string, state State, width, height int) overview {
+	o.viewport = o.viewport.scrolled(keystroke, len(overviewLines(state, width)), height)
+	return o
 }
 
 // overviewLines returns the explicit state lines, the aggregate rows, or both.

@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"testing"
@@ -293,4 +294,178 @@ func TestSharedRowHelpersMeasureWideRunesByTheirRenderedWidth(t *testing.T) {
 			t.Errorf("truncate(%q, %d) is %d cells wide, want at most %d", wide, limit, rendered, limit)
 		}
 	})
+}
+
+// The Overview scrolling tests window 20 repository rows through the same body
+// the Stream scrolling tests use, so every keystroke has a window above it and
+// one below it.
+const scrollRepositories = 20
+
+// repositoryNames returns count canonical repository identities whose
+// case-insensitive name order is their one-based position.
+func repositoryNames(count int) []string {
+	names := make([]string, 0, count)
+	for index := range count {
+		names = append(names, fmt.Sprintf("acme/repo-%02d", index+1))
+	}
+	return names
+}
+
+// numberedRepositories returns one activity per repository, each carrying the
+// same single push, so every row holds an equal total and the rows keep the
+// deterministic name order the aggregates impose.
+func numberedRepositories(t *testing.T, names []string) []domain.RepositoryActivity {
+	t.Helper()
+	activities := make([]domain.RepositoryActivity, 0, len(names))
+	for index, name := range names {
+		activities = append(activities, testActivity(t, name,
+			testEvent(t, strconv.Itoa(index), name, domain.CategoryPush, domain.EntityCommit)))
+	}
+	return activities
+}
+
+// scrollOverviewModel returns a current model whose scope holds count numbered
+// repositories, each with one push.
+func scrollOverviewModel(t *testing.T, count int) Model {
+	t.Helper()
+	names := repositoryNames(count)
+	model := newModel(t, names...)
+	model.state.Snapshot = domain.NewSnapshot(testScope(t, names...), numberedRepositories(t, names))
+	model.state.Freshness = FreshnessCurrent
+	return model
+}
+
+// overviewRowAt returns the one-based numbered repository the body line names.
+func overviewRowAt(t *testing.T, model Model, index int) int {
+	t.Helper()
+	rows := bodyLines(t, model.View().Content)
+	if index >= len(rows) {
+		t.Fatalf("overview rendered %d body rows, want at least %d:\n%v", len(rows), index+1, rows)
+	}
+	for position := 1; position <= scrollRepositories; position++ {
+		if strings.Contains(rows[index], fmt.Sprintf("repo-%02d", position)) {
+			return position
+		}
+	}
+	t.Fatalf("body row %d %q names no numbered repository", index, rows[index])
+	return 0
+}
+
+// topOverviewRow returns the one-based numbered repository the first body line
+// names.
+func topOverviewRow(t *testing.T, model Model) int {
+	t.Helper()
+	return overviewRowAt(t, model, 0)
+}
+
+func TestOverviewScrollKeysWindowTheRowsWithinBounds(t *testing.T) {
+	model, _ := apply(t, scrollOverviewModel(t, scrollRepositories),
+		tea.WindowSizeMsg{Width: wideWidth, Height: scrollTerminalHeight})
+	lastTop := scrollRepositories - scrollBodyHeight + 1
+
+	cases := []struct {
+		name       string
+		keystrokes []string
+		wantTop    int
+	}{
+		{name: "initial", wantTop: 1},
+		{name: "down", keystrokes: []string{"down"}, wantTop: 2},
+		{name: "up clamps at the first repository", keystrokes: []string{"down", "up", "up"}, wantTop: 1},
+		{name: "page down", keystrokes: []string{"pgdown"}, wantTop: 1 + scrollBodyHeight},
+		{name: "page up returns", keystrokes: []string{"pgdown", "pgup"}, wantTop: 1},
+		{name: "page down clamps at the last window", keystrokes: []string{"pgdown", "pgdown", "pgdown", "pgdown"}, wantTop: lastTop},
+		{name: "down clamps at the last window", keystrokes: []string{"pgdown", "pgdown", "pgdown", "down", "down"}, wantTop: lastTop},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			scrolledModel := scrolled(t, model, testCase.keystrokes...)
+			if got := topOverviewRow(t, scrolledModel); got != testCase.wantTop {
+				t.Errorf("top row is repository %d, want %d", got, testCase.wantTop)
+			}
+			rows := bodyLines(t, scrolledModel.View().Content)
+			if len(rows) != scrollBodyHeight {
+				t.Errorf("overview rendered %d rows, want the full body of %d", len(rows), scrollBodyHeight)
+			}
+		})
+	}
+}
+
+func TestOverviewClampsTheWindowAfterRefreshShrinkage(t *testing.T) {
+	names := repositoryNames(scrollRepositories)
+	model := newModel(t, names...)
+	// An all-zero success prepends the explicit no-recent-activity line, so the
+	// body holds one line more than the rows a later success renders.
+	empty := make([]domain.RepositoryActivity, 0, len(names))
+	for _, name := range names {
+		empty = append(empty, testActivity(t, name))
+	}
+	model.state.Snapshot = domain.NewSnapshot(testScope(t, names...), empty)
+	model.state.Freshness = FreshnessCurrent
+
+	model, _ = apply(t, model, tea.WindowSizeMsg{Width: wideWidth, Height: scrollTerminalHeight})
+	model = scrolled(t, model, "pgdown", "pgdown", "pgdown", "pgdown")
+
+	model, _ = apply(t, model, refreshedMsg{result: Result{Repositories: numberedRepositories(t, names)}})
+
+	rows := bodyLines(t, model.View().Content)
+	if len(rows) != scrollBodyHeight {
+		t.Fatalf("overview rendered %d rows after shrinkage, want the full body of %d:\n%v", len(rows), scrollBodyHeight, rows)
+	}
+	if got := overviewRowAt(t, model, len(rows)-1); got != scrollRepositories {
+		t.Errorf("last row after shrinkage is repository %d, want %d", got, scrollRepositories)
+	}
+	if got := topOverviewRow(t, scrolled(t, model, "down")); got != scrollRepositories-scrollBodyHeight+1 {
+		t.Errorf("top row after scrolling a shrunken snapshot is repository %d, want the last window", got)
+	}
+}
+
+func TestOverviewClampsTheWindowAfterResize(t *testing.T) {
+	model, _ := apply(t, scrollOverviewModel(t, scrollRepositories),
+		tea.WindowSizeMsg{Width: wideWidth, Height: scrollTerminalHeight})
+	model = scrolled(t, model, "pgdown", "pgdown", "pgdown")
+
+	grown, _ := apply(t, model, tea.WindowSizeMsg{Width: wideWidth, Height: scrollRepositories + chromeLines})
+	if got := topOverviewRow(t, grown); got != 1 {
+		t.Errorf("top row after growing the terminal is repository %d, want the first repository", got)
+	}
+	if rows := bodyLines(t, grown.View().Content); len(rows) != scrollRepositories {
+		t.Errorf("grown overview rendered %d rows, want all %d repositories", len(rows), scrollRepositories)
+	}
+}
+
+func TestOverviewKeepsItsPositionAcrossViewSwitches(t *testing.T) {
+	model, _ := apply(t, scrollOverviewModel(t, scrollRepositories),
+		tea.WindowSizeMsg{Width: wideWidth, Height: scrollTerminalHeight})
+	model = scrolled(t, model, "down", "down", "down")
+	want := topOverviewRow(t, model)
+
+	switched := scrolled(t, model, "2", "tab")
+	if switched.mode != ModeOverview {
+		t.Fatalf("mode after switching back is %v, want ModeOverview", switched.mode)
+	}
+	if got := topOverviewRow(t, switched); got != want {
+		t.Errorf("top row after a view switch is repository %d, want %d", got, want)
+	}
+}
+
+func TestScrolledOverviewRendersWithinNarrowBounds(t *testing.T) {
+	model, _ := apply(t, scrollOverviewModel(t, scrollRepositories),
+		tea.WindowSizeMsg{Width: narrowWidth, Height: narrowHeight})
+	content := scrolled(t, model, "down", "pgdown", "pgup", "up").View().Content
+
+	assertFits(t, content, narrowWidth, narrowHeight)
+	for _, want := range []string{ModeOverview.Label(), transportLabel, "acme/repo-01", "q quit"} {
+		if !strings.Contains(content, want) {
+			t.Errorf("scrolled %dx%d overview does not contain %q:\n%s", narrowWidth, narrowHeight, want, content)
+		}
+	}
+
+	for _, size := range []tea.WindowSizeMsg{
+		{Width: 1, Height: 1}, {Width: 4, Height: 3}, {Width: 12, Height: 5},
+		{Width: 20, Height: narrowHeight}, {Width: 30, Height: 4}, {Width: narrowWidth, Height: 3},
+	} {
+		sized, _ := apply(t, scrollOverviewModel(t, scrollRepositories), size)
+		assertFits(t, scrolled(t, sized, "down", "pgdown", "up", "pgup").View().Content, size.Width, size.Height)
+	}
 }

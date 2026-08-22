@@ -222,19 +222,6 @@ func TestStreamScrollKeysWindowTheEventsWithinBounds(t *testing.T) {
 	}
 }
 
-func TestStreamScrollKeysDoNotMoveTheOverview(t *testing.T) {
-	model, _ := apply(t, populatedModel(t), tea.WindowSizeMsg{Width: wideWidth, Height: scrollTerminalHeight})
-	before := model.View().Content
-
-	moved := scrolled(t, model, "down", "pgdown")
-	if moved.overview.offset != 0 {
-		t.Errorf("overview offset is %d, want scrolling to stay out of Overview in v0.1.0", moved.overview.offset)
-	}
-	if after := moved.View().Content; after != before {
-		t.Errorf("overview render changed after scroll keys:\nbefore:\n%s\nafter:\n%s", before, after)
-	}
-}
-
 func TestStreamClampsTheWindowAfterRefreshShrinkage(t *testing.T) {
 	model, _ := apply(t, streamModel(t, numberedEvents(t, scrollEvents)),
 		tea.WindowSizeMsg{Width: wideWidth, Height: scrollTerminalHeight})

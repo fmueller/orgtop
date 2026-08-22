@@ -64,8 +64,8 @@ freshness marker beside `POLLING`:
 | `1` | Open Overview |
 | `2` | Open Stream |
 | `tab` | Toggle between the two views |
-| `up` / `down` | Scroll the Stream by one event |
-| `pgup` / `pgdown` | Scroll the Stream by one page |
+| `up` / `down` | Scroll the active view by one row |
+| `pgup` / `pgdown` | Scroll the active view by one page |
 | `q` | Quit |
 | `ctrl+c` | Quit |
 

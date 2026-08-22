@@ -94,13 +94,16 @@ func (m Model) handleKey(message tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 }
 
 // scroll delegates a scrolling keystroke to the active view within the content
-// area the shared chrome leaves. Only Stream scrolls in v0.1.0 (FR-010).
+// area the shared chrome leaves. Both views scroll through the same mechanism,
+// each over its own offset (FR-009, FR-010).
 func (m Model) scroll(keystroke string) Model {
-	if m.mode != ModeStream {
+	width, height := m.budget()
+	bodyHeight := height - chromeLines
+	if m.mode == ModeStream {
+		m.stream = m.stream.scrolled(keystroke, m.state, width, bodyHeight)
 		return m
 	}
-	width, height := m.budget()
-	m.stream = m.stream.scrolled(keystroke, m.state, width, height-chromeLines)
+	m.overview = m.overview.scrolled(keystroke, m.state, width, bodyHeight)
 	return m
 }
 
@@ -149,10 +152,10 @@ func (m Model) body(width, height int) string {
 	return m.overview.render(m.state, width, height)
 }
 
-// renderBody windows the view's lines at its offset and fills the content area.
-// A negative height leaves the content unbounded.
-func renderBody(lines []string, offset, width, height int) string {
-	visible := lines[min(max(offset, 0), len(lines)):]
+// renderBody windows the view's lines at its clamped offset and fills the
+// content area. A negative height leaves the content unbounded.
+func renderBody(lines []string, view viewport, width, height int) string {
+	visible := lines[view.clamped(len(lines), height):]
 	if height > 0 && len(visible) > height {
 		visible = visible[:height]
 	}

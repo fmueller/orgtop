@@ -97,7 +97,9 @@ func renderFooter(width int) string {
 
 // footerCandidates advertises only the controls the shell implements.
 var footerCandidates = []string{
-	strings.Join([]string{"1 overview", "2 stream", "tab switch", "q quit"}, separator),
+	strings.Join([]string{"1 overview", "2 stream", "tab switch", "up/down scroll", "pgup/pgdn page", "q quit"}, separator),
+	strings.Join([]string{"1/2/tab switch", "up/down scroll", "pgup/pgdn page", "q quit"}, separator),
+	strings.Join([]string{"1/2/tab switch", "up/down scroll", "q quit"}, separator),
 	strings.Join([]string{"1/2/tab switch", "q quit"}, separator),
 	"q quit",
 }

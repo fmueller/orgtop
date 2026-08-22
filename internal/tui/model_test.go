@@ -277,15 +277,55 @@ func TestFooterAdvertisesOnlyImplementedControls(t *testing.T) {
 	model, _ := apply(t, newModel(t, "acme/backend"), tea.WindowSizeMsg{Width: 120, Height: 24})
 	content := model.View().Content
 
-	for _, want := range []string{"1 overview", "2 stream", "tab switch", "q quit"} {
+	for _, want := range []string{"1 overview", "2 stream", "tab switch", "up/down scroll", "pgup/pgdn page", "q quit"} {
 		if !strings.Contains(content, want) {
 			t.Errorf("footer does not advertise %q:\n%s", want, content)
 		}
 	}
-	for _, unwanted := range []string{"scroll", "refresh", "inspect", "filter"} {
+	for _, unwanted := range []string{"refresh", "inspect", "filter"} {
 		if strings.Contains(strings.ToLower(content), unwanted) {
 			t.Errorf("footer advertises the unimplemented control %q:\n%s", unwanted, content)
 		}
+	}
+}
+
+// TestFooterNeverDisplacesTheQuitHint keeps the scroll controls subordinate to
+// the quit hint: a width that cannot hold them drops them, never the way out.
+func TestFooterNeverDisplacesTheQuitHint(t *testing.T) {
+	for _, width := range []int{120, 60, narrowWidth, 30, 20, 10, 6} {
+		model, _ := apply(t, newModel(t, "acme/backend"), tea.WindowSizeMsg{Width: width, Height: narrowHeight})
+		content := model.View().Content
+		assertFits(t, content, width, narrowHeight)
+
+		lines := strings.Split(content, "\n")
+		footer := lines[len(lines)-1]
+		if !strings.Contains(footer, "q quit") {
+			t.Errorf("footer at width %d is %q, want it to keep the quit hint", width, footer)
+		}
+	}
+}
+
+// TestScrollKeysMoveOnlyTheActiveView guards the per-view offsets: both views
+// scroll with the same keys, and a keystroke never moves the inactive one.
+func TestScrollKeysMoveOnlyTheActiveView(t *testing.T) {
+	streamActive, _ := apply(t, streamModel(t, numberedEvents(t, scrollEvents)),
+		tea.WindowSizeMsg{Width: wideWidth, Height: scrollTerminalHeight})
+	moved := scrolled(t, streamActive, "down", "pgdown")
+	if moved.overview.offset != 0 {
+		t.Errorf("overview offset is %d after Stream scrolling, want it unmoved", moved.overview.offset)
+	}
+	if moved.stream.offset == 0 {
+		t.Error("stream offset is 0 after Stream scrolling, want the active view moved")
+	}
+
+	overviewActive, _ := apply(t, scrollOverviewModel(t, scrollRepositories),
+		tea.WindowSizeMsg{Width: wideWidth, Height: scrollTerminalHeight})
+	moved = scrolled(t, overviewActive, "down", "pgdown")
+	if moved.stream.offset != 0 {
+		t.Errorf("stream offset is %d after Overview scrolling, want it unmoved", moved.stream.offset)
+	}
+	if moved.overview.offset == 0 {
+		t.Error("overview offset is 0 after Overview scrolling, want the active view moved")
 	}
 }
 

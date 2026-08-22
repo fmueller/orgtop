@@ -1,12 +1,12 @@
 ---
 id: T-016-share-the-stream-scrolling-mechanism-with-the
 title: Share the Stream scrolling mechanism with the Overview rows
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.1.0.md#overview-view
 dependencies:
     - T-010-implement-the-scrollable-stream-activity-view
-updated_at: "2026-08-22T13:16:01Z"
+updated_at: "2026-08-22T14:27:54Z"
 ---
 
 # T-016-share-the-stream-scrolling-mechanism-with-the Share the Stream scrolling mechanism with the Overview rows
@@ -58,3 +58,4 @@ advertise the keys once in the shared footer.
 - v0.1.0 scope is reachability through scrolling. The stronger no-silent-truncation
   rule with a position or overflow indicator is carried by v0.2.0 FR-011 and is not
   part of this task.
+- 2026-08-22T14:27:50Z: verification pass

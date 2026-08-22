@@ -18,44 +18,20 @@ const minDetailWidth = 20
 // snapshot's events in their deterministic reverse-chronological order and
 // windows them manually, so no component library is needed (FR-010).
 type stream struct {
-	// offset is the first rendered row. The shell preserves it across mode
-	// switches so a view keeps its scroll position (FR-007).
-	offset int
+	// viewport is the Stream's own scroll position, moved and clamped by the
+	// mechanism both views share.
+	viewport
 }
 
 // render returns the Stream body for the shared content area.
 func (s stream) render(state State, width, height int) string {
-	lines := streamLines(state, width)
-	return renderBody(lines, clampOffset(s.offset, len(lines), height), width, height)
+	return renderBody(streamLines(state, width), s.viewport, width, height)
 }
 
-// scrolled returns the view moved by one scrolling keystroke. The stored offset
-// is clamped before and after the move, so a refresh that shrank the snapshot
-// or a resize that grew the body never leaves the view past its last window.
+// scrolled returns the view moved by one scrolling keystroke.
 func (s stream) scrolled(keystroke string, state State, width, height int) stream {
-	count := len(streamLines(state, width))
-	offset := clampOffset(s.offset, count, height)
-	switch keystroke {
-	case "up":
-		offset--
-	case "down":
-		offset++
-	case "pgup":
-		offset -= height
-	case "pgdown":
-		offset += height
-	}
-	s.offset = clampOffset(offset, count, height)
+	s.viewport = s.viewport.scrolled(keystroke, len(streamLines(state, width)), height)
 	return s
-}
-
-// clampOffset bounds the first rendered row so the window always ends at the
-// last line. A non-positive height renders unbounded, where nothing scrolls.
-func clampOffset(offset, count, height int) int {
-	if height <= 0 {
-		return 0
-	}
-	return min(max(offset, 0), max(count-height, 0))
 }
 
 // streamLines returns the explicit state line or the event rows.
