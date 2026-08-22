@@ -20,9 +20,11 @@ Guidance for coding agents working in the OrgTop repository.
 - `.github/workflows/ci.yml` defines required CI validation for code changes.
 - `.github/workflows/planning.yml` is the fast lane for planning, spec, doc, and
   skill changes; its `paths:` set must stay an exact mirror of the `paths-ignore`
-  in `ci.yml`.
+  in `ci.yml`, and `TestWorkflowPathLanesAreExactMirrors` fails when it does not.
 - `.github/workflows/release.yml` publishes tags; `CHANGELOG.md` is the source of
   release notes and a tag without a matching `## [<version>]` section is refused.
+- `internal/toolchain` holds no production code: it guards the repository's own
+  CI, release, and toolchain configuration.
 - `README.md` is the repository-level product and contributor introduction.
 
 ## Taskrail lifecycle
