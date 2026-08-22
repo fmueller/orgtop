@@ -38,3 +38,10 @@ Stream files/tests; do not modify root navigation, source, or snapshot calculati
 - Record exact commands, exit status, and named Stream update/render cases.
 
 ## Implementation Notes
+
+- T-006 handoff: `streamLines` in `internal/tui/stream.go` returns a placeholder
+  body ("Recent events are not rendered yet"). Replace it with the event rows;
+  the placeholder must not survive into a release.
+- T-006 handoff: `stream.offset` is preserved across mode switches but no key
+  moves it and only `renderBody` windows on it. Add the scroll/page keys and the
+  upper bound here, and cover clamping after refresh shrinkage and resize.

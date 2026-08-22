@@ -1,12 +1,12 @@
 ---
 id: T-006-build-the-bubble-tea-application-shell
 title: Build the Bubble Tea application shell
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.1.0.md#application-shell-and-refresh-lifecycle
 dependencies:
     - T-005-build-filtered-activity-snapshots-and-repository
-updated_at: "2026-08-21T22:39:23Z"
+updated_at: "2026-08-22T11:16:03Z"
 ---
 
 # T-006-build-the-bubble-tea-application-shell Build the Bubble Tea application shell
@@ -39,3 +39,5 @@ and Stream extension seams; source commands and refresh transitions belong to T-
 - Record exact commands, exit status, and shell/navigation/narrow tests.
 
 ## Implementation Notes
+
+- 2026-08-22T11:15:59Z: verification pass

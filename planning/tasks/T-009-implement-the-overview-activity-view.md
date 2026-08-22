@@ -39,3 +39,9 @@ modify root navigation or refresh orchestration.
 - Record exact commands, exit status, and named Overview rendering cases.
 
 ## Implementation Notes
+
+- T-006 handoff: `overviewLines` in `internal/tui/overview.go` returns a
+  placeholder body ("Repository activity is not rendered yet"). Replace it with
+  the aggregate rows; the placeholder must not survive into a release.
+- T-006 handoff: `overview.offset` exists as a preserved state slot but nothing
+  moves it yet. Clamp and drive it here if Overview scrolls.

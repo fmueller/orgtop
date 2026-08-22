@@ -44,3 +44,9 @@ view-specific rendering to T-009 and T-010.
 - Record exact commands, exit status, and transition/scheduling/cancellation tests.
 
 ## Implementation Notes
+
+- T-006 handoff: the shell header drops scope context near `40` columns whenever
+  `State.Cause` is set, because the candidate ladder in `internal/tui/chrome.go`
+  prefers the cause over the repository count. Revisit that ordering once this
+  task produces real sanitized cause strings, and confirm the `40x10`
+  `STALE`-with-cause layout still reads well.
