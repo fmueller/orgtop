@@ -1,14 +1,14 @@
 ---
 id: T-011-complete-v0-1-integration-and-release-readiness
 title: Complete v0.1 integration and release readiness
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.1.0.md#integration-documentation-and-release-readiness
 dependencies:
     - T-008-wire-an-executable-orgtop-vertical-slice
     - T-009-implement-the-overview-activity-view
     - T-010-implement-the-scrollable-stream-activity-view
-updated_at: "2026-08-21T22:39:23Z"
+updated_at: "2026-08-22T14:06:16Z"
 ---
 
 # T-011-complete-v0-1-integration-and-release-readiness Complete v0.1 integration and release readiness
@@ -59,3 +59,4 @@ checks; change it only for a real mismatch. Do not add deferred features.
   so `padRight`, `widestWidth`, and `truncate` stay unguarded for wide runes on the
   Overview path. Extend the coverage to Overview rows and to the shared header
   candidates.
+- 2026-08-22T14:06:12Z: verification pass

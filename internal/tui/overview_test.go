@@ -7,6 +7,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 
 	"github.com/fmueller/orgtop/internal/domain"
 )
@@ -255,4 +256,41 @@ func TestOverviewHasNoPlaceholderBody(t *testing.T) {
 	if content := renderAt(t, populatedModel(t), wideWidth, wideHeight); strings.Contains(content, "not rendered yet") {
 		t.Errorf("overview still renders the placeholder body:\n%s", content)
 	}
+}
+
+// TestSharedRowHelpersMeasureWideRunesByTheirRenderedWidth guards the padding,
+// alignment, and truncation helpers the Overview and Stream rows share. The
+// Overview's own row inputs are ASCII by construction — domain.ParseRepository
+// rejects anything else and the count labels are fixed — so a wide rune cannot
+// reach them through a rendered row. The helpers are covered directly instead,
+// which is the only level at which byte-wise measurement is observable.
+func TestSharedRowHelpersMeasureWideRunesByTheirRenderedWidth(t *testing.T) {
+	// Four wide runes: eight rendered cells, twelve bytes.
+	const wide = "推送提交"
+
+	t.Run("padRight pads to the rendered width", func(t *testing.T) {
+		const width = 12
+		padded := padRight(wide, width)
+		if rendered := lipgloss.Width(padded); rendered != width {
+			t.Errorf("padRight(%q, %d) is %d cells wide, want %d: %q", wide, width, rendered, width, padded)
+		}
+	})
+
+	t.Run("widestWidth measures the widest rendered line", func(t *testing.T) {
+		lines := []string{wide, "abcdefghij"}
+		if got := widestWidth(lines); got != 10 {
+			t.Errorf("widestWidth(%q) = %d, want 10", lines, got)
+		}
+	})
+
+	t.Run("truncate cuts on a cell boundary", func(t *testing.T) {
+		const limit = 5
+		truncated := truncate(wide, limit)
+		if truncated != "推送" {
+			t.Errorf("truncate(%q, %d) = %q, want %q", wide, limit, truncated, "推送")
+		}
+		if rendered := lipgloss.Width(truncated); rendered > limit {
+			t.Errorf("truncate(%q, %d) is %d cells wide, want at most %d", wide, limit, rendered, limit)
+		}
+	})
 }

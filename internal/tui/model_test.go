@@ -373,3 +373,52 @@ func TestTheShellRendersOnTheAlternateScreen(t *testing.T) {
 		t.Error("the shell does not render on the alternate screen")
 	}
 }
+
+// TestHeaderMeasuresWideRunesByTheirRenderedWidth guards the shared header
+// candidates against byte-wise measurement. The sanitized failure cause is the
+// only free-form text the header carries: repository identities are ASCII by
+// construction, so a relayed upstream cause is the one field whose byte length
+// and rendered width differ.
+func TestHeaderMeasuresWideRunesByTheirRenderedWidth(t *testing.T) {
+	state := State{
+		Scope:     testScope(t, "acme/backend"),
+		Freshness: FreshnessStale,
+		Cause:     "仓库不可访问",
+	}
+
+	// The richest candidate is 65 cells but 71 bytes wide, so a header measured
+	// by bytes drops to a sparser layout at exactly the width that fits it.
+	const width = 65
+	header := renderHeader(state, ModeOverview, width)
+
+	assertFits(t, header, width, 1)
+	for _, want := range []string{appName, state.Cause, "acme/backend"} {
+		if !strings.Contains(header, want) {
+			t.Errorf("header %q drops %q although the richest layout fits the width", header, want)
+		}
+	}
+}
+
+// TestStaleHeaderKeepsTheLastSuccessTimeOverScopeContext guards FR-008: a stale
+// header must show the STALE marker, the last-success time, and a concise cause
+// together. Once the cause leaves room for a single context field, the scope
+// summary gives way — the operator selected the Scope on the command line,
+// while the last-success time is live state nothing else reports.
+func TestStaleHeaderKeepsTheLastSuccessTimeOverScopeContext(t *testing.T) {
+	state := State{
+		Scope:       testScope(t, "acme/backend", "acme/frontend"),
+		Freshness:   FreshnessStale,
+		LastSuccess: time.Date(2026, time.August, 22, 12, 34, 56, 0, time.UTC),
+		Cause:       "refreshing acme/frontend: unexpected github response: status 500",
+	}
+
+	const width = 120
+	header := renderHeader(state, ModeOverview, width)
+
+	assertFits(t, header, width, 1)
+	for _, want := range []string{"STALE", "updated 12:34:56", "status 500"} {
+		if !strings.Contains(header, want) {
+			t.Errorf("stale header %q drops %q", header, want)
+		}
+	}
+}

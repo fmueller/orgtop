@@ -4,8 +4,72 @@ OrgTop is a terminal-native engineering activity awareness tool: `top` for your
 engineering organization. It is intended to provide a compact view of current
 activity across selected repositories without requiring a browser dashboard.
 
-OrgTop is in early development. The repository currently provides the project and
-planning foundation; the v0.1 product functionality is not implemented yet.
+OrgTop v0.1 shows recent activity for an explicitly selected set of GitHub
+repositories in two views: an Overview of per-repository counts and a Stream of
+individual events.
+
+## Usage
+
+```bash
+orgtop --repo owner/repository [--repo owner/repository ...]
+```
+
+Repeat `--repo` to select several repositories:
+
+```bash
+orgtop --repo acme/backend --repo acme/frontend
+```
+
+Every repository is named exactly as `owner/repository`. There is no glob or
+organization-wide selection: a launch without `--repo`, with a malformed
+identifier, or with glob syntax exits before the terminal UI with usage and a
+concise cause, and makes no network request.
+
+### Authentication
+
+OrgTop uses an existing local GitHub credential and never stores one of its own.
+It resolves the first available of:
+
+1. `GH_TOKEN`
+2. `GITHUB_TOKEN`
+3. `gh auth token --hostname github.com`
+
+A non-empty environment variable is used as-is and no `gh` process is started.
+If none of the three yields a token, startup exits non-zero and recommends
+setting `GH_TOKEN` or running `gh auth login`. The token value never appears in
+output, errors, or rendered views.
+
+### Polling, not live
+
+OrgTop reads GitHub's repository events endpoint on an interval and honours the
+poll delay GitHub advertises, with a 60-second floor. The header therefore shows
+a constant `POLLING` label: data is as recent as the last completed refresh and
+is not live. GitHub's events endpoint is itself cached and near-current rather
+than instantaneous, so a very fresh event can take a moment to appear.
+
+A refresh is atomic across the whole selection. The header carries a separate
+freshness marker beside `POLLING`:
+
+| Marker | Meaning |
+|---|---|
+| `LOADING` | The first refresh has not completed yet. |
+| *(none)* | The shown snapshot is the latest complete success. |
+| `ERROR` | No refresh has ever succeeded; the cause is shown. |
+| `STALE` | A later refresh failed; the last successful snapshot stays visible with its last-success time and the cause. |
+
+### Controls
+
+| Key | Action |
+|---|---|
+| `1` | Open Overview |
+| `2` | Open Stream |
+| `tab` | Toggle between the two views |
+| `up` / `down` | Scroll the Stream by one event |
+| `pgup` / `pgdown` | Scroll the Stream by one page |
+| `q` | Quit |
+| `ctrl+c` | Quit |
+
+Quitting cancels whatever refresh is in flight and restores the terminal.
 
 ## Prerequisites
 
@@ -16,6 +80,18 @@ planning foundation; the v0.1 product functionality is not implemented yet.
 
 Run `mise install` to install the versions declared in `mise.toml`, or provide the
 tools through another mechanism.
+
+## Installation
+
+There is no published release yet. Build from source:
+
+```bash
+task build     # or: go build ./cmd/orgtop
+./orgtop --repo acme/backend
+```
+
+`task build` and the release build both produce a single static `orgtop`
+executable from `./cmd/orgtop`.
 
 ## Development
 

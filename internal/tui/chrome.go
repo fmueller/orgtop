@@ -64,13 +64,22 @@ func headerCandidates(state State, mode Mode) [][]field {
 		updated = []field{{text: "updated " + state.LastSuccess.Format(clockLayout), style: contextStyle}}
 	}
 
+	// context is the last context field a tightening header keeps. A stale
+	// header must report the last-success time beside its cause (FR-008), so
+	// there the scope summary gives way first; every other state keeps the
+	// scope context the operator selected (FR-002).
+	context := counted
+	if state.Freshness == FreshnessStale {
+		context = updated
+	}
+
 	return [][]field{
 		slices.Concat(title, core, cause, listed, updated),
 		slices.Concat(title, core, cause, counted, updated),
-		slices.Concat(title, core, cause, counted),
-		slices.Concat(core, cause, counted),
+		slices.Concat(title, core, cause, context),
+		slices.Concat(core, cause, context),
 		slices.Concat(core, cause),
-		slices.Concat(core, counted),
+		slices.Concat(core, context),
 		core,
 	}
 }

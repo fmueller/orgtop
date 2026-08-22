@@ -24,5 +24,13 @@ workflow refuses to publish otherwise.
 - Stream now lists recent events newest first with their time, repository,
   text-encoded category, actor, and description, and scrolls with the up, down,
   page up, and page down keys.
+- The README documents the repeated `--repo` usage, the credential precedence
+  and its `gh auth login` fallback, the polling-not-live semantics, the
+  controls, and the development checks.
+
+### Fixed
+
+- A `STALE` header now keeps the last successful refresh time when the terminal
+  is too narrow to show it beside the Scope summary as well.
 
 [Unreleased]: https://github.com/fmueller/orgtop/commits/main

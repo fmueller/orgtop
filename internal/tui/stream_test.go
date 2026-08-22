@@ -435,3 +435,55 @@ func TestStreamMeasuresWideRunesByTheirRenderedWidth(t *testing.T) {
 		}
 	}
 }
+
+// withLocalZone pins time.Local to a fixed offset for one test, so a rendered
+// clock can be checked against an independent conversion of a UTC instant
+// instead of the machine's own timezone. A fixed zone needs no tzdata, which
+// keeps the guard identical on every platform the release publishes to.
+//
+// It mutates a process-wide global, so no test in this package may call
+// t.Parallel while this helper exists.
+func withLocalZone(t *testing.T, name string, offset time.Duration) {
+	t.Helper()
+	previous := time.Local
+	time.Local = time.FixedZone(name, int(offset.Seconds()))
+	t.Cleanup(func() { time.Local = previous })
+}
+
+// TestStreamSpellsOccurrenceTimesInTheLocalTimezone guards FR-010: the row clock
+// is the reader's wall clock, the same one the header's last-success time is
+// spelled in. Rendering the source's UTC instant instead would put a row and the
+// header it sits under on two different clocks.
+func TestStreamSpellsOccurrenceTimesInTheLocalTimezone(t *testing.T) {
+	const sourceClock = "03:00:00"
+	occurred := time.Date(2026, time.August, 22, 3, 0, 0, 0, time.UTC)
+
+	tests := []struct {
+		name   string
+		offset time.Duration
+		want   string
+	}{
+		{name: "east of utc", offset: 9 * time.Hour, want: "12:00:00"},
+		{name: "west of utc", offset: -5 * time.Hour, want: "22:00:00"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			withLocalZone(t, test.name, test.offset)
+			events := []domain.Event{
+				streamEvent(t, "1", "acme/backend", occurred, domain.CategoryPush, domain.EntityCommit, "alice", "pushed 1 commit to main"),
+			}
+
+			rows := bodyLines(t, renderAt(t, streamModel(t, events), wideWidth, wideHeight))
+			if len(rows) != 1 {
+				t.Fatalf("stream rendered %d rows, want 1:\n%v", len(rows), rows)
+			}
+			if !strings.Contains(rows[0], test.want) {
+				t.Errorf("row %q does not spell the local clock %q", rows[0], test.want)
+			}
+			if strings.Contains(rows[0], sourceClock) {
+				t.Errorf("row %q spells the source's UTC instant %q instead of the local clock", rows[0], sourceClock)
+			}
+		})
+	}
+}

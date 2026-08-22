@@ -61,24 +61,35 @@ func (h *harness) shell() shell {
 	}
 }
 
+// realResolver returns the production credential resolver with only its process
+// seams stubbed: token is what GH_TOKEN holds, and gh always reports nothing. An
+// environment credential must short-circuit resolution, so a gh invocation
+// alongside one fails the test that asked for it.
+func realResolver(t *testing.T, token string) auth.Resolver {
+	t.Helper()
+
+	return auth.Resolver{
+		LookupEnv: func(key string) string {
+			if key == "GH_TOKEN" {
+				return token
+			}
+			return ""
+		},
+		Run: func(context.Context, string, ...string) ([]byte, error) {
+			if token != "" {
+				t.Error("gh was invoked although an environment credential is set")
+			}
+			return nil, errors.New("gh reported no credential")
+		},
+	}
+}
+
 // sentinelCredential resolves a credential carrying sentinelToken through the
 // documented GH_TOKEN precedence, which is the only constructor auth exposes.
 func sentinelCredential(t *testing.T) auth.Credential {
 	t.Helper()
 
-	resolver := auth.Resolver{
-		LookupEnv: func(key string) string {
-			if key == "GH_TOKEN" {
-				return sentinelToken
-			}
-			return ""
-		},
-		Run: func(context.Context, string, ...string) ([]byte, error) {
-			t.Error("gh was invoked although an environment credential is set")
-			return nil, errors.New("unexpected gh invocation")
-		},
-	}
-	credential, err := resolver.Resolve(context.Background())
+	credential, err := realResolver(t, sentinelToken).Resolve(context.Background())
 	if err != nil {
 		t.Fatalf("resolving the sentinel credential failed: %v", err)
 	}
