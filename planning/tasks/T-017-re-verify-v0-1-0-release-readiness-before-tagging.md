@@ -1,7 +1,7 @@
 ---
 id: T-017-re-verify-v0-1-0-release-readiness-before-tagging
 title: Re-verify v0.1.0 release readiness before tagging
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.1.0.md#integration-documentation-and-release-readiness
 dependencies:
@@ -10,7 +10,7 @@ dependencies:
     - T-014-enforce-the-non-nil-refresh-source-at-model
     - T-015-keep-the-polling-floor-consistent-across-the
     - T-016-share-the-stream-scrolling-mechanism-with-the
-updated_at: "2026-08-22T14:12:58Z"
+updated_at: "2026-08-23T19:51:45Z"
 ---
 
 # T-017-re-verify-v0-1-0-release-readiness-before-tagging Re-verify v0.1.0 release readiness before tagging
@@ -85,3 +85,4 @@ What the follow-ups move:
   "no exec internals leaked" assertions cannot fail. The guarantee is covered by
   `internal/auth/credential_test.go`. Drop the redundant assertions or leave them
   documented; do not treat it as new work.
+- 2026-08-23T19:51:40Z: verification pass

@@ -16,6 +16,11 @@ const releaseBinary = "orgtop"
 // releaseMain is the only command package the module builds.
 const releaseMain = "./cmd/orgtop"
 
+// releaseVersion is the milestone this repository is preparing to tag. The
+// release workflow extracts its notes from the matching CHANGELOG.md section,
+// so the section has to exist before the tag is pushed.
+const releaseVersion = "0.1.0"
+
 // goModule is the module file whose direct requirements v0.1.0 pins.
 var goModule = filepath.Join(repoRoot, "go.mod")
 
@@ -75,6 +80,22 @@ func TestModuleKeepsTheV010DependencySurface(t *testing.T) {
 	}
 }
 
+// TestChangelogDocumentsTheReleaseVersion keeps the tag publishable. The guard
+// scripts refuse a tag whose `## [<version>]` section is missing or empty, but
+// they only run at tag time; this fails on every ordinary CI run instead, while
+// the section can still be written.
+func TestChangelogDocumentsTheReleaseVersion(t *testing.T) {
+	t.Parallel()
+
+	notes, documented := changelogSection(readFile(t, changelogPath), releaseVersion)
+	if !documented {
+		t.Fatalf("CHANGELOG.md has no '## [%s]' heading, so the release workflow would refuse the tag", releaseVersion)
+	}
+	if strings.TrimSpace(notes) == "" {
+		t.Errorf("CHANGELOG.md's '## [%s]' section is empty, so the release would publish a blank body", releaseVersion)
+	}
+}
+
 // directRequirements returns the module paths go.mod requires directly, which
 // are the requirements not marked indirect.
 func directRequirements(t *testing.T) []string {
@@ -109,4 +130,103 @@ func value(node *yaml.Node) string {
 		return "<missing>"
 	}
 	return node.Value
+}
+
+// changelogSection returns the release notes under the `## [version]` heading
+// and whether that heading is present at all, which keeps a missing section
+// distinguishable from one that says nothing.
+//
+// The link-reference block a Keep a Changelog file ends with falls under the
+// last version heading, so it is skipped: those lines are addresses, not notes,
+// and counting them would let an entryless section read as written.
+func changelogSection(changelog, version string) (string, bool) {
+	heading := "## [" + version + "]"
+	var (
+		notes      []string
+		documented bool
+	)
+	for _, line := range strings.Split(changelog, "\n") {
+		if !strings.HasPrefix(line, "## ") {
+			if documented && !isLinkReference(line) {
+				notes = append(notes, line)
+			}
+			continue
+		}
+		if documented {
+			break
+		}
+		documented = line == heading || strings.HasPrefix(line, heading+" ")
+	}
+	return strings.Join(notes, "\n"), documented
+}
+
+// isLinkReference reports whether the line defines a markdown link reference,
+// the `[label]: url` form Keep a Changelog collects at the foot of the file.
+func isLinkReference(line string) bool {
+	line = strings.TrimSpace(line)
+	label, address, found := strings.Cut(line, "]: ")
+	return found && strings.HasPrefix(label, "[") && address != ""
+}
+
+// TestChangelogSectionDistinguishesAbsentFromSaysNothing pins the two answers
+// the release guard depends on. The link-reference block at the foot of a Keep
+// a Changelog file sits under the last version heading, so a section whose
+// entries were never written still has lines under it; those lines are not
+// release notes and must not read as content.
+func TestChangelogSectionDistinguishesAbsentFromSaysNothing(t *testing.T) {
+	t.Parallel()
+
+	const links = "[Unreleased]: https://example.test/compare\n[0.1.0]: https://example.test/tag"
+
+	tests := []struct {
+		name           string
+		changelog      string
+		wantDocumented bool
+		wantEntries    bool
+	}{
+		{
+			name:      "heading absent",
+			changelog: "## [Unreleased]\n\n- something\n",
+		},
+		{
+			name:           "heading with no lines at all",
+			changelog:      "## [0.1.0]\n## [0.0.9]\n\n- older\n",
+			wantDocumented: true,
+		},
+		{
+			name:           "heading followed only by the link block",
+			changelog:      "## [0.1.0] - 2026-08-23\n\n" + links + "\n",
+			wantDocumented: true,
+		},
+		{
+			name:           "dated heading with entries",
+			changelog:      "## [0.1.0] - 2026-08-23\n\n### Added\n\n- a feature\n\n" + links + "\n",
+			wantDocumented: true,
+			wantEntries:    true,
+		},
+		{
+			name:           "entries end at the next version heading",
+			changelog:      "## [0.1.0]\n\n- a feature\n\n## [0.0.9]\n\n- older\n",
+			wantDocumented: true,
+			wantEntries:    true,
+		},
+		{
+			name:      "a longer version is not the requested one",
+			changelog: "## [0.1.0-rc1]\n\n- a candidate\n",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			notes, documented := changelogSection(test.changelog, releaseVersion)
+			if documented != test.wantDocumented {
+				t.Errorf("documented = %t, want %t", documented, test.wantDocumented)
+			}
+			if entries := strings.TrimSpace(notes) != ""; entries != test.wantEntries {
+				t.Errorf("has entries = %t, want %t, from notes %q", entries, test.wantEntries, notes)
+			}
+		})
+	}
 }

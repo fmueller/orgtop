@@ -29,6 +29,7 @@ var (
 	taskfile         = filepath.Join(repoRoot, "Taskfile.yml")
 	miseConfig       = filepath.Join(repoRoot, "mise.toml")
 	goreleaserConfig = filepath.Join(repoRoot, ".goreleaser.yml")
+	changelogPath    = filepath.Join(repoRoot, "CHANGELOG.md")
 	changelogGuard   = filepath.Join(repoRoot, "scripts", "check-changelog-version.sh")
 	changelogNotes   = filepath.Join(repoRoot, "scripts", "changelog-release-notes.sh")
 )

@@ -18,6 +18,13 @@ var deferredClaims = []string{
 	"live activity", "real time", "real-time", "webhook",
 }
 
+// documentedControls are the key bindings the footer advertises, scrolling
+// included. A README that stops naming one of them misdescribes the shipped
+// shell to the operator who reads it.
+var documentedControls = []string{
+	"`1`", "`2`", "`tab`", "`up`", "`down`", "`pgup`", "`pgdown`", "`q`", "`ctrl+c`",
+}
+
 // TestReadmeDocumentsTheDocumentedUsage keeps the documented invocation the one
 // the binary actually accepts. Deriving it from the parser rather than repeating
 // the string means a renamed or reshaped flag fails here instead of misleading a
@@ -78,7 +85,7 @@ func TestReadmeDocumentsPollingControlsAndChecks(t *testing.T) {
 			t.Errorf("README.md does not document %q", required)
 		}
 	}
-	for _, control := range []string{"`1`", "`2`", "`tab`", "`q`", "`ctrl+c`"} {
+	for _, control := range documentedControls {
 		if !strings.Contains(readme, control) {
 			t.Errorf("README.md does not document the %s control", control)
 		}

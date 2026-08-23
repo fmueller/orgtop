@@ -34,6 +34,14 @@ const (
 	wideHeight   = 30
 )
 
+// narrowBodyHeight is the row budget the body has at that narrowest terminal,
+// once the shared header and footer take one line each.
+const narrowBodyHeight = narrowHeight - 2
+
+// scrollRepositories selects two more repositories than that budget can show at
+// once, so the last one is only reachable by scrolling.
+const scrollRepositories = narrowBodyHeight + 2
+
 // cannedResponse is one scripted repository response.
 type cannedResponse struct {
 	status int
@@ -131,6 +139,10 @@ func (e *eventsEndpoint) requestCount(repository string) int {
 
 // eventsPath is the bounded events path the source requests for a repository.
 func eventsPath(repository string) string { return "/repos/" + repository + "/events" }
+
+// scrollRepository names the selected repository at a zero-based position. The
+// fixed-width suffix keeps every identity distinct as a substring.
+func scrollRepository(index int) string { return fmt.Sprintf("acme/r%02d", index) }
 
 // ok queues a successful page.
 func ok(body string) cannedResponse { return cannedResponse{status: http.StatusOK, body: body} }
@@ -405,6 +417,47 @@ func TestViewNavigationPreservesTheLoadedSnapshotAndScrollPosition(t *testing.T)
 	if endpoint.requestCount("acme/backend") != 1 {
 		t.Errorf("view switching triggered %d requests, want the loaded snapshot to be reused", endpoint.requestCount("acme/backend"))
 	}
+}
+
+// TestOverviewScrollsToEverySelectedRepositoryAtTheNarrowestSize proves the
+// reachability contract end to end: at 40x10 a Scope that overflows the body
+// still lets an operator reach its last repository, through the same wired
+// binary path a real launch takes (FR-009, A-010).
+func TestOverviewScrollsToEverySelectedRepositoryAtTheNarrowestSize(t *testing.T) {
+	script := make(map[string][]cannedResponse, scrollRepositories)
+	args := make([]string, 0, 2*scrollRepositories)
+	for index := range scrollRepositories {
+		repository := scrollRepository(index)
+		script[eventsPath(repository)] = []cannedResponse{ok(eventsPage(repository, 1))}
+		args = append(args, "--repo", repository)
+	}
+
+	run := newFlow(t, newEndpoint(script), args...)
+	run.refresh()
+
+	first, last := scrollRepository(0), scrollRepository(scrollRepositories-1)
+	top := run.render(narrowWidth, narrowHeight)
+	assertContains(t, top, "OVERVIEW", first)
+	assertAbsent(t, top, last)
+	if rows := body(t, top); len(rows) != narrowBodyHeight {
+		t.Errorf("overview rendered %d rows at %dx%d, want the full body budget of %d:\n%s",
+			len(rows), narrowWidth, narrowHeight, narrowBodyHeight, top)
+	}
+
+	run.press("pgdown")
+	bottom := run.model.View().Content
+	assertContains(t, bottom, "OVERVIEW", last)
+	assertAbsent(t, bottom, first)
+
+	// A page past the end stays on the last row rather than scrolling into
+	// blank space, so the window never leaves the content.
+	run.press("pgdown")
+	if clamped := run.model.View().Content; clamped != bottom {
+		t.Errorf("paging past the last row moved the window:\n%s\nwant:\n%s", clamped, bottom)
+	}
+
+	run.press("pgup")
+	assertContains(t, run.model.View().Content, first)
 }
 
 func TestTheShellStaysInteractiveWhileARefreshIsPending(t *testing.T) {
