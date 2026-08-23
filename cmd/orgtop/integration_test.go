@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"sync"
 	"testing"
@@ -153,20 +154,41 @@ func serverError() cannedResponse {
 	return cannedResponse{status: http.StatusInternalServerError, body: `{"message":"upstream is unavailable"}`}
 }
 
+// pushEvent renders one synthetic push event for the repository, identified by
+// the id its page gives it and occurring at the given instant.
+func pushEvent(repository, id string, occurred time.Time) map[string]any {
+	return map[string]any{
+		"id":         id,
+		"type":       "PushEvent",
+		"actor":      map[string]any{"login": "alice"},
+		"repo":       map[string]any{"name": repository},
+		"payload":    map[string]any{"size": 1, "ref": "refs/heads/main", "head": "cafe"},
+		"created_at": occurred.Format(time.RFC3339),
+	}
+}
+
 // eventsPage renders a synthetic events page for the repository: count push
 // events, newest first, each naming its own one-based position.
 func eventsPage(repository string, count int) string {
 	base := time.Date(2026, time.August, 22, 12, 0, 0, 0, time.UTC)
 	page := make([]map[string]any, 0, count)
 	for index := range count {
-		page = append(page, map[string]any{
-			"id":         fmt.Sprintf("%s-%03d", strings.ReplaceAll(repository, "/", "-"), index),
-			"type":       "PushEvent",
-			"actor":      map[string]any{"login": "alice"},
-			"repo":       map[string]any{"name": repository},
-			"payload":    map[string]any{"size": 1, "ref": "refs/heads/main", "head": "cafe"},
-			"created_at": base.Add(-time.Duration(index) * time.Minute).Format(time.RFC3339),
-		})
+		id := fmt.Sprintf("%s-%03d", strings.ReplaceAll(repository, "/", "-"), index)
+		page = append(page, pushEvent(repository, id, base.Add(-time.Duration(index)*time.Minute)))
+	}
+	return encode(page)
+}
+
+// agedEventsPage renders a synthetic events page whose push events occurred the
+// given durations before now, newest first. The timestamps are relative because
+// the wired shell anchors rendered ages to its own last-success instant, which
+// an integration flow cannot pin.
+func agedEventsPage(repository string, ages ...time.Duration) string {
+	now := time.Now().UTC()
+	page := make([]map[string]any, 0, len(ages))
+	for index, age := range ages {
+		id := fmt.Sprintf("%s-aged-%03d", strings.ReplaceAll(repository, "/", "-"), index)
+		page = append(page, pushEvent(repository, id, now.Add(-age)))
 	}
 	return encode(page)
 }
@@ -722,4 +744,34 @@ func TestStartupPrefersTheEnvironmentCredentialOverTheGitHubCLI(t *testing.T) {
 		t.Error("the launch did not receive the resolved credential")
 	}
 	assertAbsent(t, harness.output.String(), sentinelToken)
+}
+
+// TestMultiDaySnapshotRendersAgesRatherThanClockTimes guards FR-010 through the
+// wired binary: a snapshot page reaches back weeks, so Stream must place each
+// event by its age at the last successful refresh instead of by a time of day
+// that cannot distinguish this afternoon from one three weeks ago.
+func TestMultiDaySnapshotRendersAgesRatherThanClockTimes(t *testing.T) {
+	const day = 24 * time.Hour
+	endpoint := newEndpoint(map[string][]cannedResponse{
+		eventsPath("acme/backend"): {ok(agedEventsPage("acme/backend", 2*time.Hour, 3*day, 20*day))},
+	})
+	run := newFlow(t, endpoint, "--repo", "acme/backend")
+	run.refresh()
+	run.press("2")
+
+	stream := run.render(wideWidth, wideHeight)
+	rows := body(t, stream)
+	if len(rows) != 3 {
+		t.Fatalf("stream rendered %d rows, want 3:\n%v", len(rows), rows)
+	}
+
+	clock := regexp.MustCompile(`\d{1,2}:\d{2}`)
+	for index, want := range []string{"2h", "3d", "2w"} {
+		if age := strings.Fields(rows[index])[0]; age != want {
+			t.Errorf("row %d is aged %q, want %q:\n%s", index, age, want, rows[index])
+		}
+		if clock.MatchString(rows[index]) {
+			t.Errorf("row %d spells a wall-clock time of day:\n%s", index, rows[index])
+		}
+	}
 }

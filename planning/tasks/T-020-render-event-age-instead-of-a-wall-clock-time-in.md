@@ -1,11 +1,11 @@
 ---
 id: T-020-render-event-age-instead-of-a-wall-clock-time-in
 title: Render event age instead of a wall-clock time in Stream
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.1.0.md#stream-view
 dependencies: []
-updated_at: "2026-08-23T20:14:03Z"
+updated_at: "2026-08-23T20:40:30Z"
 ---
 
 # T-020-render-event-age-instead-of-a-wall-clock-time-in Render event age instead of a wall-clock time in Stream
@@ -94,3 +94,4 @@ data that is no longer being refreshed.
   recording successes and is not the anchor for rendering.
 - Keep this task to the age spelling. Column headings are T-022; the description
   rework is T-021; coverage disclosure and truncation marking are T-023.
+- 2026-08-23T20:40:26Z: verification pass

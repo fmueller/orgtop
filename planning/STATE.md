@@ -1,14 +1,14 @@
 ---
 schema_version: 1
-updated_at: "2026-08-23T20:16:13Z"
+updated_at: "2026-08-23T20:43:52Z"
 active_spec_version: v0.1.0
 active_spec_path: specs/v0.1.0.md
 current_task: ""
 current_task_title: ""
 status_summary: idle
 blockers: []
-next_action: 'Start task T-020-render-event-age-instead-of-a-wall-clock-time-in: Render event age instead of a wall-clock time in Stream'
-last_verification_result: pass for T-017-re-verify-v0-1-0-release-readiness-before-tagging at 2026-08-23T19:51:40Z
+next_action: Select the next eligible task
+last_verification_result: pass for T-020-render-event-age-instead-of-a-wall-clock-time-in at 2026-08-23T20:40:26Z
 relevant_artifacts: []
 continuation_notes:
     - This repository is using manual Taskrail-style workflow scaffolding until the product replaces more of the bootstrap steps.
@@ -34,11 +34,11 @@ continuation_notes:
 
 ## Last Verification
 
-- pass for T-017-re-verify-v0-1-0-release-readiness-before-tagging at 2026-08-23T19:51:40Z
+- pass for T-020-render-event-age-instead-of-a-wall-clock-time-in at 2026-08-23T20:40:26Z
 
 ## Next Action
 
-- Start task T-020-render-event-age-instead-of-a-wall-clock-time-in: Render event age instead of a wall-clock time in Stream
+- Select the next eligible task
 
 ## Relevant Artifacts
 
@@ -52,6 +52,6 @@ continuation_notes:
 
 - todo: 7
 - in_progress: 0
-- completed: 17
+- completed: 18
 - blocked: 0
 - cancelled: 0

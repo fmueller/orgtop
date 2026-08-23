@@ -2,6 +2,7 @@ package tui
 
 import (
 	"strings"
+	"time"
 
 	"charm.land/lipgloss/v2"
 
@@ -47,14 +48,14 @@ func streamLines(state State, width int) []string {
 	if len(events) == 0 {
 		return []string{noRecentActivity}
 	}
-	return streamRows(events, width)
+	return streamRows(events, state.LastSuccess, width)
 }
 
-// streamLayout labels one row layout: how precisely the occurrence time is
-// spelled and how each category is named. The category is always text, so a
-// monochrome terminal keeps the full encoding (FR-010).
+// streamLayout labels one row layout: how each category is named. The category
+// is always text, so a monochrome terminal keeps the full encoding (FR-010).
+// The age column has one spelling at every width, because it is already the
+// narrowest honest one.
 type streamLayout struct {
-	clock       string
 	push        string
 	pullRequest string
 	review      string
@@ -81,12 +82,12 @@ func (l streamLayout) name(category domain.Category) string {
 
 // streamLayouts orders the row layouts from richest to sparsest.
 var streamLayouts = []streamLayout{
-	{clock: clockLayout, push: "push", pullRequest: "pull request", review: "review", comment: "comment", other: "other"},
-	{clock: "15:04", push: "push", pullRequest: "pr", review: "rev", comment: "com", other: "oth"},
+	{push: "push", pullRequest: "pull request", review: "review", comment: "comment", other: "other"},
+	{push: "push", pullRequest: "pr", review: "rev", comment: "com", other: "oth"},
 }
 
-// streamRow is one laid-out event: the aligned occurrence time, repository, and
-// category, followed by the optional actor and description.
+// streamRow is one laid-out event: the aligned age, repository, and category,
+// followed by the optional actor and description.
 type streamRow struct {
 	columns string
 	detail  string
@@ -112,15 +113,15 @@ func (r streamRow) required() int {
 
 // streamRows renders the widest row layout that fits the width. Every snapshot
 // event keeps a row; the shared body truncates what still overflows.
-func streamRows(events []domain.Event, width int) []string {
+func streamRows(events []domain.Event, lastSuccess time.Time, width int) []string {
 	sparsest := len(streamLayouts) - 1
 	for _, layout := range streamLayouts[:sparsest] {
-		rows := layoutStreamRows(events, layout)
+		rows := layoutStreamRows(events, lastSuccess, layout)
 		if fits(requiredWidth(rows), width) {
 			return renderStreamRows(rows)
 		}
 	}
-	return renderStreamRows(layoutStreamRows(events, streamLayouts[sparsest]))
+	return renderStreamRows(layoutStreamRows(events, lastSuccess, streamLayouts[sparsest]))
 }
 
 // requiredWidth returns the widest width the rows need.
@@ -142,21 +143,25 @@ func renderStreamRows(rows []streamRow) []string {
 }
 
 // layoutStreamRows lays out one event per row in the snapshot's order, aligning
-// the detail behind the widest repository identity and category name.
-func layoutStreamRows(events []domain.Event, layout streamLayout) []streamRow {
+// the detail behind the widest repository identity and category name. Ages are
+// right-aligned in their own column so the snapshot's reverse-chronological
+// order reads straight down it (FR-010).
+func layoutStreamRows(events []domain.Event, lastSuccess time.Time, layout streamLayout) []streamRow {
+	ages := make([]string, 0, len(events))
 	identities := make([]string, 0, len(events))
 	categories := make([]string, 0, len(events))
 	for _, event := range events {
+		ages = append(ages, eventAge(event.OccurredAt, lastSuccess))
 		identities = append(identities, event.Repository.String())
 		categories = append(categories, layout.name(event.Category))
 	}
-	identityWidth, categoryWidth := widestWidth(identities), widestWidth(categories)
+	ageWidth, identityWidth, categoryWidth := widestWidth(ages), widestWidth(identities), widestWidth(categories)
 
 	rows := make([]streamRow, 0, len(events))
 	for index, event := range events {
 		rows = append(rows, streamRow{
 			columns: strings.Join([]string{
-				event.OccurredAt.Local().Format(layout.clock),
+				padLeft(ages[index], ageWidth),
 				padRight(identities[index], identityWidth),
 				padRight(categories[index], categoryWidth),
 			}, rowGap),

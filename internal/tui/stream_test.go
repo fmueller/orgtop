@@ -2,18 +2,22 @@ package tui
 
 import (
 	"fmt"
+	"regexp"
+	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 	"unicode/utf8"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 
 	"github.com/fmueller/orgtop/internal/domain"
 )
 
-// streamBase is the instant the newest test event occurred at. It is a local
-// time, so the rendered clock is the same in every test timezone.
+// streamBase is the instant the newest test event occurred at, and the
+// last-success instant the rendered ages are anchored to.
 var streamBase = time.Date(2026, time.August, 22, 12, 0, 5, 0, time.Local)
 
 // forbiddenStreamVocabulary lists the deferred capabilities Stream must not
@@ -74,19 +78,20 @@ func streamModel(t *testing.T, events []domain.Event) Model {
 		testActivity(t, "acme/frontend", frontend...),
 	})
 	model.state.Freshness = FreshnessCurrent
+	model.state.LastSuccess = streamBase
 	return model
 }
 
-// numberedEvents returns count push events for acme/backend, newest first, each
-// carrying its own one-based position in its description.
-func numberedEvents(t *testing.T, count int) []domain.Event {
+// agedEvents returns one push event per elapsed duration, in the order given,
+// each occurring that long before streamBase.
+func agedEvents(t *testing.T, elapsed ...time.Duration) []domain.Event {
 	t.Helper()
-	events := make([]domain.Event, 0, count)
-	for index := range count {
+	events := make([]domain.Event, 0, len(elapsed))
+	for index, since := range elapsed {
 		events = append(events, streamEvent(t,
 			fmt.Sprintf("%03d", index),
 			"acme/backend",
-			streamBase.Add(-time.Duration(index)*time.Minute),
+			streamBase.Add(-since),
 			domain.CategoryPush,
 			domain.EntityCommit,
 			"alice",
@@ -94,6 +99,18 @@ func numberedEvents(t *testing.T, count int) []domain.Event {
 		))
 	}
 	return events
+}
+
+// numberedEvents returns count push events for acme/backend, newest first, each
+// carrying its own one-based position in its description, spaced one minute
+// apart.
+func numberedEvents(t *testing.T, count int) []domain.Event {
+	t.Helper()
+	elapsed := make([]time.Duration, 0, count)
+	for index := range count {
+		elapsed = append(elapsed, time.Duration(index)*time.Minute)
+	}
+	return agedEvents(t, elapsed...)
 }
 
 // The scrolling tests window 20 events through a body that shows 8 of them, so
@@ -138,7 +155,7 @@ func TestStreamRendersEveryEventInSnapshotOrder(t *testing.T) {
 	}
 	for index, event := range events {
 		for _, want := range []string{
-			event.OccurredAt.Format("15:04:05"),
+			eventAge(event.OccurredAt, streamBase),
 			event.Repository.String(),
 			event.Description,
 		} {
@@ -329,7 +346,7 @@ func TestStreamRetainsEventContextAtNarrowSizes(t *testing.T) {
 	if len(rows) == 0 {
 		t.Fatalf("narrow stream rendered no event row:\n%s", content)
 	}
-	for _, want := range []string{"12:00", "acme/backend", "push"} {
+	for _, want := range []string{youngestAge, "acme/backend", "push"} {
 		if !strings.Contains(rows[0], want) {
 			t.Errorf("narrow row %q does not retain %q", rows[0], want)
 		}
@@ -378,7 +395,7 @@ func TestStreamRendersAnEventWithoutActorOrDescription(t *testing.T) {
 	if len(rows) != 1 {
 		t.Fatalf("stream rendered %d rows, want the detail-free event to keep its row:\n%v", len(rows), rows)
 	}
-	for _, want := range []string{"12:00:05", "acme/backend", "push"} {
+	for _, want := range []string{youngestAge, "acme/backend", "push"} {
 		if !strings.Contains(rows[0], want) {
 			t.Errorf("detail-free row %q does not retain %q", rows[0], want)
 		}
@@ -423,54 +440,148 @@ func TestStreamMeasuresWideRunesByTheirRenderedWidth(t *testing.T) {
 	}
 }
 
-// withLocalZone pins time.Local to a fixed offset for one test, so a rendered
-// clock can be checked against an independent conversion of a UTC instant
-// instead of the machine's own timezone. A fixed zone needs no tzdata, which
-// keeps the guard identical on every platform the release publishes to.
-//
-// It mutates a process-wide global, so no test in this package may call
-// t.Parallel while this helper exists.
-func withLocalZone(t *testing.T, name string, offset time.Duration) {
+// ageUnits orders the age units from youngest to oldest, so two rendered ages
+// can be compared without reconstructing the duration behind them.
+var ageUnits = []string{"m", "h", "d", "w", "y"}
+
+// renderedAge returns the age column of a rendered row, which is its first
+// whitespace-separated field.
+func renderedAge(t *testing.T, row string) string {
 	t.Helper()
-	previous := time.Local
-	time.Local = time.FixedZone(name, int(offset.Seconds()))
-	t.Cleanup(func() { time.Local = previous })
+	fields := strings.Fields(row)
+	if len(fields) == 0 {
+		t.Fatalf("row %q has no age column", row)
+	}
+	return fields[0]
 }
 
-// TestStreamSpellsOccurrenceTimesInTheLocalTimezone guards FR-010: the row clock
-// is the reader's wall clock, the same one the header's last-success time is
-// spelled in. Rendering the source's UTC instant instead would put a row and the
-// header it sits under on two different clocks.
-func TestStreamSpellsOccurrenceTimesInTheLocalTimezone(t *testing.T) {
-	const sourceClock = "03:00:00"
-	occurred := time.Date(2026, time.August, 22, 3, 0, 0, 0, time.UTC)
+// ageOrder ranks a rendered age so ages can be ordered across units. It fails
+// the test on anything that is not one whole unit, which is what a row spelling
+// a wall-clock time would be.
+func ageOrder(t *testing.T, age string) (int, int) {
+	t.Helper()
+	if age == youngestAge {
+		return 0, 0
+	}
+	unit := slices.Index(ageUnits, age[len(age)-1:])
+	if unit < 0 {
+		t.Fatalf("age %q names no age unit of %v", age, ageUnits)
+	}
+	count, err := strconv.Atoi(age[:len(age)-1])
+	if err != nil {
+		t.Fatalf("age %q carries no whole unit count: %v", age, err)
+	}
+	return unit + 1, count
+}
 
-	tests := []struct {
-		name   string
-		offset time.Duration
-		want   string
-	}{
-		{name: "east of utc", offset: 9 * time.Hour, want: "12:00:00"},
-		{name: "west of utc", offset: -5 * time.Hour, want: "22:00:00"},
+// TestStreamRendersAgesThatNeverDecreaseDownTheSnapshot guards FR-010: the
+// visible form of the reverse-chronological order is that the age column only
+// ever grows downward. A wall-clock stamp satisfies the ordering internally
+// while reading as broken, which is the defect this replaces.
+func TestStreamRendersAgesThatNeverDecreaseDownTheSnapshot(t *testing.T) {
+	elapsed := []time.Duration{30 * time.Second, 25 * time.Minute, 3 * time.Hour, 26 * time.Hour, 4 * day, 23 * day}
+	want := []string{youngestAge, "25m", "3h", "1d", "4d", "3w"}
+
+	rows := bodyLines(t, renderAt(t, streamModel(t, agedEvents(t, elapsed...)), wideWidth, wideHeight))
+	if len(rows) != len(want) {
+		t.Fatalf("stream rendered %d rows, want %d:\n%v", len(rows), len(want), rows)
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			withLocalZone(t, test.name, test.offset)
-			events := []domain.Event{
-				streamEvent(t, "1", "acme/backend", occurred, domain.CategoryPush, domain.EntityCommit, "alice", "pushed 1 commit to main"),
-			}
+	previousUnit, previousCount := 0, 0
+	for index, row := range rows {
+		age := renderedAge(t, row)
+		if age != want[index] {
+			t.Errorf("row %d spells its age %q, want %q:\n%s", index, age, want[index], row)
+		}
+		unit, count := ageOrder(t, age)
+		if unit < previousUnit || (unit == previousUnit && count < previousCount) {
+			t.Errorf("row %d is younger than the row above it: %q after %d unit %d", index, age, previousCount, previousUnit)
+		}
+		previousUnit, previousCount = unit, count
+	}
+}
 
-			rows := bodyLines(t, renderAt(t, streamModel(t, events), wideWidth, wideHeight))
-			if len(rows) != 1 {
-				t.Fatalf("stream rendered %d rows, want 1:\n%v", len(rows), rows)
+// TestStreamRightAlignsTheAgeColumn guards FR-010: the ages share one fixed
+// column so the ordering reads straight down it and the columns behind it stay
+// aligned. Left-aligned ages of different widths would stagger every later
+// column of the row.
+func TestStreamRightAlignsTheAgeColumn(t *testing.T) {
+	rows := bodyLines(t, renderAt(t,
+		streamModel(t, agedEvents(t, 30*time.Second, 5*time.Minute, 12*time.Hour, 23*day)),
+		wideWidth, wideHeight))
+
+	width := lipgloss.Width(youngestAge)
+	for index, row := range rows {
+		column := string([]rune(row)[:width])
+		if strings.TrimLeft(column, " ") != renderedAge(t, row) {
+			t.Errorf("row %d starts with %q, want the age right-aligned in %d columns:\n%s", index, column, width, row)
+		}
+	}
+}
+
+// TestStreamRendersNoWallClockTimeOfDay guards FR-010 at every width: no row
+// may fall back to a time of day, which a snapshot reaching back weeks cannot
+// place in time.
+func TestStreamRendersNoWallClockTimeOfDay(t *testing.T) {
+	clock := regexp.MustCompile(`\d{1,2}:\d{2}`)
+	events := agedEvents(t, 30*time.Second, 25*time.Minute, 3*time.Hour, 26*time.Hour, 23*day)
+
+	for _, width := range []int{narrowWidth, 60, wideWidth} {
+		for _, row := range bodyLines(t, renderAt(t, streamModel(t, events), width, wideHeight)) {
+			if clock.MatchString(row) {
+				t.Errorf("row %q at width %d spells a wall-clock time of day", row, width)
 			}
-			if !strings.Contains(rows[0], test.want) {
-				t.Errorf("row %q does not spell the local clock %q", rows[0], test.want)
-			}
-			if strings.Contains(rows[0], sourceClock) {
-				t.Errorf("row %q spells the source's UTC instant %q instead of the local clock", rows[0], sourceClock)
-			}
-		})
+		}
+	}
+}
+
+// TestStreamAnchorsAgesToTheLastSuccessRatherThanTheCurrentClock guards FR-010:
+// the ages must agree with the last-success time the same header reports.
+// Measuring against time.Now instead would drift between redraws and disagree
+// with the header, since the polling floor is a full minute.
+func TestStreamAnchorsAgesToTheLastSuccessRatherThanTheCurrentClock(t *testing.T) {
+	model := streamModel(t, agedEvents(t, 5*time.Minute))
+	model.state.LastSuccess = streamBase
+
+	rows := bodyLines(t, renderAt(t, model, wideWidth, wideHeight))
+	if len(rows) != 1 {
+		t.Fatalf("stream rendered %d rows, want 1:\n%v", len(rows), rows)
+	}
+	if age := renderedAge(t, rows[0]); age != "5m" {
+		t.Errorf("row %q is aged %q, want %q measured from the last success rather than the current clock", rows[0], age, "5m")
+	}
+}
+
+// TestStaleStreamKeepsTheAgesItHadWhileCurrent guards FR-008 and FR-010
+// together: a stale snapshot stops being refreshed, so its ages must freeze with
+// it rather than aging past data nobody is updating.
+func TestStaleStreamKeepsTheAgesItHadWhileCurrent(t *testing.T) {
+	model := streamModel(t, agedEvents(t, 30*time.Second, 25*time.Minute, 3*day))
+	current := bodyLines(t, renderAt(t, model, wideWidth, wideHeight))
+
+	model.state.Freshness = FreshnessStale
+	model.state.Cause = "status 500"
+	stale := bodyLines(t, renderAt(t, model, wideWidth, wideHeight))
+
+	if len(stale) != len(current) {
+		t.Fatalf("the stale stream rendered %d rows, want the %d it had while current:\n%v", len(stale), len(current), stale)
+	}
+	for index := range current {
+		if want, got := renderedAge(t, current[index]), renderedAge(t, stale[index]); got != want {
+			t.Errorf("stale row %d is aged %q, want the frozen %q", index, got, want)
+		}
+	}
+}
+
+// TestStreamClampsAnEventAheadOfTheLastSuccess guards FR-010: a source clock
+// running ahead of the anchor must render the youngest age rather than a
+// negative or empty one.
+func TestStreamClampsAnEventAheadOfTheLastSuccess(t *testing.T) {
+	rows := bodyLines(t, renderAt(t, streamModel(t, agedEvents(t, -time.Hour)), wideWidth, wideHeight))
+	if len(rows) != 1 {
+		t.Fatalf("stream rendered %d rows, want 1:\n%v", len(rows), rows)
+	}
+	if age := renderedAge(t, rows[0]); age != youngestAge {
+		t.Errorf("row %q ahead of the last success is aged %q, want %q", rows[0], age, youngestAge)
 	}
 }

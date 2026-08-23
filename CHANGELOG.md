@@ -23,8 +23,8 @@ workflow refuses to publish otherwise.
 - Overview now lists every selected repository with its recent event,
   pull-request, and push counts, and says so explicitly when a refresh returns
   no activity at all.
-- Stream now lists recent events newest first with their time, repository,
-  text-encoded category, actor, and description.
+- Stream now lists recent events newest first with their age at the last
+  successful refresh, repository, text-encoded category, actor, and description.
 - Overview and Stream both scroll with the up, down, page up, and page down
   keys, each keeping its own position across view switches.
 - The README documents the repeated `--repo` usage, the credential precedence

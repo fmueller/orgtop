@@ -138,6 +138,11 @@ func layoutRows(aggregates []domain.Aggregate, layout rowLayout) []string {
 	return rows
 }
 
+// padLeft pads the text with leading spaces up to the rendered width.
+func padLeft(text string, width int) string {
+	return strings.Repeat(" ", width-lipgloss.Width(text)) + text
+}
+
 // padRight pads the text with spaces up to the rendered width.
 func padRight(text string, width int) string {
 	return text + strings.Repeat(" ", width-lipgloss.Width(text))
