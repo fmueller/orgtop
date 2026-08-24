@@ -1,12 +1,12 @@
 ---
 id: T-018-drain-the-partially-read-success-body-on-a-read
 title: Drain the partially read success body on a read failure
-status: todo
+status: completed
 priority: low
 spec_ref: specs/v0.1.0.md#github-activity-source
 dependencies:
     - T-013-drain-non-2xx-github-response-bodies-before
-updated_at: "2026-08-22T14:58:27Z"
+updated_at: "2026-08-24T16:42:20Z"
 ---
 
 # T-018-drain-the-partially-read-success-body-on-a-read Drain the partially read success body on a read failure
@@ -39,3 +39,4 @@ the T-013 review recorded as low severity and out of that task's scope.
 - Evidence for the gap: the T-013 go-reviewer finding, recorded in
   `planning/artifacts/verify/T-013-drain-non-2xx-github-response-bodies-before/`.
 - Keep the change minimal: no retries and no pooling configuration.
+- 2026-08-24T16:42:16Z: verification pass

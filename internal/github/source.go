@@ -24,10 +24,11 @@ const (
 	requestTimeout  = 30 * time.Second
 )
 
-// errorBodyDrainLimit bounds how much of a non-2xx body is consumed so the idle
-// keep-alive connection can be reused. It is large enough for a GitHub error
-// document and small enough that a hostile body cannot force a long read.
-const errorBodyDrainLimit = 4 << 10
+// bodyDrainLimit bounds how much of a response body the caller stopped reading,
+// whether untouched or partially read, is consumed so the idle keep-alive
+// connection can be reused. It is large enough for a GitHub error document and
+// small enough that a hostile body cannot force a long read.
+const bodyDrainLimit = 4 << 10
 
 // Failure classes a repository refresh reports. None of them carries a
 // credential value or an authenticated request header (NFR-003).
@@ -147,14 +148,13 @@ func (s Source) fetch(ctx context.Context, repository domain.Repository) (Reposi
 
 	rateLimited, statusErr := s.statusError(response)
 	if statusErr != nil {
-		// net/http only reuses the connection once the body is consumed, so
-		// drain a bounded prefix before the deferred Close.
-		_, _ = io.Copy(io.Discard, io.LimitReader(response.Body, errorBodyDrainLimit))
+		drainBody(response.Body)
 		return RepositoryActivity{}, 0, s.failure(repository, response.Header, rateLimited, statusErr)
 	}
 
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
+		drainBody(response.Body)
 		return RepositoryActivity{}, 0, s.failure(repository, response.Header, false, fmt.Errorf("%w: reading the response failed", ErrTransport))
 	}
 
@@ -166,6 +166,12 @@ func (s Source) fetch(ctx context.Context, repository domain.Repository) (Reposi
 		Repository: displayIdentity(repository, events),
 		Events:     events,
 	}, pollInterval(response.Header), nil
+}
+
+// drainBody consumes a bounded prefix of a body the caller stopped reading, so
+// net/http can reuse the idle connection once the deferred Close runs.
+func drainBody(body io.Reader) {
+	_, _ = io.Copy(io.Discard, io.LimitReader(body, bodyDrainLimit))
 }
 
 // do sends the documented bounded events request for one repository.

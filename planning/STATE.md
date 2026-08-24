@@ -1,14 +1,14 @@
 ---
 schema_version: 1
-updated_at: "2026-08-24T13:33:33Z"
+updated_at: "2026-08-24T16:42:20Z"
 active_spec_version: v0.1.0
 active_spec_path: specs/v0.1.0.md
 current_task: ""
 current_task_title: ""
 status_summary: idle
 blockers: []
-next_action: 'Start task T-018-drain-the-partially-read-success-body-on-a-read: Drain the partially read success body on a read failure'
-last_verification_result: pass for T-025-inject-a-fake-clock-into-tests at 2026-08-24T11:29:02Z
+next_action: Select the next eligible task
+last_verification_result: pass for T-018-drain-the-partially-read-success-body-on-a-read at 2026-08-24T16:42:16Z
 relevant_artifacts: []
 continuation_notes:
     - This repository is using manual Taskrail-style workflow scaffolding until the product replaces more of the bootstrap steps.
@@ -34,11 +34,11 @@ continuation_notes:
 
 ## Last Verification
 
-- pass for T-025-inject-a-fake-clock-into-tests at 2026-08-24T11:29:02Z
+- pass for T-018-drain-the-partially-read-success-body-on-a-read at 2026-08-24T16:42:16Z
 
 ## Next Action
 
-- Start task T-018-drain-the-partially-read-success-body-on-a-read: Drain the partially read success body on a read failure
+- Select the next eligible task
 
 ## Relevant Artifacts
 
@@ -50,8 +50,8 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 4
+- todo: 3
 - in_progress: 0
-- completed: 22
+- completed: 23
 - blocked: 0
 - cancelled: 0

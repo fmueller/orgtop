@@ -707,3 +707,80 @@ func TestRefreshDrainsNon2xxBodiesWithinABound(t *testing.T) {
 		})
 	}
 }
+
+// midStreamFailureReader serves a prefix, fails once the way a reset connection
+// does, then serves the rest so a drain read after the failure is observable.
+type midStreamFailureReader struct {
+	prefix    io.Reader
+	remainder io.Reader
+	failed    bool
+}
+
+func (r *midStreamFailureReader) Read(buffer []byte) (int, error) {
+	if r.failed {
+		return r.remainder.Read(buffer)
+	}
+	n, err := r.prefix.Read(buffer)
+	if err == nil {
+		return n, nil
+	}
+	r.failed = true
+	return n, errors.New("connection reset by peer")
+}
+
+// TestRefreshDrainsAPartiallyReadSuccessBodyWithinABound covers T-018: a 2xx
+// body whose read fails partway must still be drained within the shared bound
+// so net/http can reuse the idle connection, and a hostile remainder must not
+// force an unbounded read.
+func TestRefreshDrainsAPartiallyReadSuccessBodyWithinABound(t *testing.T) {
+	const (
+		drainLimit  = 4 << 10
+		prefixSize  = 64
+		wantMessage = "reading the response failed"
+	)
+
+	tests := []struct {
+		name          string
+		remainderSize int
+		wantRead      int64
+	}{
+		{name: "a short remainder is drained completely", remainderSize: 128, wantRead: prefixSize + 128},
+		{name: "an oversized remainder is bounded", remainderSize: 1 << 20, wantRead: prefixSize + drainLimit},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			body := &instrumentedBody{reader: &midStreamFailureReader{
+				prefix:    strings.NewReader(strings.Repeat("x", prefixSize)),
+				remainder: strings.NewReader(strings.Repeat("y", test.remainderSize)),
+			}}
+			source := github.Source{
+				Client: stubClient{response: &http.Response{
+					StatusCode: http.StatusOK,
+					Header:     http.Header{},
+					Body:       body,
+				}},
+				BaseURL:    "https://api.test.invalid",
+				Credential: sentinelCredential(t),
+				Now:        func() time.Time { return testNow },
+			}
+
+			failure := refreshSourceExpectingError(t, source)
+			if !errors.Is(failure, github.ErrTransport) {
+				t.Errorf("error %v does not match ErrTransport", failure)
+			}
+			if !strings.Contains(failure.Error(), wantMessage) {
+				t.Errorf("error %q does not report %q", failure, wantMessage)
+			}
+			if body.read != test.wantRead {
+				t.Errorf("read %d bytes, want %d", body.read, test.wantRead)
+			}
+			if !body.closed {
+				t.Error("the response body was not closed")
+			}
+			if body.readAfterClose {
+				t.Error("the response body was read after it was closed")
+			}
+		})
+	}
+}
