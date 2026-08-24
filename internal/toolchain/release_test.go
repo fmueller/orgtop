@@ -183,6 +183,9 @@ func TestChangelogSectionDistinguishesAbsentFromSaysNothing(t *testing.T) {
 		changelog      string
 		wantDocumented bool
 		wantEntries    bool
+		// wantNotes, when set, pins the extracted notes exactly, so a stripped
+		// link reference cannot take real entries with it.
+		wantNotes string
 	}{
 		{
 			name:      "heading absent",
@@ -203,6 +206,21 @@ func TestChangelogSectionDistinguishesAbsentFromSaysNothing(t *testing.T) {
 			changelog:      "## [0.1.0] - 2026-08-23\n\n### Added\n\n- a feature\n\n" + links + "\n",
 			wantDocumented: true,
 			wantEntries:    true,
+			wantNotes:      "### Added\n\n- a feature",
+		},
+		{
+			name:           "a link reference inside the section goes, its entries stay",
+			changelog:      "## [0.1.0] - 2026-08-23\n\n[0.1.0]: https://example.test/tag\n\n### Added\n\n- a feature\n\n## [0.0.9]\n\n- older\n",
+			wantDocumented: true,
+			wantEntries:    true,
+			wantNotes:      "### Added\n\n- a feature",
+		},
+		{
+			name:           "an entry that merely contains a bracket-colon stays",
+			changelog:      "## [0.1.0]\n\n- an entry with a stray ]: sequence.\n- [a link](https://example.test) entry.\n\n" + links + "\n",
+			wantDocumented: true,
+			wantEntries:    true,
+			wantNotes:      "- an entry with a stray ]: sequence.\n- [a link](https://example.test) entry.",
 		},
 		{
 			name:           "entries end at the next version heading",
@@ -226,6 +244,9 @@ func TestChangelogSectionDistinguishesAbsentFromSaysNothing(t *testing.T) {
 			}
 			if entries := strings.TrimSpace(notes) != ""; entries != test.wantEntries {
 				t.Errorf("has entries = %t, want %t, from notes %q", entries, test.wantEntries, notes)
+			}
+			if got := strings.TrimSpace(notes); test.wantNotes != "" && got != test.wantNotes {
+				t.Errorf("notes = %q, want %q", got, test.wantNotes)
 			}
 		})
 	}
