@@ -3,10 +3,10 @@
 #
 # Usage: scripts/changelog-release-notes.sh <tag> [changelog-path]
 #
-# Prints the body of the matching `## [<version>]` section (heading line
-# excluded, leading and trailing blank lines trimmed) to stdout. Exits non-zero
-# when the section is missing or empty, so a release can never publish
-# manufactured notes in place of documented ones.
+# Prints the body of the matching `## [<version>]` section to stdout, with the
+# heading line, `[label]: url` link references, and surrounding blank lines
+# removed. Exits non-zero when the section is missing or empty, so a release can
+# never publish manufactured notes in place of documented ones.
 #
 # CHANGELOG.md follows Keep a Changelog: a tag `v0.1.0` matches a heading
 # `## [0.1.0]` or `## [0.1.0] - 2026-08-22`, but not `## [0.1.0-rc1]`.
@@ -39,7 +39,15 @@ notes="$(
         if (token == version) { capture = 1; next }
       }
     }
-    capture { print }
+    # Print every line but a `[label]: url` link reference: Keep a Changelog
+    # collects those at the foot of the file, inside the newest version section,
+    # and they render as nothing. Mirrors isLinkReference in
+    # internal/toolchain/release_test.go, so the trim matches its TrimSpace.
+    capture {
+      line = $0
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "", line)
+      if (line !~ /^\[.*\]: ./) { print }
+    }
   ' "$changelog"
 )"
 # Trim leading and trailing blank lines.

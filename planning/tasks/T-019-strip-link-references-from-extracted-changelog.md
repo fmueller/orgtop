@@ -1,12 +1,12 @@
 ---
 id: T-019-strip-link-references-from-extracted-changelog
 title: Strip link references from extracted changelog release notes
-status: todo
+status: completed
 priority: low
 spec_ref: specs/v0.1.0.md#integration-documentation-and-release-readiness
 dependencies:
     - T-017-re-verify-v0-1-0-release-readiness-before-tagging
-updated_at: "2026-08-23T19:50:57Z"
+updated_at: "2026-08-24T18:08:05Z"
 ---
 
 # T-019-strip-link-references-from-extracted-changelog Strip link references from extracted changelog release notes
@@ -79,3 +79,4 @@ published release-note content and was outside T-017's re-verification scope.
   side already recognizes; matching it keeps the two guards consistent.
 - Purely a release-notes presentation change. Do not change which tags are
   accepted beyond the entryless-section case named in Acceptance.
+- 2026-08-24T18:08:01Z: verification pass
