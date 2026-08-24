@@ -10,7 +10,8 @@ dependencies:
     - T-022-give-stream-sticky-column-headings
     - T-023-disclose-what-the-stream-list-covers-and-mark
     - T-025-inject-a-fake-clock-into-tests
-updated_at: "2026-08-24T07:30:00Z"
+    - T-026-extend-the-host-clock-guard-to-time-until-and-pin
+updated_at: "2026-08-24T11:45:00Z"
 ---
 
 # T-024-re-verify-v0-1-0-release-readiness-and-drift-after Re-verify v0.1.0 release readiness and drift after the Stream legibility work
@@ -36,6 +37,10 @@ What the preceding tasks move:
 - T-025 injects a fake clock into the tests, so the age assertions T-020
   introduced stop depending on the real one and the gate runs against a
   deterministic surface.
+- T-026 closes the one host clock read T-025 left, the `time.Until` deadline
+  measurement in `internal/github/source_test.go`, and widens the guard to cover
+  it. Until it lands, the determinism guard is repository-wide in name only, so
+  the gate cannot claim the surface it re-verifies is fully deterministic.
 
 Unlike T-017, this one also has a spec to re-check. FR-005, FR-006, FR-007,
 FR-010, and A-010 were amended before T-020 started, so the implemented surface
@@ -57,6 +62,9 @@ and the amended spec have to be compared rather than assumed to agree.
 - README documents the controls as the footer advertises them and describes the
   Stream columns as they now render, including that times are ages. The
   `internal/toolchain/docs_test.go` guards match the shipped surface.
+- No non-benchmark test in the repository reads the host clock, `time.Until`
+  included, and `TestNoTestReadsTheHostClock` enforces it, so the gate re-verifies
+  a surface whose tests cannot drift with when or how fast they run (NFR-006).
 - `taskrail validate` reports valid state and `taskrail coverage` reports no
   uncovered area and no task pointing away from the active spec.
 - Every amended spec clause has an implementing task that reached `completed`, and
