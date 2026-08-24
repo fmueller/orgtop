@@ -1,12 +1,12 @@
 ---
 id: T-026-extend-the-host-clock-guard-to-time-until-and-pin
 title: Extend the host clock guard to time.Until and pin the github request deadline test
-status: todo
+status: completed
 priority: low
 spec_ref: specs/v0.1.0.md#github-activity-source
 dependencies:
     - T-025-inject-a-fake-clock-into-tests
-updated_at: "2026-08-24T11:28:16Z"
+updated_at: "2026-08-24T18:51:54Z"
 ---
 
 # T-026-extend-the-host-clock-guard-to-time-until-and-pin Extend the host clock guard to time.Until and pin the github request deadline test
@@ -70,3 +70,4 @@ elapsed real time.
 - T-024, the v0.1.0 release gate, depends on this task: its determinism
   acceptance cannot be met while a test still measures a deadline against the
   host clock.
+- 2026-08-24T18:51:49Z: verification pass

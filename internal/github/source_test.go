@@ -71,7 +71,7 @@ type recordedRequest struct {
 	query       url.Values
 	header      http.Header
 	hasDeadline bool
-	timeout     time.Duration
+	deadline    time.Time
 }
 
 // recordingClient records every request before delegating to the fixture server.
@@ -90,7 +90,7 @@ func (c *recordingClient) Do(request *http.Request) (*http.Response, error) {
 	}
 	if deadline, ok := request.Context().Deadline(); ok {
 		recorded.hasDeadline = true
-		recorded.timeout = time.Until(deadline)
+		recorded.deadline = deadline
 	}
 	c.mu.Lock()
 	c.requests = append(c.requests, recorded)
@@ -228,9 +228,6 @@ func TestRefreshRequestsOneDocumentedPagePerScopeEntry(t *testing.T) {
 		}
 		if !request.hasDeadline {
 			t.Errorf("request %d has no deadline, want a request timeout", index)
-		}
-		if request.timeout <= 0 || request.timeout > 30*time.Second {
-			t.Errorf("request %d timeout = %s, want a positive timeout no greater than 30s", index, request.timeout)
 		}
 	}
 }
@@ -780,6 +777,70 @@ func TestRefreshDrainsAPartiallyReadSuccessBodyWithinABound(t *testing.T) {
 			}
 			if body.readAfterClose {
 				t.Error("the response body was read after it was closed")
+			}
+		})
+	}
+}
+
+// requestBudget is the bound Refresh is documented to place on each request
+// (FR-004). The test brackets it with caller deadlines on either side rather
+// than measuring the remaining duration, so the outcome does not depend on
+// machine speed (NFR-006).
+const requestBudget = 30 * time.Second
+
+// TestRefreshBoundsEachRequestWithAThirtySecondTimeout pins the budget through
+// the only thing an observer can compare a derived deadline against without
+// reading the clock: the caller deadline it was derived from. A caller deadline
+// inside the budget must survive untouched, and one beyond it must be cut short.
+func TestRefreshBoundsEachRequestWithAThirtySecondTimeout(t *testing.T) {
+	tests := []struct {
+		name              string
+		callerBudget      time.Duration
+		wantCallerHonored bool
+	}{
+		{
+			name:              "a caller deadline inside the budget is not extended",
+			callerBudget:      requestBudget - time.Second,
+			wantCallerHonored: true,
+		},
+		{
+			name:              "a caller deadline beyond the budget is shortened",
+			callerBudget:      requestBudget + time.Second,
+			wantCallerHonored: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := newFixtureServer(t, map[string]stubResponse{
+				"/repos/acme/backend/events": {body: fixtureBody(t, "empty.json")},
+			})
+			source, client := newTestSource(t, server)
+			ctx, cancel := context.WithTimeout(t.Context(), tt.callerBudget)
+			defer cancel()
+			callerDeadline, hasCallerDeadline := ctx.Deadline()
+			if !hasCallerDeadline {
+				t.Fatal("the caller context carried no deadline")
+			}
+
+			if _, err := source.Refresh(ctx, mustScope(t, "acme/backend")); err != nil {
+				t.Fatalf("refresh failed: %v", err)
+			}
+
+			requests := client.recorded()
+			if len(requests) != 1 {
+				t.Fatalf("got %d requests, want exactly one", len(requests))
+			}
+			request := requests[0]
+			if !request.hasDeadline {
+				t.Fatal("the request context carried no deadline")
+			}
+			if honored := request.deadline.Equal(callerDeadline); honored != tt.wantCallerHonored {
+				t.Errorf("the request deadline equals the caller deadline = %t, want %t", honored, tt.wantCallerHonored)
+			}
+			if !tt.wantCallerHonored && !request.deadline.Before(callerDeadline) {
+				t.Errorf("request deadline %v is not earlier than the caller deadline %v, so the budget was never applied",
+					request.deadline, callerDeadline)
 			}
 		})
 	}

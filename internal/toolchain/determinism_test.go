@@ -16,11 +16,7 @@ import (
 // that calls one of them makes its own outcome depend on when and how fast it
 // runs; NFR-006 requires the opposite, so a test pins the instants it depends
 // on and injects them through the seam the code under test exposes.
-//
-// time.Until reads the host clock just as much and is deliberately not listed
-// yet: internal/github/source_test.go still measures a request deadline with
-// it, and reshaping that assertion is tracked separately.
-var hostClockReaders = []string{"Now", "Since"}
+var hostClockReaders = []string{"Now", "Since", "Until"}
 
 // clockRead is one host clock read a test file performs.
 type clockRead struct {
@@ -32,8 +28,8 @@ type clockRead struct {
 }
 
 // TestNoTestReadsTheHostClock walks every _test.go file in the repository and
-// fails on a call to time.Now or time.Since outside a benchmark, where
-// measuring elapsed real time is the point.
+// fails on a call to any hostClockReaders entry, except inside a benchmark,
+// where measuring elapsed real time is the point.
 func TestNoTestReadsTheHostClock(t *testing.T) {
 	t.Parallel()
 
