@@ -11,6 +11,14 @@ workflow refuses to publish otherwise.
 
 ## [Unreleased]
 
+### Added
+
+- Stream names its columns. A heading row sits directly under the shared header
+  and stays there at every scroll position, so the age, repository, category, and
+  actor/description columns remain identified once the events have scrolled. The
+  headings give way when the terminal is too short to hold both them and an event
+  row, and the explicit loading, error, and no-recent-activity states keep none.
+
 ### Changed
 
 - Event descriptions no longer restate the entity class the Stream category

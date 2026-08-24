@@ -90,7 +90,7 @@ func streamModel(t *testing.T, events []domain.Event) Model {
 // body rows, one per streamCategories entry.
 func detailedCategoryRows(t *testing.T) []string {
 	t.Helper()
-	rows := bodyLines(t, renderAt(t, streamModel(t, detailedEvents(t)), wideWidth, wideHeight))
+	rows := eventRows(t, renderAt(t, streamModel(t, detailedEvents(t)), wideWidth, wideHeight))
 	if len(rows) != len(streamCategories) {
 		t.Fatalf("stream rendered %d rows, want one per snapshot event:\n%v", len(rows), rows)
 	}
@@ -128,12 +128,17 @@ func numberedEvents(t *testing.T, count int) []domain.Event {
 	return agedEvents(t, elapsed...)
 }
 
-// The scrolling tests window 20 events through a body that shows 8 of them, so
+// The scrolling tests window 20 events through a body that shows 7 of them, so
 // every keystroke has both a window above and one below it.
 const (
 	scrollTerminalHeight = 10
-	scrollBodyHeight     = scrollTerminalHeight - chromeLines
-	scrollEvents         = 20
+	// scrollBodyHeight is the shared content area at that height, which is what
+	// Overview scrolls through in full.
+	scrollBodyHeight = scrollTerminalHeight - chromeLines
+	// streamRowBudget is Stream's own row budget: the shared content area minus
+	// the line its sticky column headings reserve.
+	streamRowBudget = scrollBodyHeight - streamChrome
+	scrollEvents    = 20
 )
 
 // scrolled drives the keystrokes through an already sized model.
@@ -148,9 +153,9 @@ func scrolled(t *testing.T, model Model, keystrokes ...string) Model {
 // topRow returns the one-based numbered event the first body line shows.
 func topRow(t *testing.T, model Model) int {
 	t.Helper()
-	rows := bodyLines(t, model.View().Content)
+	rows := eventRows(t, model.View().Content)
 	if len(rows) == 0 {
-		t.Fatalf("stream rendered no body rows:\n%s", model.View().Content)
+		t.Fatalf("stream rendered no event rows:\n%s", model.View().Content)
 	}
 	for position := 1; position <= scrollEvents; position++ {
 		if strings.Contains(rows[0], fmt.Sprintf("commit %02d", position)) {
@@ -163,7 +168,7 @@ func topRow(t *testing.T, model Model) int {
 
 func TestStreamRendersEveryEventInSnapshotOrder(t *testing.T) {
 	events := detailedEvents(t)
-	rows := bodyLines(t, renderAt(t, streamModel(t, events), wideWidth, wideHeight))
+	rows := eventRows(t, renderAt(t, streamModel(t, events), wideWidth, wideHeight))
 
 	if len(rows) != len(events) {
 		t.Fatalf("stream rendered %d rows, want one per snapshot event:\n%v", len(rows), rows)
@@ -185,7 +190,7 @@ func TestStreamRendersEveryEventInSnapshotOrder(t *testing.T) {
 }
 
 func TestStreamOmitsTheActorWhenTheEventHasNone(t *testing.T) {
-	rows := bodyLines(t, renderAt(t, streamModel(t, detailedEvents(t)), wideWidth, wideHeight))
+	rows := eventRows(t, renderAt(t, streamModel(t, detailedEvents(t)), wideWidth, wideHeight))
 
 	if len(rows) != 5 {
 		t.Fatalf("stream rendered %d rows, want one per snapshot event:\n%v", len(rows), rows)
@@ -236,7 +241,7 @@ func TestStreamNamesEachCategoryExactlyOncePerRow(t *testing.T) {
 func TestStreamScrollKeysWindowTheEventsWithinBounds(t *testing.T) {
 	model, _ := apply(t, streamModel(t, numberedEvents(t, scrollEvents)),
 		tea.WindowSizeMsg{Width: wideWidth, Height: scrollTerminalHeight})
-	lastTop := scrollEvents - scrollBodyHeight + 1
+	lastTop := scrollEvents - streamRowBudget + 1
 
 	cases := []struct {
 		name       string
@@ -246,7 +251,7 @@ func TestStreamScrollKeysWindowTheEventsWithinBounds(t *testing.T) {
 		{name: "initial", wantTop: 1},
 		{name: "down", keystrokes: []string{"down"}, wantTop: 2},
 		{name: "up clamps at the newest event", keystrokes: []string{"down", "up", "up"}, wantTop: 1},
-		{name: "page down", keystrokes: []string{"pgdown"}, wantTop: 1 + scrollBodyHeight},
+		{name: "page down", keystrokes: []string{"pgdown"}, wantTop: 1 + streamRowBudget},
 		{name: "page up returns", keystrokes: []string{"pgdown", "pgup"}, wantTop: 1},
 		{name: "page down clamps at the oldest window", keystrokes: []string{"pgdown", "pgdown", "pgdown", "pgdown"}, wantTop: lastTop},
 		{name: "down clamps at the oldest window", keystrokes: []string{"pgdown", "pgdown", "pgdown", "down", "down"}, wantTop: lastTop},
@@ -258,9 +263,9 @@ func TestStreamScrollKeysWindowTheEventsWithinBounds(t *testing.T) {
 			if got := topRow(t, scrolledModel); got != testCase.wantTop {
 				t.Errorf("top row is event %d, want %d", got, testCase.wantTop)
 			}
-			rows := bodyLines(t, scrolledModel.View().Content)
-			if len(rows) != scrollBodyHeight {
-				t.Errorf("stream rendered %d rows, want the full body of %d", len(rows), scrollBodyHeight)
+			rows := eventRows(t, scrolledModel.View().Content)
+			if len(rows) != streamRowBudget {
+				t.Errorf("stream rendered %d event rows, want the full row budget of %d", len(rows), streamRowBudget)
 			}
 		})
 	}
@@ -279,7 +284,7 @@ func TestStreamClampsTheWindowAfterRefreshShrinkage(t *testing.T) {
 		},
 	}})
 
-	rows := bodyLines(t, model.View().Content)
+	rows := eventRows(t, model.View().Content)
 	if len(rows) != len(shrunk) {
 		t.Fatalf("stream rendered %d rows after shrinkage, want %d:\n%v", len(rows), len(shrunk), rows)
 	}
@@ -296,11 +301,13 @@ func TestStreamClampsTheWindowAfterResize(t *testing.T) {
 		tea.WindowSizeMsg{Width: wideWidth, Height: scrollTerminalHeight})
 	model = scrolled(t, model, "pgdown", "pgdown", "pgdown")
 
-	grown, _ := apply(t, model, tea.WindowSizeMsg{Width: wideWidth, Height: scrollEvents + chromeLines})
+	// The grown terminal must afford the sticky headings as well as every event
+	// row, so the line Stream reserves is part of the height it is given.
+	grown, _ := apply(t, model, tea.WindowSizeMsg{Width: wideWidth, Height: scrollEvents + chromeLines + streamChrome})
 	if got := topRow(t, grown); got != 1 {
 		t.Errorf("top row after growing the terminal is event %d, want the newest event", got)
 	}
-	if rows := bodyLines(t, grown.View().Content); len(rows) != scrollEvents {
+	if rows := eventRows(t, grown.View().Content); len(rows) != scrollEvents {
 		t.Errorf("grown stream rendered %d rows, want all %d events", len(rows), scrollEvents)
 	}
 }
@@ -369,7 +376,7 @@ func TestStreamRetainsEventContextAtNarrowSizes(t *testing.T) {
 	content := renderAt(t, streamModel(t, detailedEvents(t)), narrowWidth, narrowHeight)
 
 	assertFits(t, content, narrowWidth, narrowHeight)
-	rows := bodyLines(t, content)
+	rows := eventRows(t, content)
 	if len(rows) == 0 {
 		t.Fatalf("narrow stream rendered no event row:\n%s", content)
 	}
@@ -417,7 +424,7 @@ func TestStreamHasNoPlaceholderBody(t *testing.T) {
 
 func TestStreamRendersAnEventWithoutActorOrDescription(t *testing.T) {
 	bare := streamEvent(t, "1", "acme/backend", streamBase, domain.CategoryPush, domain.EntityCommit, "", "")
-	rows := bodyLines(t, renderAt(t, streamModel(t, []domain.Event{bare}), wideWidth, wideHeight))
+	rows := eventRows(t, renderAt(t, streamModel(t, []domain.Event{bare}), wideWidth, wideHeight))
 
 	if len(rows) != 1 {
 		t.Fatalf("stream rendered %d rows, want the detail-free event to keep its row:\n%v", len(rows), rows)
@@ -455,7 +462,7 @@ func TestStreamMeasuresWideRunesByTheirRenderedWidth(t *testing.T) {
 	} {
 		content := renderAt(t, streamModel(t, events), size.Width, size.Height)
 		assertFits(t, content, size.Width, size.Height)
-		rows := bodyLines(t, content)
+		rows := eventRows(t, content)
 		if len(rows) != len(events) {
 			t.Fatalf("stream at width %d rendered %d rows, want %d:\n%v", size.Width, len(rows), len(events), rows)
 		}
@@ -509,7 +516,7 @@ func TestStreamRendersAgesThatNeverDecreaseDownTheSnapshot(t *testing.T) {
 	elapsed := []time.Duration{30 * time.Second, 25 * time.Minute, 3 * time.Hour, 26 * time.Hour, 4 * day, 23 * day}
 	want := []string{youngestAge, "25m", "3h", "1d", "4d", "3w"}
 
-	rows := bodyLines(t, renderAt(t, streamModel(t, agedEvents(t, elapsed...)), wideWidth, wideHeight))
+	rows := eventRows(t, renderAt(t, streamModel(t, agedEvents(t, elapsed...)), wideWidth, wideHeight))
 	if len(rows) != len(want) {
 		t.Fatalf("stream rendered %d rows, want %d:\n%v", len(rows), len(want), rows)
 	}
@@ -533,7 +540,7 @@ func TestStreamRendersAgesThatNeverDecreaseDownTheSnapshot(t *testing.T) {
 // aligned. Left-aligned ages of different widths would stagger every later
 // column of the row.
 func TestStreamRightAlignsTheAgeColumn(t *testing.T) {
-	rows := bodyLines(t, renderAt(t,
+	rows := eventRows(t, renderAt(t,
 		streamModel(t, agedEvents(t, 30*time.Second, 5*time.Minute, 12*time.Hour, 23*day)),
 		wideWidth, wideHeight))
 
@@ -554,7 +561,7 @@ func TestStreamRendersNoWallClockTimeOfDay(t *testing.T) {
 	events := agedEvents(t, 30*time.Second, 25*time.Minute, 3*time.Hour, 26*time.Hour, 23*day)
 
 	for _, width := range []int{narrowWidth, 60, wideWidth} {
-		for _, row := range bodyLines(t, renderAt(t, streamModel(t, events), width, wideHeight)) {
+		for _, row := range eventRows(t, renderAt(t, streamModel(t, events), width, wideHeight)) {
 			if clock.MatchString(row) {
 				t.Errorf("row %q at width %d spells a wall-clock time of day", row, width)
 			}
@@ -570,7 +577,7 @@ func TestStreamAnchorsAgesToTheLastSuccessRatherThanTheCurrentClock(t *testing.T
 	model := streamModel(t, agedEvents(t, 5*time.Minute))
 	model.state.LastSuccess = streamBase
 
-	rows := bodyLines(t, renderAt(t, model, wideWidth, wideHeight))
+	rows := eventRows(t, renderAt(t, model, wideWidth, wideHeight))
 	if len(rows) != 1 {
 		t.Fatalf("stream rendered %d rows, want 1:\n%v", len(rows), rows)
 	}
@@ -584,11 +591,11 @@ func TestStreamAnchorsAgesToTheLastSuccessRatherThanTheCurrentClock(t *testing.T
 // it rather than aging past data nobody is updating.
 func TestStaleStreamKeepsTheAgesItHadWhileCurrent(t *testing.T) {
 	model := streamModel(t, agedEvents(t, 30*time.Second, 25*time.Minute, 3*day))
-	current := bodyLines(t, renderAt(t, model, wideWidth, wideHeight))
+	current := eventRows(t, renderAt(t, model, wideWidth, wideHeight))
 
 	model.state.Freshness = FreshnessStale
 	model.state.Cause = "status 500"
-	stale := bodyLines(t, renderAt(t, model, wideWidth, wideHeight))
+	stale := eventRows(t, renderAt(t, model, wideWidth, wideHeight))
 
 	if len(stale) != len(current) {
 		t.Fatalf("the stale stream rendered %d rows, want the %d it had while current:\n%v", len(stale), len(current), stale)
@@ -604,11 +611,200 @@ func TestStaleStreamKeepsTheAgesItHadWhileCurrent(t *testing.T) {
 // running ahead of the anchor must render the youngest age rather than a
 // negative or empty one.
 func TestStreamClampsAnEventAheadOfTheLastSuccess(t *testing.T) {
-	rows := bodyLines(t, renderAt(t, streamModel(t, agedEvents(t, -time.Hour)), wideWidth, wideHeight))
+	rows := eventRows(t, renderAt(t, streamModel(t, agedEvents(t, -time.Hour)), wideWidth, wideHeight))
 	if len(rows) != 1 {
 		t.Fatalf("stream rendered %d rows, want 1:\n%v", len(rows), rows)
 	}
 	if age := renderedAge(t, rows[0]); age != youngestAge {
 		t.Errorf("row %q ahead of the last success is aged %q, want %q", rows[0], age, youngestAge)
+	}
+}
+
+// streamHeadingText is the column-name vocabulary the heading row uses in the
+// richest and the sparsest layout. Both registers are asserted so a heading is
+// recognizable at every width without pinning the exact spelling of a row.
+var streamHeadingText = map[string][]string{
+	"rich":   {"age", "repository", "category"},
+	"sparse": {"age", "repo", "type"},
+}
+
+// headingLine returns the first body line of a Stream render, which is the
+// sticky column heading row.
+func headingLine(t *testing.T, content string) string {
+	t.Helper()
+	lines := bodyLines(t, content)
+	if len(lines) == 0 {
+		t.Fatalf("stream rendered no body lines:\n%s", content)
+	}
+	return lines[0]
+}
+
+// eventRows returns the event rows of a Stream render: the body lines below the
+// heading row Stream reserves above them. It fails when the heading is missing,
+// so a row assertion can never silently be made against the headings.
+func eventRows(t *testing.T, content string) []string {
+	t.Helper()
+	lines := bodyLines(t, content)
+	if len(lines) == 0 {
+		t.Fatalf("stream rendered no body lines:\n%s", content)
+	}
+	assertNamesColumns(t, lines[0])
+	return lines[1:]
+}
+
+// assertNamesColumns fails unless the line names the columns in one of the
+// layout registers.
+func assertNamesColumns(t *testing.T, line string) {
+	t.Helper()
+	for _, names := range streamHeadingText {
+		if containsAll(line, names) {
+			return
+		}
+	}
+	t.Fatalf("line %q names no column heading register of %v", line, streamHeadingText)
+}
+
+// containsAll reports whether the line contains every want.
+func containsAll(line string, wants []string) bool {
+	for _, want := range wants {
+		if !strings.Contains(line, want) {
+			return false
+		}
+	}
+	return true
+}
+
+// TestStreamKeepsItsHeadingsAtEveryScrollPosition guards FR-010: the headings
+// are the view's chrome, not its content, so no scroll position and no height
+// may move them off screen while an event row is still rendered.
+func TestStreamKeepsItsHeadingsAtEveryScrollPosition(t *testing.T) {
+	for _, height := range []int{scrollTerminalHeight, narrowHeight, 6, 4} {
+		model, _ := apply(t, streamModel(t, numberedEvents(t, scrollEvents)),
+			tea.WindowSizeMsg{Width: wideWidth, Height: height})
+
+		for _, keystrokes := range [][]string{
+			nil,
+			{"down"},
+			{"pgdown"},
+			{"pgdown", "pgdown", "pgdown", "pgdown", "pgdown"},
+			{"pgdown", "pgdown", "pgdown", "pgdown", "pgdown", "down", "down"},
+		} {
+			// eventRows fails unless the first body line still names the
+			// columns, so reaching an event row proves the headings held.
+			content := scrolled(t, model, keystrokes...).View().Content
+			if rows := eventRows(t, content); len(rows) == 0 {
+				t.Errorf("stream at height %d after %v kept the headings but no event row:\n%s", height, keystrokes, content)
+			}
+		}
+	}
+}
+
+// TestStreamScrollsToTheOldestEventBelowItsHeadings guards the clamp against the
+// content area the headings leave: the last event must stay reachable and a page
+// past the end must clamp to it rather than scrolling into blank space.
+func TestStreamScrollsToTheOldestEventBelowItsHeadings(t *testing.T) {
+	model, _ := apply(t, streamModel(t, numberedEvents(t, scrollEvents)),
+		tea.WindowSizeMsg{Width: wideWidth, Height: scrollTerminalHeight})
+
+	bottom := scrolled(t, model, "pgdown", "pgdown", "pgdown", "pgdown", "pgdown")
+	content := bottom.View().Content
+	rows := eventRows(t, content)
+	if len(rows) != streamRowBudget {
+		t.Fatalf("stream rendered %d event rows at the bottom, want the row budget of %d:\n%s", len(rows), streamRowBudget, content)
+	}
+	if last := fmt.Sprintf("commit %02d", scrollEvents); !strings.Contains(rows[len(rows)-1], last) {
+		t.Errorf("the last event row is %q, want the oldest event %q", rows[len(rows)-1], last)
+	}
+	if clamped := scrolled(t, bottom, "pgdown", "down").View().Content; clamped != content {
+		t.Errorf("paging past the oldest event moved the window:\n%s\nwant:\n%s", clamped, content)
+	}
+}
+
+// TestStreamHeadingsGiveWayToTheEventRow guards A-010: the headings are
+// subordinate to content, so a content area that cannot hold both drops the
+// headings and keeps the row.
+func TestStreamHeadingsGiveWayToTheEventRow(t *testing.T) {
+	// The shared header and footer take one line each, so this is the height
+	// whose content area is exactly one line.
+	const height = chromeLines + 1
+
+	content := renderAt(t, streamModel(t, numberedEvents(t, scrollEvents)), wideWidth, height)
+	assertFits(t, content, wideWidth, height)
+
+	rows := bodyLines(t, content)
+	if len(rows) != 1 {
+		t.Fatalf("stream rendered %d body lines at height %d, want the single content line:\n%s", len(rows), height, content)
+	}
+	if !strings.Contains(rows[0], "commit 01") {
+		t.Errorf("the single content line is %q, want the newest event row rather than the headings", rows[0])
+	}
+}
+
+// TestStreamHeadingsFollowTheRowLayoutLadder guards FR-010: the headings are laid
+// out with the rows, so they name the same columns in the same register and stay
+// aligned with the values below them at every width.
+func TestStreamHeadingsFollowTheRowLayoutLadder(t *testing.T) {
+	cases := []struct {
+		name     string
+		width    int
+		register string
+	}{
+		{name: "wide", width: wideWidth, register: "rich"},
+		{name: "narrow", width: narrowWidth, register: "sparse"},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			content := renderAt(t, streamModel(t, detailedEvents(t)), testCase.width, wideHeight)
+			assertFits(t, content, testCase.width, wideHeight)
+
+			heading := headingLine(t, content)
+			if !containsAll(heading, streamHeadingText[testCase.register]) {
+				t.Fatalf("heading %q at width %d does not name %v", heading, testCase.width, streamHeadingText[testCase.register])
+			}
+
+			// The repository column starts where the age column ends, in the
+			// heading and in every row alike.
+			rows := eventRows(t, content)
+			if len(rows) == 0 {
+				t.Fatalf("stream rendered no event rows:\n%s", content)
+			}
+			want := strings.Index(heading, streamHeadingText[testCase.register][1])
+			for index, row := range rows {
+				if got := strings.Index(row, "acme/"); got != want {
+					t.Errorf("row %d starts its repository column at %d, want the heading's %d:\n%s\n%s", index, got, want, heading, row)
+				}
+			}
+		})
+	}
+}
+
+// TestStreamExplicitStatesCarryNoColumnHeadings guards FR-010: the loading,
+// error, and no-recent-activity states have no columns, so they are given no
+// headings naming them.
+func TestStreamExplicitStatesCarryNoColumnHeadings(t *testing.T) {
+	cases := []struct {
+		name      string
+		freshness Freshness
+		wantBody  string
+	}{
+		{name: "loading", freshness: FreshnessLoading, wantBody: "Loading recent events"},
+		{name: "error", freshness: FreshnessError, wantBody: "Recent events are unavailable"},
+		{name: "empty success", freshness: FreshnessCurrent, wantBody: noRecentActivity},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			model := streamModel(t, nil)
+			model.state.Freshness = testCase.freshness
+
+			lines := bodyLines(t, renderAt(t, model, wideWidth, wideHeight))
+			if len(lines) != 1 {
+				t.Fatalf("the %s state rendered %d body lines, want only its explicit state line:\n%v", testCase.name, len(lines), lines)
+			}
+			if !strings.Contains(lines[0], testCase.wantBody) {
+				t.Errorf("the %s state line is %q, want %q", testCase.name, lines[0], testCase.wantBody)
+			}
+		})
 	}
 }

@@ -39,9 +39,20 @@ const (
 // once the shared header and footer take one line each.
 const narrowBodyHeight = narrowHeight - 2
 
+// streamChromeLine is the further content line Stream reserves for its sticky
+// column headings (FR-007), so its event-row budget is one short of Overview's.
+const streamChromeLine = 1
+
+// streamRowBudget is the event-row budget Stream has at that narrowest terminal.
+const streamRowBudget = narrowBodyHeight - streamChromeLine
+
 // scrollRepositories selects two more repositories than that budget can show at
 // once, so the last one is only reachable by scrolling.
 const scrollRepositories = narrowBodyHeight + 2
+
+// scrollStreamEvents is two more events than Stream can show at once, so the
+// oldest is only reachable by scrolling.
+const scrollStreamEvents = streamRowBudget + 2
 
 // cannedResponse is one scripted repository response.
 type cannedResponse struct {
@@ -329,6 +340,22 @@ func body(t *testing.T, content string) []string {
 	return kept
 }
 
+// streamBody returns the event rows of a Stream render: the body lines below the
+// sticky column headings Stream keeps above them at every scroll position
+// (FR-010). It fails when the headings are missing, so a row assertion can never
+// silently be made against them.
+func streamBody(t *testing.T, content string) []string {
+	t.Helper()
+	lines := body(t, content)
+	if len(lines) == 0 {
+		t.Fatalf("stream rendered no body lines:\n%s", content)
+	}
+	if fields := strings.Fields(lines[0]); len(fields) == 0 || fields[0] != "age" {
+		t.Fatalf("the first stream body line is %q, want the sticky column headings:\n%s", lines[0], content)
+	}
+	return lines[1:]
+}
+
 // assertContains fails unless the content names every want.
 func assertContains(t *testing.T, content string, wants ...string) {
 	t.Helper()
@@ -362,8 +389,10 @@ func TestOneRepositoryFlowRendersOnlyTheSelectedRepository(t *testing.T) {
 
 	run.press("2")
 	stream := run.model.View().Content
-	if rows := body(t, stream); len(rows) != 2 {
-		t.Errorf("stream rendered %d rows, want 2:\n%v", len(rows), rows)
+	// The body also carries Stream's sticky heading row, so the event rows are
+	// counted below it.
+	if rows := streamBody(t, stream); len(rows) != 2 {
+		t.Errorf("stream rendered %d event rows, want 2:\n%v", len(rows), rows)
 	}
 	assertContains(t, stream, "acme/backend", "alice", "push")
 
@@ -591,9 +620,13 @@ func TestBothCompletedViewsRetainRequiredContextAtTheNarrowestSize(t *testing.T)
 		name      string
 		keystroke string
 		label     string
+		// rows returns the primary content lines of the view. Stream carries
+		// its sticky column headings above them, and A-010 keeps the headings
+		// subordinate to that content, so its rows are counted below them.
+		rows func(*testing.T, string) []string
 	}{
-		{name: "overview", keystroke: "1", label: "OVERVIEW"},
-		{name: "stream", keystroke: "2", label: "STREAM"},
+		{name: "overview", keystroke: "1", label: "OVERVIEW", rows: body},
+		{name: "stream", keystroke: "2", label: "STREAM", rows: streamBody},
 	} {
 		t.Run(view.name, func(t *testing.T) {
 			run.press(view.keystroke)
@@ -604,11 +637,62 @@ func TestBothCompletedViewsRetainRequiredContextAtTheNarrowestSize(t *testing.T)
 				t.Errorf("%s used %d lines, want at most %d:\n%s", view.name, len(lines), narrowHeight, content)
 			}
 			assertContains(t, content, view.label, "POLLING", "q quit")
-			if rows := body(t, content); len(rows) == 0 {
+			if rows := view.rows(t, content); len(rows) == 0 {
 				t.Errorf("%s kept no primary content line:\n%s", view.name, content)
 			}
 		})
 	}
+}
+
+// TestStreamScrollsToEveryEventBelowItsStickyHeadingsAtTheNarrowestSize proves
+// the Stream half of the reachability contract end to end: at 40x10 a snapshot
+// that overflows the content area still lets an operator reach its oldest event,
+// while the column headings naming that content stay on screen at every scroll
+// position (FR-010, A-010).
+func TestStreamScrollsToEveryEventBelowItsStickyHeadingsAtTheNarrowestSize(t *testing.T) {
+	// One event per whole minute, so every row carries a distinct rendered age
+	// and the window can be identified by the ages it shows.
+	ages := make([]time.Duration, 0, scrollStreamEvents)
+	for index := range scrollStreamEvents {
+		ages = append(ages, time.Duration(index+1)*time.Minute)
+	}
+	endpoint := newEndpoint(map[string][]cannedResponse{
+		eventsPath("acme/backend"): {ok(agedEventsPage("acme/backend", ages...))},
+	})
+	run := newFlow(t, endpoint, "--repo", "acme/backend")
+	run.refresh()
+	run.press("2")
+
+	newest, oldest := "1m", fmt.Sprintf("%dm", scrollStreamEvents)
+	top := run.render(narrowWidth, narrowHeight)
+	assertContains(t, top, "STREAM", "POLLING", "q quit")
+	rows := streamBody(t, top)
+	if len(rows) != streamRowBudget {
+		t.Fatalf("stream rendered %d event rows at %dx%d, want the row budget of %d:\n%s",
+			len(rows), narrowWidth, narrowHeight, streamRowBudget, top)
+	}
+	assertContains(t, rows[0], newest)
+	assertAbsent(t, top, oldest)
+
+	run.press("pgdown")
+	bottom := run.model.View().Content
+	scrolledRows := streamBody(t, bottom)
+	if len(scrolledRows) != streamRowBudget {
+		t.Fatalf("the scrolled stream rendered %d event rows, want the row budget of %d:\n%s",
+			len(scrolledRows), streamRowBudget, bottom)
+	}
+	assertContains(t, scrolledRows[len(scrolledRows)-1], oldest)
+	assertAbsent(t, bottom, " "+newest+" ")
+
+	// A page past the oldest event stays on it rather than scrolling into blank
+	// space, so the window never leaves the content.
+	run.press("pgdown")
+	if clamped := run.model.View().Content; clamped != bottom {
+		t.Errorf("paging past the oldest event moved the window:\n%s\nwant:\n%s", clamped, bottom)
+	}
+
+	run.press("pgup")
+	assertContains(t, streamBody(t, run.model.View().Content)[0], newest)
 }
 
 func TestQuitEndsTheWiredProgramAndCancelsTheInFlightRequest(t *testing.T) {
@@ -760,9 +844,9 @@ func TestMultiDaySnapshotRendersAgesRatherThanClockTimes(t *testing.T) {
 	run.press("2")
 
 	stream := run.render(wideWidth, wideHeight)
-	rows := body(t, stream)
+	rows := streamBody(t, stream)
 	if len(rows) != 3 {
-		t.Fatalf("stream rendered %d rows, want 3:\n%v", len(rows), rows)
+		t.Fatalf("stream rendered %d event rows, want 3:\n%v", len(rows), rows)
 	}
 
 	clock := regexp.MustCompile(`\d{1,2}:\d{2}`)

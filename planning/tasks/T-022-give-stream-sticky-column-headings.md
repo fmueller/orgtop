@@ -1,11 +1,11 @@
 ---
 id: T-022-give-stream-sticky-column-headings
 title: Give Stream sticky column headings
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.1.0.md#stream-view
 dependencies: []
-updated_at: "2026-08-23T20:14:11Z"
+updated_at: "2026-08-24T07:44:34Z"
 ---
 
 # T-022-give-stream-sticky-column-headings Give Stream sticky column headings
@@ -81,3 +81,4 @@ both views.
 - Highest-risk task of the Stream legibility set: it moves the arithmetic the
   A-010 contract rests on. Prefer deriving the per-view reservation from the view
   rather than branching on the mode in several places.
+- 2026-08-24T07:44:30Z: verification pass
