@@ -35,13 +35,13 @@ func TestEventCarriesRequiredData(t *testing.T) {
 		Category:    domain.CategoryPullRequest,
 		EntityKind:  domain.EntityPullRequest,
 		EntityRef:   "#42",
-		Description: "merged pull request #42",
+		Description: "merged #42",
 	}
 
 	if event.ID != "12345" || !event.OccurredAt.Equal(at) || event.Repository.Key() != "owner/repo" {
 		t.Errorf("unexpected identity fields: %+v", event)
 	}
-	if event.Actor != "octocat" || event.EntityRef != "#42" || event.Description != "merged pull request #42" {
+	if event.Actor != "octocat" || event.EntityRef != "#42" || event.Description != "merged #42" {
 		t.Errorf("unexpected descriptive fields: %+v", event)
 	}
 	if event.Category != domain.CategoryPullRequest || event.EntityKind != domain.EntityPullRequest {

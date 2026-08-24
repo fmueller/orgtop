@@ -138,7 +138,7 @@ func classify(payload eventPayload) (domain.Category, domain.EntityKind, string,
 		return domain.CategoryReview, domain.EntityPullRequest, ref, reviewDescription(detail.Review, ref)
 	case typePullRequestReviewComment:
 		ref := pullRequestRef(detail.PullRequest)
-		return domain.CategoryComment, domain.EntityPullRequest, ref, commentDescription(entityPullRequest, ref)
+		return domain.CategoryComment, domain.EntityPullRequest, ref, pullRequestCommentDescription(ref)
 	case typeIssueComment:
 		return classifyIssueComment(detail)
 	default:
@@ -156,9 +156,9 @@ func classifyIssueComment(detail *detailPayload) (domain.Category, domain.Entity
 		onPullRequest = issue.PullRequest != nil
 	}
 	if onPullRequest {
-		return domain.CategoryComment, domain.EntityPullRequest, ref, commentDescription(entityPullRequest, ref)
+		return domain.CategoryComment, domain.EntityPullRequest, ref, pullRequestCommentDescription(ref)
 	}
-	return domain.CategoryOther, domain.EntityOther, ref, commentDescription(entityIssue, ref)
+	return domain.CategoryOther, domain.EntityOther, ref, issueCommentDescription(ref)
 }
 
 func pushDescription(detail *detailPayload) string {
@@ -218,13 +218,28 @@ func reviewVerb(review *reviewPayload) string {
 	}
 }
 
-func commentDescription(entity, ref string) string {
-	return subject("commented on", entity, ref)
+func pullRequestCommentDescription(ref string) string {
+	return subject("commented on", entityPullRequest, ref)
 }
 
-// subject renders "<verb> <entity> <ref>", falling back to an article when no
-// entity reference is available.
+func issueCommentDescription(ref string) string {
+	return namedSubject("commented on", entityIssue, ref)
+}
+
+// subject renders "<verb> <ref>" for an event whose category already names the
+// entity class, so a rendered row states that class once (FR-005). Without a
+// reference it names the entity rather than degrading to a bare verb.
 func subject(verb, entity, ref string) string {
+	if ref == "" {
+		return verb + " " + article(entity) + " " + entity
+	}
+	return verb + " " + ref
+}
+
+// namedSubject renders "<verb> <entity> <ref>" for an event whose category does
+// not name the entity class. An issue-only comment normalizes as `other`, so
+// only the noun keeps it distinguishable from a pull-request comment.
+func namedSubject(verb, entity, ref string) string {
 	if ref == "" {
 		return verb + " " + article(entity) + " " + entity
 	}

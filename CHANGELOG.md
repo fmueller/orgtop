@@ -11,6 +11,14 @@ workflow refuses to publish otherwise.
 
 ## [Unreleased]
 
+### Changed
+
+- Event descriptions no longer restate the entity class the Stream category
+  column already names: a pull-request row reads `opened #42` rather than
+  `opened pull request #42`. Descriptions without an entity reference still name
+  the entity, and an issue-only comment keeps its noun because its category is
+  `other`.
+
 ## [0.1.0] - 2026-08-23
 
 ### Added

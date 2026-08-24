@@ -1,11 +1,11 @@
 ---
 id: T-021-stop-restating-the-entity-class-in-event
 title: Stop restating the entity class in event descriptions
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.1.0.md#github-activity-source
 dependencies: []
-updated_at: "2026-08-23T20:14:03Z"
+updated_at: "2026-08-24T07:18:10Z"
 ---
 
 # T-021-stop-restating-the-entity-class-in-event Stop restating the entity class in event descriptions
@@ -70,3 +70,4 @@ category. Only the entity noun is redundant.
   which entity, not the class the category already names.
 - Descriptions are domain data, not rendering. Do not make the wording depend on
   terminal width; the layout ladder in `internal/tui/stream.go` handles width.
+- 2026-08-24T07:18:04Z: verification pass

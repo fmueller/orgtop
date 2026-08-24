@@ -51,12 +51,16 @@ func detailedEvents(t *testing.T) []domain.Event {
 	t.Helper()
 	return []domain.Event{
 		streamEvent(t, "1", "acme/backend", streamBase, domain.CategoryPush, domain.EntityCommit, "alice", "pushed 2 commits to main"),
-		streamEvent(t, "2", "acme/frontend", streamBase.Add(-time.Minute), domain.CategoryPullRequest, domain.EntityPullRequest, "bob", "opened pull request #7"),
-		streamEvent(t, "3", "acme/backend", streamBase.Add(-2*time.Minute), domain.CategoryReview, domain.EntityPullRequest, "", "approved pull request #7"),
-		streamEvent(t, "4", "acme/backend", streamBase.Add(-3*time.Minute), domain.CategoryComment, domain.EntityPullRequest, "carol", "commented on pull request #7"),
+		streamEvent(t, "2", "acme/frontend", streamBase.Add(-time.Minute), domain.CategoryPullRequest, domain.EntityPullRequest, "bob", "opened #7"),
+		streamEvent(t, "3", "acme/backend", streamBase.Add(-2*time.Minute), domain.CategoryReview, domain.EntityPullRequest, "", "approved #7"),
+		streamEvent(t, "4", "acme/backend", streamBase.Add(-3*time.Minute), domain.CategoryComment, domain.EntityPullRequest, "carol", "commented on #7"),
 		streamEvent(t, "5", "acme/frontend", streamBase.Add(-4*time.Minute), domain.CategoryOther, domain.EntityOther, "dave", "created the tag v1.2.3"),
 	}
 }
+
+// streamCategories lists the category column text detailedEvents renders, in
+// row order.
+var streamCategories = []string{"push", "pull request", "review", "comment", "other"}
 
 // streamModel returns a current model whose snapshot holds the events.
 func streamModel(t *testing.T, events []domain.Event) Model {
@@ -80,6 +84,17 @@ func streamModel(t *testing.T, events []domain.Event) Model {
 	model.state.Freshness = FreshnessCurrent
 	model.state.LastSuccess = streamBase
 	return model
+}
+
+// detailedCategoryRows renders detailedEvents at the wide size and returns its
+// body rows, one per streamCategories entry.
+func detailedCategoryRows(t *testing.T) []string {
+	t.Helper()
+	rows := bodyLines(t, renderAt(t, streamModel(t, detailedEvents(t)), wideWidth, wideHeight))
+	if len(rows) != len(streamCategories) {
+		t.Fatalf("stream rendered %d rows, want one per snapshot event:\n%v", len(rows), rows)
+	}
+	return rows
 }
 
 // agedEvents returns one push event per elapsed duration, in the order given,
@@ -176,7 +191,7 @@ func TestStreamOmitsTheActorWhenTheEventHasNone(t *testing.T) {
 		t.Fatalf("stream rendered %d rows, want one per snapshot event:\n%v", len(rows), rows)
 	}
 	review := rows[2]
-	if !strings.Contains(review, "approved pull request #7") {
+	if !strings.Contains(review, "approved #7") {
 		t.Fatalf("row 2 is %q, want the review description", review)
 	}
 	for _, actor := range []string{"alice", "bob", "carol", "dave"} {
@@ -190,18 +205,30 @@ func TestStreamOmitsTheActorWhenTheEventHasNone(t *testing.T) {
 }
 
 func TestStreamEncodesEachCategoryWithoutColor(t *testing.T) {
-	rows := bodyLines(t, renderAt(t, streamModel(t, detailedEvents(t)), wideWidth, wideHeight))
+	rows := detailedCategoryRows(t)
 
-	wantCategories := []string{"push", "pull request", "review", "comment", "other"}
-	if len(rows) != len(wantCategories) {
-		t.Fatalf("stream rendered %d rows, want one per snapshot event:\n%v", len(rows), rows)
-	}
-	for index, want := range wantCategories {
+	for index, want := range streamCategories {
 		if !strings.Contains(rows[index], want) {
 			t.Errorf("row %d is %q, want the category text %q", index, rows[index], want)
 		}
 		if strings.Contains(rows[index], "\x1b[") {
 			t.Errorf("row %d carries color escapes, so its category is not text-encoded: %q", index, rows[index])
+		}
+	}
+}
+
+// TestStreamNamesEachCategoryExactlyOncePerRow guards FR-005 and FR-010 from the
+// rendering side: the category column names the entity class, so a description
+// must not restate it. Whole-word matching keeps "commented" from counting as a
+// second "comment".
+func TestStreamNamesEachCategoryExactlyOncePerRow(t *testing.T) {
+	rows := detailedCategoryRows(t)
+
+	for index, category := range streamCategories {
+		occurrences := regexp.MustCompile(`\b`+regexp.QuoteMeta(category)+`\b`).FindAllString(rows[index], -1)
+		if len(occurrences) != 1 {
+			t.Errorf("row %d names the category %q %d times, want exactly once: %q",
+				index, category, len(occurrences), rows[index])
 		}
 	}
 }

@@ -99,7 +99,7 @@ func TestNormalizeEventsByCategory(t *testing.T) {
 			category:    domain.CategoryPullRequest,
 			entityKind:  domain.EntityPullRequest,
 			entityRef:   "#42",
-			description: "opened pull request #42",
+			description: "opened #42",
 		},
 		{
 			name:        "pull request merged",
@@ -110,7 +110,7 @@ func TestNormalizeEventsByCategory(t *testing.T) {
 			category:    domain.CategoryPullRequest,
 			entityKind:  domain.EntityPullRequest,
 			entityRef:   "#42",
-			description: "merged pull request #42",
+			description: "merged #42",
 		},
 		{
 			name:        "pull request reopened",
@@ -121,7 +121,7 @@ func TestNormalizeEventsByCategory(t *testing.T) {
 			category:    domain.CategoryPullRequest,
 			entityKind:  domain.EntityPullRequest,
 			entityRef:   "#42",
-			description: "reopened pull request #42",
+			description: "reopened #42",
 		},
 		{
 			name:        "pull request closed without a merge",
@@ -132,7 +132,18 @@ func TestNormalizeEventsByCategory(t *testing.T) {
 			category:    domain.CategoryPullRequest,
 			entityKind:  domain.EntityPullRequest,
 			entityRef:   "#42",
-			description: "closed pull request #42",
+			description: "closed #42",
+		},
+		{
+			name:        "pull request updated by an unmapped action",
+			fixture:     "pull_request_edited.json",
+			id:          "2005",
+			occurredAt:  "2026-08-22T09:04:00Z",
+			actor:       "hubot",
+			category:    domain.CategoryPullRequest,
+			entityKind:  domain.EntityPullRequest,
+			entityRef:   "#42",
+			description: "updated #42",
 		},
 		{
 			name:        "review approved",
@@ -143,7 +154,7 @@ func TestNormalizeEventsByCategory(t *testing.T) {
 			category:    domain.CategoryReview,
 			entityKind:  domain.EntityPullRequest,
 			entityRef:   "#42",
-			description: "approved pull request #42",
+			description: "approved #42",
 		},
 		{
 			name:        "review requesting changes",
@@ -154,7 +165,7 @@ func TestNormalizeEventsByCategory(t *testing.T) {
 			category:    domain.CategoryReview,
 			entityKind:  domain.EntityPullRequest,
 			entityRef:   "#42",
-			description: "requested changes on pull request #42",
+			description: "requested changes on #42",
 		},
 		{
 			name:        "review with a dismissed state",
@@ -165,7 +176,7 @@ func TestNormalizeEventsByCategory(t *testing.T) {
 			category:    domain.CategoryReview,
 			entityKind:  domain.EntityPullRequest,
 			entityRef:   "#42",
-			description: "reviewed pull request #42",
+			description: "reviewed #42",
 		},
 		{
 			name:        "review with a commented state",
@@ -176,7 +187,7 @@ func TestNormalizeEventsByCategory(t *testing.T) {
 			category:    domain.CategoryReview,
 			entityKind:  domain.EntityPullRequest,
 			entityRef:   "#42",
-			description: "reviewed pull request #42",
+			description: "reviewed #42",
 		},
 		{
 			name:        "pull request review comment",
@@ -187,7 +198,7 @@ func TestNormalizeEventsByCategory(t *testing.T) {
 			category:    domain.CategoryComment,
 			entityKind:  domain.EntityPullRequest,
 			entityRef:   "#42",
-			description: "commented on pull request #42",
+			description: "commented on #42",
 		},
 		{
 			name:        "issue comment on a pull request",
@@ -198,7 +209,7 @@ func TestNormalizeEventsByCategory(t *testing.T) {
 			category:    domain.CategoryComment,
 			entityKind:  domain.EntityPullRequest,
 			entityRef:   "#42",
-			description: "commented on pull request #42",
+			description: "commented on #42",
 		},
 		{
 			name:        "issue only comment",
