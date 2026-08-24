@@ -45,20 +45,38 @@ type Model struct {
 	pending bool
 }
 
+// Option replaces one optional seam of the root model after New has built its
+// defaults. Every seam an Option reaches stays optional, so the binary's own
+// wiring passes none of them and keeps the production defaults.
+type Option func(*Model)
+
+// WithClock replaces the clock the model stamps a recorded success with, so a
+// test outside the package can pin the instant rendered ages are measured from
+// (NFR-006). A nil now keeps the default, time.Now, following the shape
+// github.Source.Now already uses.
+func WithClock(now func() time.Time) Option {
+	return func(model *Model) {
+		if now != nil {
+			model.now = now
+		}
+	}
+}
+
 // New returns the root model for the selected scope in its initial loading
 // state, with its first refresh already owned by Init. ctx bounds every refresh
-// the model starts.
+// the model starts. Options replace optional seams; supplying none yields the
+// production defaults.
 //
 // A missing source is rejected here, at the construction seam the caller still
 // owns, and reported as ErrNoSource. Deferring it would surface the failure
 // inside the refresh command Bubble Tea runs on its own goroutine, where the
 // caller that built the model is no longer on the stack.
-func New(ctx context.Context, scope domain.Scope, source Source) (Model, error) {
+func New(ctx context.Context, scope domain.Scope, source Source, options ...Option) (Model, error) {
 	if source == nil {
 		return Model{}, ErrNoSource
 	}
 	refreshCtx, cancel := context.WithCancel(ctx)
-	return Model{
+	model := Model{
 		state:   State{Scope: scope, Freshness: FreshnessLoading},
 		ctx:     refreshCtx,
 		cancel:  cancel,
@@ -66,7 +84,11 @@ func New(ctx context.Context, scope domain.Scope, source Source) (Model, error) 
 		now:     time.Now,
 		tick:    tickAfter,
 		pending: true,
-	}, nil
+	}
+	for _, option := range options {
+		option(&model)
+	}
+	return model, nil
 }
 
 // Init implements tea.Model. The first refresh runs as a command, so the

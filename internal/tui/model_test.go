@@ -6,6 +6,7 @@ package tui
 import (
 	"context"
 	"errors"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -20,6 +21,13 @@ const (
 	narrowWidth  = 40
 	narrowHeight = 10
 )
+
+// fixedInstant is the instant every shell test pins its clock to. Naming one
+// instant rather than reading the host clock keeps a rendered age, and every
+// assertion derived from it, identical on every run (NFR-006). It sits after
+// the events the scripted results carry, so a pinned success is never older
+// than the activity it publishes.
+var fixedInstant = time.Date(2026, time.August, 22, 12, 0, 0, 0, time.UTC)
 
 func testScope(t *testing.T, values ...string) domain.Scope {
 	t.Helper()
@@ -73,6 +81,51 @@ func TestNewRejectsAMissingSource(t *testing.T) {
 
 	if !errors.Is(err, ErrNoSource) {
 		t.Fatalf("New without a source returned %v, want ErrNoSource", err)
+	}
+}
+
+// TestNewDefaultsTheClockToTheRealOne guards the production wiring: a caller
+// that supplies no clock, and one that supplies a nil clock, both keep the
+// binary reading the host clock exactly as before (NFR-006).
+func TestNewDefaultsTheClockToTheRealOne(t *testing.T) {
+	tests := []struct {
+		name    string
+		options []Option
+	}{
+		{name: "no option"},
+		{name: "nil clock", options: []Option{WithClock(nil)}},
+	}
+
+	realClock := reflect.ValueOf(time.Now).Pointer()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			model, err := New(context.Background(), testScope(t, "acme/backend"), &fakeSource{}, tt.options...)
+			if err != nil {
+				t.Fatalf("building the model failed: %v", err)
+			}
+			if model.now == nil {
+				t.Fatal("the model was built without a clock")
+			}
+			if got := reflect.ValueOf(model.now).Pointer(); got != realClock {
+				t.Error("the model's clock is not time.Now, so the binary no longer reads the real clock")
+			}
+		})
+	}
+}
+
+// TestWithClockPinsTheInstantASuccessIsRecordedAt proves the seam an external
+// caller needs: the supplied clock, not the host one, stamps State.LastSuccess.
+func TestWithClockPinsTheInstantASuccessIsRecordedAt(t *testing.T) {
+	source := &fakeSource{outcomes: []outcome{{result: activity(t, "acme/backend")}}}
+	model, err := New(context.Background(), testScope(t, "acme/backend"), source, WithClock(func() time.Time { return fixedInstant }))
+	if err != nil {
+		t.Fatalf("building the model failed: %v", err)
+	}
+
+	model, _ = run(t, model, model.Init())
+
+	if !model.state.LastSuccess.Equal(fixedInstant) {
+		t.Errorf("LastSuccess = %v, want the pinned instant %v", model.state.LastSuccess, fixedInstant)
 	}
 }
 

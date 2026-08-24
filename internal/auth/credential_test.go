@@ -115,27 +115,63 @@ func TestResolveFallsBackToGhAuthToken(t *testing.T) {
 	}
 }
 
+// commandBudget is the bound Resolve is documented to place on gh. The test
+// brackets it with caller deadlines on either side rather than measuring how
+// long the call took, so the outcome does not depend on machine speed
+// (NFR-006).
+const commandBudget = 10 * time.Second
+
+// TestResolveBoundsGhWithATenSecondTimeout pins the budget through the only
+// thing an observer can compare a derived deadline against without reading the
+// clock: the caller deadline it was derived from. A caller deadline inside the
+// budget must survive untouched, and one outside it must be cut short.
 func TestResolveBoundsGhWithATenSecondTimeout(t *testing.T) {
-	runner := &fakeRunner{stdout: sentinelToken}
-	start := time.Now()
+	tests := []struct {
+		name              string
+		callerBudget      time.Duration
+		wantCallerHonored bool
+	}{
+		{
+			name:              "a caller deadline inside the budget is not extended",
+			callerBudget:      commandBudget - time.Second,
+			wantCallerHonored: true,
+		},
+		{
+			name:              "a caller deadline beyond the budget is shortened",
+			callerBudget:      commandBudget + time.Second,
+			wantCallerHonored: false,
+		},
+	}
 
-	if _, err := resolverWith(nil, runner).Resolve(t.Context()); err != nil {
-		t.Fatalf("Resolve() returned error: %v", err)
-	}
-	end := time.Now()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(t.Context(), tt.callerBudget)
+			defer cancel()
+			callerDeadline, hasCallerDeadline := ctx.Deadline()
+			if !hasCallerDeadline {
+				t.Fatal("the caller context carried no deadline")
+			}
+			runner := &fakeRunner{stdout: sentinelToken}
 
-	if len(runner.calls) != 1 {
-		t.Fatalf("gh was invoked %d times, want 1", len(runner.calls))
-	}
-	call := runner.calls[0]
-	if !call.hasDeadline {
-		t.Fatal("the gh context carried no deadline")
-	}
-	if upper := call.deadline.Sub(end); upper > 10*time.Second {
-		t.Errorf("gh deadline budget = %v, want at most 10s", upper)
-	}
-	if lower := call.deadline.Sub(start); lower < 9*time.Second {
-		t.Errorf("gh deadline budget = %v, want about 10s", lower)
+			if _, err := resolverWith(nil, runner).Resolve(ctx); err != nil {
+				t.Fatalf("Resolve() returned error: %v", err)
+			}
+
+			if len(runner.calls) != 1 {
+				t.Fatalf("gh was invoked %d times, want 1", len(runner.calls))
+			}
+			call := runner.calls[0]
+			if !call.hasDeadline {
+				t.Fatal("the gh context carried no deadline")
+			}
+			if honored := call.deadline.Equal(callerDeadline); honored != tt.wantCallerHonored {
+				t.Errorf("the gh deadline equals the caller deadline = %t, want %t", honored, tt.wantCallerHonored)
+			}
+			if !tt.wantCallerHonored && !call.deadline.Before(callerDeadline) {
+				t.Errorf("gh deadline %v is not earlier than the caller deadline %v, so the budget was never applied",
+					call.deadline, callerDeadline)
+			}
+		})
 	}
 }
 
@@ -189,7 +225,7 @@ func TestResolveReportsCancellationRatherThanMissingAuthentication(t *testing.T)
 		{
 			name: "deadline exceeded",
 			context: func(t *testing.T) context.Context {
-				ctx, cancel := context.WithDeadline(t.Context(), time.Now().Add(-time.Second))
+				ctx, cancel := context.WithTimeout(t.Context(), -time.Second)
 				t.Cleanup(cancel)
 				return ctx
 			},

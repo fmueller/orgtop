@@ -108,7 +108,7 @@ func run(t *testing.T, model Model, cmd tea.Cmd) (Model, tea.Cmd) {
 
 func TestInitRendersLoadingAndStartsRefreshThroughACommand(t *testing.T) {
 	source := &fakeSource{outcomes: []outcome{{result: activity(t, "acme/backend")}}}
-	model := lifecycle(t, source, time.Now(), &recorder{}, "acme/backend")
+	model := lifecycle(t, source, fixedInstant, &recorder{}, "acme/backend")
 
 	cmd := model.Init()
 	if cmd == nil {
@@ -129,7 +129,7 @@ func TestInitRendersLoadingAndStartsRefreshThroughACommand(t *testing.T) {
 
 func TestShellStaysResponsiveWhileARefreshIsPending(t *testing.T) {
 	source := &fakeSource{outcomes: []outcome{{result: activity(t, "acme/backend")}}}
-	model := lifecycle(t, source, time.Now(), &recorder{}, "acme/backend")
+	model := lifecycle(t, source, fixedInstant, &recorder{}, "acme/backend")
 	model.Init()
 
 	model, _ = apply(t, model, tea.WindowSizeMsg{Width: narrowWidth, Height: narrowHeight}, press("2"))
@@ -198,7 +198,7 @@ func TestEmptySuccessStillRecordsOneLastSuccess(t *testing.T) {
 
 func TestFirstFailureRendersTheErrorStateWithoutASnapshot(t *testing.T) {
 	source := &fakeSource{outcomes: []outcome{{err: errors.New("refreshing acme/backend: github rate limit reached")}}}
-	model := lifecycle(t, source, time.Now(), &recorder{}, "acme/backend")
+	model := lifecycle(t, source, fixedInstant, &recorder{}, "acme/backend")
 
 	model, _ = run(t, model, model.Init())
 
@@ -277,7 +277,7 @@ func TestFailedRefreshNeverPublishesPartialCandidates(t *testing.T) {
 		result: partial,
 		err:    errors.New("refreshing acme/frontend: repository not found or inaccessible"),
 	}}}
-	model := lifecycle(t, source, time.Now(), &recorder{}, "acme/backend", "acme/frontend")
+	model := lifecycle(t, source, fixedInstant, &recorder{}, "acme/backend", "acme/frontend")
 
 	model, _ = run(t, model, model.Init())
 
@@ -314,7 +314,7 @@ func TestNextAttemptUsesTheReportedSchedulingMetadata(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			timer := &recorder{}
 			source := &fakeSource{outcomes: []outcome{testCase.outcome}}
-			model := lifecycle(t, source, time.Now(), timer, "acme/backend")
+			model := lifecycle(t, source, fixedInstant, timer, "acme/backend")
 
 			run(t, model, model.Init())
 			if len(timer.delays) != 1 {
@@ -330,7 +330,7 @@ func TestNextAttemptUsesTheReportedSchedulingMetadata(t *testing.T) {
 func TestTheNextTimerStartsOnlyAfterTheRefreshCompletes(t *testing.T) {
 	timer := &recorder{}
 	source := &fakeSource{outcomes: []outcome{{result: activity(t, "acme/backend")}}}
-	model := lifecycle(t, source, time.Now(), timer, "acme/backend")
+	model := lifecycle(t, source, fixedInstant, timer, "acme/backend")
 
 	cmd := model.Init()
 	model, _ = apply(t, model, tea.WindowSizeMsg{Width: 80, Height: 24}, press("2"))
@@ -346,7 +346,7 @@ func TestTheNextTimerStartsOnlyAfterTheRefreshCompletes(t *testing.T) {
 
 func TestAtMostOneRefreshIsInFlight(t *testing.T) {
 	source := &fakeSource{outcomes: []outcome{{result: activity(t, "acme/backend")}}}
-	model := lifecycle(t, source, time.Now(), &recorder{}, "acme/backend")
+	model := lifecycle(t, source, fixedInstant, &recorder{}, "acme/backend")
 
 	cmd := model.Init()
 	model, due := apply(t, model, refreshDueMsg{})
@@ -366,7 +366,7 @@ func TestAtMostOneRefreshIsInFlight(t *testing.T) {
 
 func TestShutdownCancelsInFlightSourceWork(t *testing.T) {
 	source := &fakeSource{outcomes: []outcome{{result: activity(t, "acme/backend")}}}
-	model := lifecycle(t, source, time.Now(), &recorder{}, "acme/backend")
+	model := lifecycle(t, source, fixedInstant, &recorder{}, "acme/backend")
 
 	cmd := model.Init()
 	_, quit := apply(t, model, press("q"))
@@ -391,7 +391,7 @@ func TestSchedulingMetadataStaysOutOfTheRenderedState(t *testing.T) {
 		result: Result{Delay: 15 * time.Minute},
 		err:    errors.New("refreshing acme/backend: github rate limit reached"),
 	}}}
-	model := lifecycle(t, source, time.Now(), &recorder{}, "acme/backend")
+	model := lifecycle(t, source, fixedInstant, &recorder{}, "acme/backend")
 
 	model, _ = run(t, model, model.Init())
 
@@ -432,7 +432,7 @@ func TestTheReportedCauseDropsTerminalControlSequences(t *testing.T) {
 	source := &fakeSource{outcomes: []outcome{{
 		err: errors.New("refreshing acme/backend: \x1b[31;1mboom\x1b[0m\x07 status\x7f 500"),
 	}}}
-	model := lifecycle(t, source, time.Now(), &recorder{}, "acme/backend")
+	model := lifecycle(t, source, fixedInstant, &recorder{}, "acme/backend")
 
 	model, _ = run(t, model, model.Init())
 
@@ -448,7 +448,7 @@ func TestTheReportedCauseDropsTerminalControlSequences(t *testing.T) {
 
 func TestTheReportedCauseIsCollapsedToOneHeaderLine(t *testing.T) {
 	source := &fakeSource{outcomes: []outcome{{err: errors.New("refreshing acme/backend:\n\tunexpected github response: status 500")}}}
-	model := lifecycle(t, source, time.Now(), &recorder{}, "acme/backend")
+	model := lifecycle(t, source, fixedInstant, &recorder{}, "acme/backend")
 
 	model, _ = run(t, model, model.Init())
 

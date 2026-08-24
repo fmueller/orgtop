@@ -1,11 +1,11 @@
 ---
 id: T-025-inject-a-fake-clock-into-tests
 title: Inject a fake clock into tests instead of depending on the real one
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.1.0.md#application-shell-and-refresh-lifecycle
 dependencies: []
-updated_at: "2026-08-23T20:43:52Z"
+updated_at: "2026-08-24T11:29:06Z"
 ---
 
 # T-025-inject-a-fake-clock-into-tests Inject a fake clock into tests instead of depending on the real one
@@ -103,3 +103,4 @@ integration and refresh test sites follow from it.
   `Source.Now` directly.
 - This is not a tag blocker for `v0.1.0`: no rendered output changes and no
   test currently fails. It is an NFR-006 determinism debt.
+- 2026-08-24T11:29:02Z: verification pass

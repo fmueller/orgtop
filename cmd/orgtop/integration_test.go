@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -179,28 +180,32 @@ func pushEvent(repository, id string, occurred time.Time) map[string]any {
 	}
 }
 
+// wiredInstant is the instant every wired flow pins its shell clock to. The
+// shell anchors rendered ages to its own last-success instant, so pinning it
+// makes every age a fixture states an age the render must show, rather than a
+// value that drifts with how long the test runs (NFR-006).
+var wiredInstant = time.Date(2026, time.August, 22, 12, 0, 0, 0, time.UTC)
+
 // eventsPage renders a synthetic events page for the repository: count push
 // events, newest first, each naming its own one-based position.
 func eventsPage(repository string, count int) string {
-	base := time.Date(2026, time.August, 22, 12, 0, 0, 0, time.UTC)
 	page := make([]map[string]any, 0, count)
 	for index := range count {
 		id := fmt.Sprintf("%s-%03d", strings.ReplaceAll(repository, "/", "-"), index)
-		page = append(page, pushEvent(repository, id, base.Add(-time.Duration(index)*time.Minute)))
+		page = append(page, pushEvent(repository, id, wiredInstant.Add(-time.Duration(index)*time.Minute)))
 	}
 	return encode(page)
 }
 
 // agedEventsPage renders a synthetic events page whose push events occurred the
-// given durations before now, newest first. The timestamps are relative because
-// the wired shell anchors rendered ages to its own last-success instant, which
-// an integration flow cannot pin.
+// given durations before the pinned instant, newest first. Every flow pins its
+// shell clock to wiredInstant, so an offset from it is exactly the age the
+// shell renders, on every run and however long the test takes (NFR-006).
 func agedEventsPage(repository string, ages ...time.Duration) string {
-	now := time.Now().UTC()
 	page := make([]map[string]any, 0, len(ages))
 	for index, age := range ages {
 		id := fmt.Sprintf("%s-aged-%03d", strings.ReplaceAll(repository, "/", "-"), index)
-		page = append(page, pushEvent(repository, id, now.Add(-age)))
+		page = append(page, pushEvent(repository, id, wiredInstant.Add(-age)))
 	}
 	return encode(page)
 }
@@ -265,7 +270,7 @@ func newFlow(t *testing.T, endpoint *eventsEndpoint, args ...string) *flow {
 	}
 
 	adapter := serveEndpoint(t, endpoint)
-	model, err := tui.New(t.Context(), config.Scope, adapter)
+	model, err := tui.New(t.Context(), config.Scope, adapter, tui.WithClock(func() time.Time { return wiredInstant }))
 	if err != nil {
 		t.Fatalf("building the shell for %v failed: %v", args, err)
 	}
@@ -859,4 +864,45 @@ func TestMultiDaySnapshotRendersAgesRatherThanClockTimes(t *testing.T) {
 			t.Errorf("row %d spells a wall-clock time of day:\n%s", index, rows[index])
 		}
 	}
+}
+
+// TestPinnedClockRendersTheSameAgesAcrossRefreshes proves the injected clock
+// reaches the rendered ages: the shell re-stamps its last-success instant on
+// every refresh, so with the clock pinned two refreshes separated by real
+// elapsed time must render byte-identical ages, each one exactly the offset its
+// fixture states (NFR-006).
+func TestPinnedClockRendersTheSameAgesAcrossRefreshes(t *testing.T) {
+	const day = 24 * time.Hour
+	endpoint := newEndpoint(map[string][]cannedResponse{
+		eventsPath("acme/backend"): {ok(agedEventsPage("acme/backend", 90*time.Minute, 3*day))},
+	})
+	run := newFlow(t, endpoint, "--repo", "acme/backend")
+	run.refresh()
+	run.press("2")
+
+	first := ages(t, run.render(wideWidth, wideHeight))
+	if want := []string{"1h", "3d"}; !slices.Equal(first, want) {
+		t.Fatalf("the first render is aged %v, want %v", first, want)
+	}
+
+	// The second refresh is a real round trip through the test server, so real
+	// time has passed between the two renders the ages are compared across.
+	run.refresh()
+	if second := ages(t, run.render(wideWidth, wideHeight)); !slices.Equal(second, first) {
+		t.Errorf("a later refresh is aged %v, want the pinned %v", second, first)
+	}
+	if endpoint.requestCount("acme/backend") != 2 {
+		t.Fatalf("the flow performed %d refreshes, want 2", endpoint.requestCount("acme/backend"))
+	}
+}
+
+// ages returns the age column of every event row a Stream render carries.
+func ages(t *testing.T, content string) []string {
+	t.Helper()
+	rows := streamBody(t, content)
+	kept := make([]string, 0, len(rows))
+	for _, row := range rows {
+		kept = append(kept, strings.Fields(row)[0])
+	}
+	return kept
 }
