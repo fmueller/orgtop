@@ -18,9 +18,16 @@ workflow refuses to publish otherwise.
   actor/description columns remain identified once the events have scrolled. The
   headings give way when the terminal is too short to hold both them and an event
   row, and the explicit loading, error, and no-recent-activity states keep none.
+- Stream states how much activity it is showing above its column headings: the
+  number of events the current snapshot holds, and, when the 500-event bound
+  discarded older activity, that the list stops at that limit. The disclosure is
+  the first line to give way on a short terminal.
 
 ### Changed
 
+- Stream and Overview mark content the terminal is too narrow to hold with a
+  trailing `…`, so a shortened repository name or description is no longer read
+  as the whole value. The mark is paid for out of the same width.
 - Event descriptions no longer restate the entity class the Stream category
   column already names: a pull-request row reads `opened #42` rather than
   `opened pull request #42`. Descriptions without an entity reference still name

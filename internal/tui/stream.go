@@ -16,9 +16,18 @@ import (
 const minDetailWidth = 20
 
 // streamChrome is the number of content-area lines Stream reserves for its own
-// column headings. FR-007 lets a view reserve a further fixed line of its own
-// beyond the shared header and footer; this is Stream's.
-const streamChrome = 1
+// chrome: the coverage disclosure and the column headings. FR-007 lets a view
+// reserve further fixed lines of its own beyond the shared header and footer;
+// these are Stream's.
+const streamChrome = 2
+
+// boundedDisclosure is what Stream adds to its event count when the FR-006 bound
+// discarded older events, so a list that ends at the bound says so rather than
+// ending without explanation (FR-010).
+const boundedDisclosure = "older activity was discarded at this limit"
+
+// eventCount labels the number of events one snapshot holds.
+var eventCount = countLabel{singular: "event", plural: "events"}
 
 // stream is the Stream view's state slot and rendering seam. It renders the
 // snapshot's events in their deterministic reverse-chronological order and
@@ -29,46 +38,61 @@ type stream struct {
 	viewport
 }
 
-// render returns the Stream body for the shared content area: the sticky
-// heading row, when the view reserves one, above the windowed event rows.
+// render returns the Stream body for the shared content area: the sticky chrome
+// lines the view reserves, above the windowed event rows.
 func (s stream) render(state State, width, height int) string {
-	heading, lines, rowHeight := streamContent(state, width, height)
-	body := renderBody(lines, s.viewport, width, rowHeight)
-	if heading == "" {
-		return body
+	chrome, lines, rowHeight := streamContent(state, width, height)
+	rendered := make([]string, 0, len(chrome)+1)
+	for _, line := range chrome {
+		rendered = append(rendered, bodyStyle.Render(shorten(line, width)))
 	}
-	return bodyStyle.Render(truncate(heading, width)) + "\n" + body
+	rendered = append(rendered, renderBody(lines, s.viewport, width, rowHeight))
+	return strings.Join(rendered, "\n")
 }
 
 // scrolled returns the view moved by one scrolling keystroke over the rows that
-// remain once the headings have taken their line.
+// remain once Stream's own chrome has taken its lines.
 func (s stream) scrolled(keystroke string, state State, width, height int) stream {
 	_, lines, rowHeight := streamContent(state, width, height)
 	s.viewport = s.viewport.scrolled(keystroke, len(lines), rowHeight)
 	return s
 }
 
-// streamContent returns the sticky heading row, the scrollable lines beneath it,
-// and the height those lines are windowed and clamped against. Rendering and
-// scrolling both go through it, so the clamp and the render cannot disagree
-// about how many rows the content area holds.
+// streamContent returns Stream's sticky chrome lines, the scrollable lines
+// beneath them, and the height those lines are windowed and clamped against.
+// Rendering and scrolling both go through it, so the clamp and the render cannot
+// disagree about how many rows the content area holds.
 //
-// The headings name columns, so the explicit states are given none, and they are
-// subordinate to content: a content area that cannot hold both the headings and
-// one event row keeps the row (FR-010, A-010).
-func streamContent(state State, width, height int) (heading string, lines []string, rowHeight int) {
+// The chrome describes rows, so the explicit states are given none, and it is
+// subordinate to content: a content area that cannot hold all of it keeps one
+// event row, dropping the coverage disclosure before the column headings that
+// name what the remaining row means (FR-010, A-010).
+func streamContent(state State, width, height int) (chrome []string, lines []string, rowHeight int) {
 	events := state.Snapshot.Events()
 	if line := streamStateLine(state.Freshness, events); line != "" {
-		return "", []string{line}, height
+		return nil, []string{line}, height
 	}
 
 	laid := layoutFittingWidth(events, state.LastSuccess, width)
-	rows := renderStreamRows(laid.rows)
-	// A non-positive height is unbounded and always holds both.
-	if height > 0 && height <= streamChrome {
-		return "", rows, height
+	chrome = []string{streamCoverage(len(events), state.Snapshot.Truncated()), laid.heading.String()}
+	// A non-positive height is unbounded and holds all of it; a bounded one
+	// gives up chrome lines, the disclosure first, to keep one event row.
+	for height > 0 && len(chrome) >= height {
+		chrome = chrome[1:]
 	}
-	return laid.heading.String(), rows, height - streamChrome
+	return chrome, renderStreamRows(laid.rows), height - len(chrome)
+}
+
+// streamCoverage states how much activity the list represents: the number of
+// events the snapshot holds, and whether the FR-006 bound discarded older ones.
+// Without it a short list cannot be told from a bounded one, and scrolling to
+// the bottom cannot be told from having seen everything (FR-010).
+func streamCoverage(count int, truncated bool) string {
+	showing := "showing " + eventCount.of(count)
+	if !truncated {
+		return showing
+	}
+	return showing + separator + boundedDisclosure
 }
 
 // streamStateLine returns the single explicit line Stream renders in place of

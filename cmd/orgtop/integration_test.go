@@ -39,12 +39,13 @@ const (
 // once the shared header and footer take one line each.
 const narrowBodyHeight = narrowHeight - 2
 
-// streamChromeLine is the further content line Stream reserves for its sticky
-// column headings (FR-007), so its event-row budget is one short of Overview's.
-const streamChromeLine = 1
+// streamChromeLines is the further content Stream reserves for its own chrome:
+// the coverage disclosure and the sticky column headings (FR-007), so its
+// event-row budget is two short of Overview's.
+const streamChromeLines = 2
 
 // streamRowBudget is the event-row budget Stream has at that narrowest terminal.
-const streamRowBudget = narrowBodyHeight - streamChromeLine
+const streamRowBudget = narrowBodyHeight - streamChromeLines
 
 // scrollRepositories selects two more repositories than that budget can show at
 // once, so the last one is only reachable by scrolling.
@@ -341,19 +342,19 @@ func body(t *testing.T, content string) []string {
 }
 
 // streamBody returns the event rows of a Stream render: the body lines below the
-// sticky column headings Stream keeps above them at every scroll position
-// (FR-010). It fails when the headings are missing, so a row assertion can never
-// silently be made against them.
+// coverage disclosure and the sticky column headings Stream keeps above them at
+// every scroll position (FR-010). It fails when the headings are missing, so a
+// row assertion can never silently be made against Stream's own chrome.
 func streamBody(t *testing.T, content string) []string {
 	t.Helper()
 	lines := body(t, content)
-	if len(lines) == 0 {
-		t.Fatalf("stream rendered no body lines:\n%s", content)
+	for index, line := range lines {
+		if fields := strings.Fields(line); len(fields) > 0 && fields[0] == "age" {
+			return lines[index+1:]
+		}
 	}
-	if fields := strings.Fields(lines[0]); len(fields) == 0 || fields[0] != "age" {
-		t.Fatalf("the first stream body line is %q, want the sticky column headings:\n%s", lines[0], content)
-	}
-	return lines[1:]
+	t.Fatalf("no stream body line names the sticky column headings:\n%s", content)
+	return nil
 }
 
 // assertContains fails unless the content names every want.

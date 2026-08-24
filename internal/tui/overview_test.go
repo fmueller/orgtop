@@ -284,6 +284,29 @@ func TestSharedRowHelpersMeasureWideRunesByTheirRenderedWidth(t *testing.T) {
 		}
 	})
 
+	t.Run("shorten marks a cut on a cell boundary", func(t *testing.T) {
+		const limit = 5
+		shortened := shorten(wide, limit)
+		if shortened != "推送"+shortenedMark {
+			t.Errorf("shorten(%q, %d) = %q, want %q", wide, limit, shortened, "推送"+shortenedMark)
+		}
+		if rendered := lipgloss.Width(shortened); rendered > limit {
+			t.Errorf("shorten(%q, %d) is %d cells wide, want at most %d", wide, limit, rendered, limit)
+		}
+	})
+
+	t.Run("shorten leaves content that fits unmarked", func(t *testing.T) {
+		if shortened := shorten(wide, 8); shortened != wide {
+			t.Errorf("shorten(%q, 8) = %q, want it unmarked", wide, shortened)
+		}
+	})
+
+	t.Run("shorten yields the width entirely when the mark does not fit", func(t *testing.T) {
+		if shortened := shorten(wide, 0); shortened != "" {
+			t.Errorf("shorten(%q, 0) = %q, want the empty string", wide, shortened)
+		}
+	})
+
 	t.Run("truncate cuts on a cell boundary", func(t *testing.T) {
 		const limit = 5
 		truncated := truncate(wide, limit)
@@ -467,5 +490,31 @@ func TestScrolledOverviewRendersWithinNarrowBounds(t *testing.T) {
 	} {
 		sized, _ := apply(t, scrollOverviewModel(t, scrollRepositories), size)
 		assertFits(t, scrolled(t, sized, "down", "pgdown", "up", "pgup").View().Content, size.Width, size.Height)
+	}
+}
+
+// TestOverviewMarksRowsTheWidthCannotHold guards FR-009 against the shared
+// shortening helper: Overview marks a cut row like Stream does, and its identity
+// and counts stay readable ahead of the mark.
+func TestOverviewMarksRowsTheWidthCannotHold(t *testing.T) {
+	const width = 20
+
+	content := renderAt(t, populatedModel(t), width, narrowHeight)
+	assertFits(t, content, width, narrowHeight)
+
+	rows := bodyLines(t, content)
+	if len(rows) != 3 {
+		t.Fatalf("overview rendered %d rows at width %d, want 3:\n%s", len(rows), width, content)
+	}
+	for index, row := range rows {
+		if !strings.HasSuffix(row, shortenedMark) {
+			t.Errorf("shortened row %d is %q, want it marked with %q", index, row, shortenedMark)
+		}
+		if rendered := lipgloss.Width(row); rendered > width {
+			t.Errorf("marked row %d is %d cells wide, want at most %d: %q", index, rendered, width, row)
+		}
+	}
+	if !strings.Contains(rows[0], "acme/backend") {
+		t.Errorf("the marked row %q loses the repository identity", rows[0])
 	}
 }

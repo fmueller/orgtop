@@ -139,10 +139,35 @@ func plainFields(fields []field) string {
 	return strings.Join(texts, separator)
 }
 
+// shortenedMark marks content the width could not hold, so a cut line is not
+// read as the whole line (FR-010).
+const shortenedMark = "…"
+
 // fits reports whether a width satisfies the limit.
 func fits(width, limit int) bool { return limit < 0 || width <= limit }
 
-// truncate shortens the text to the limit.
+// shorten cuts the text to the limit and marks it as shortened. The mark is
+// paid for out of the same limit, so a marked line is never wider than the
+// unmarked one it replaces, and a limit too tight to hold the mark yields
+// nothing rather than an unmarked cut.
+//
+// The bodies both views render go through here; the header and the footer do
+// not. Each of those already has an explicit ladder that drops whole fields to
+// fit, so their shortening is announced by what is missing rather than by a
+// mark, and their final cut happens at widths where the mark would consume the
+// last readable cells.
+func shorten(text string, limit int) string {
+	if fits(lipgloss.Width(text), limit) {
+		return text
+	}
+	markWidth := lipgloss.Width(shortenedMark)
+	if limit < markWidth {
+		return ""
+	}
+	return truncate(text, limit-markWidth) + shortenedMark
+}
+
+// truncate cuts the text to the limit without marking it.
 func truncate(text string, limit int) string {
 	if fits(lipgloss.Width(text), limit) {
 		return text

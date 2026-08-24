@@ -628,40 +628,56 @@ var streamHeadingText = map[string][]string{
 	"sparse": {"age", "repo", "type"},
 }
 
-// headingLine returns the first body line of a Stream render, which is the
-// sticky column heading row.
+// headingIndex returns the position of the sticky column heading row among the
+// body lines. It fails when no line names the columns, so a row assertion can
+// never silently be made against Stream's own chrome.
+func headingIndex(t *testing.T, lines []string, content string) int {
+	t.Helper()
+	for index, line := range lines {
+		if namesColumns(line) {
+			return index
+		}
+	}
+	t.Fatalf("no body line names a column heading register of %v:\n%s", streamHeadingText, content)
+	return 0
+}
+
+// namesColumns reports whether the line names the columns in one of the layout
+// registers.
+func namesColumns(line string) bool {
+	for _, names := range streamHeadingText {
+		if containsAll(line, names) {
+			return true
+		}
+	}
+	return false
+}
+
+// headingLine returns the sticky column heading row of a Stream render.
 func headingLine(t *testing.T, content string) string {
 	t.Helper()
 	lines := bodyLines(t, content)
-	if len(lines) == 0 {
-		t.Fatalf("stream rendered no body lines:\n%s", content)
+	return lines[headingIndex(t, lines, content)]
+}
+
+// coverageLine returns Stream's coverage disclosure: the body line the view
+// reserves above its column headings.
+func coverageLine(t *testing.T, content string) string {
+	t.Helper()
+	lines := bodyLines(t, content)
+	index := headingIndex(t, lines, content)
+	if index == 0 {
+		t.Fatalf("stream rendered no coverage disclosure above its headings:\n%s", content)
 	}
-	return lines[0]
+	return lines[index-1]
 }
 
 // eventRows returns the event rows of a Stream render: the body lines below the
-// heading row Stream reserves above them. It fails when the heading is missing,
-// so a row assertion can never silently be made against the headings.
+// chrome lines Stream reserves above them.
 func eventRows(t *testing.T, content string) []string {
 	t.Helper()
 	lines := bodyLines(t, content)
-	if len(lines) == 0 {
-		t.Fatalf("stream rendered no body lines:\n%s", content)
-	}
-	assertNamesColumns(t, lines[0])
-	return lines[1:]
-}
-
-// assertNamesColumns fails unless the line names the columns in one of the
-// layout registers.
-func assertNamesColumns(t *testing.T, line string) {
-	t.Helper()
-	for _, names := range streamHeadingText {
-		if containsAll(line, names) {
-			return
-		}
-	}
-	t.Fatalf("line %q names no column heading register of %v", line, streamHeadingText)
+	return lines[headingIndex(t, lines, content)+1:]
 }
 
 // containsAll reports whether the line contains every want.
@@ -806,5 +822,166 @@ func TestStreamExplicitStatesCarryNoColumnHeadings(t *testing.T) {
 				t.Errorf("the %s state line is %q, want %q", testCase.name, lines[0], testCase.wantBody)
 			}
 		})
+	}
+}
+
+// TestStreamStatesHowManyEventsItIsShowing guards FR-010: a short list must be
+// readable as a quiet page rather than as an unexplained bound, so Stream states
+// the event count the snapshot holds.
+func TestStreamStatesHowManyEventsItIsShowing(t *testing.T) {
+	cases := []struct {
+		name   string
+		events []domain.Event
+		want   string
+	}{
+		{name: "several events", events: detailedEvents(t), want: "5 events"},
+		{name: "one event", events: detailedEvents(t)[:1], want: "1 event"},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			coverage := coverageLine(t, renderAt(t, streamModel(t, testCase.events), wideWidth, wideHeight))
+			if !strings.Contains(coverage, testCase.want) {
+				t.Errorf("coverage disclosure %q does not state %q", coverage, testCase.want)
+			}
+		})
+	}
+}
+
+// TestStreamSaysTheListIsBoundedOnlyWhenTheBoundDiscardedEvents guards FR-006
+// and FR-010: the claim follows the snapshot's retained fact, so a snapshot
+// whose count merely reaches the limit makes no claim.
+func TestStreamSaysTheListIsBoundedOnlyWhenTheBoundDiscardedEvents(t *testing.T) {
+	cases := []struct {
+		name     string
+		returned int
+		want     bool
+	}{
+		{name: "exactly at the bound", returned: domain.MaxSnapshotEvents, want: false},
+		{name: "one past the bound", returned: domain.MaxSnapshotEvents + 1, want: true},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			model := streamModel(t, numberedEvents(t, testCase.returned))
+			content := renderAt(t, model, wideWidth, wideHeight)
+			coverage := coverageLine(t, content)
+
+			if want := fmt.Sprintf("%d events", domain.MaxSnapshotEvents); !strings.Contains(coverage, want) {
+				t.Errorf("coverage disclosure %q does not state %q", coverage, want)
+			}
+			if got := strings.Contains(coverage, boundedDisclosure); got != testCase.want {
+				t.Errorf("coverage disclosure %q claims the list is bounded = %t, want %t", coverage, got, testCase.want)
+			}
+		})
+	}
+}
+
+// TestStreamCoverageGivesWayBeforeTheHeadingsAndTheEventRow guards A-010: the
+// disclosure is the first of Stream's own chrome lines to give way, so a content
+// area that holds two lines keeps the headings above the row, and one that holds
+// a single line keeps the row.
+func TestStreamCoverageGivesWayBeforeTheHeadingsAndTheEventRow(t *testing.T) {
+	cases := []struct {
+		name         string
+		height       int
+		wantLines    int
+		wantHeadings bool
+		wantCoverage bool
+	}{
+		{name: "one content line", height: chromeLines + 1, wantLines: 1},
+		{name: "two content lines", height: chromeLines + 2, wantLines: 2, wantHeadings: true},
+		{name: "three content lines", height: chromeLines + 3, wantLines: 3, wantHeadings: true, wantCoverage: true},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			content := renderAt(t, streamModel(t, numberedEvents(t, scrollEvents)), wideWidth, testCase.height)
+			assertFits(t, content, wideWidth, testCase.height)
+
+			lines := bodyLines(t, content)
+			if len(lines) != testCase.wantLines {
+				t.Fatalf("stream rendered %d body lines at height %d, want %d:\n%s", len(lines), testCase.height, testCase.wantLines, content)
+			}
+			if !strings.Contains(lines[len(lines)-1], "commit 01") {
+				t.Errorf("the last body line is %q, want the newest event row", lines[len(lines)-1])
+			}
+			if got := namesColumns(lines[0]) || (len(lines) > 1 && namesColumns(lines[1])); got != testCase.wantHeadings {
+				t.Errorf("stream renders its headings = %t at height %d, want %t:\n%s", got, testCase.height, testCase.wantHeadings, content)
+			}
+			if got := strings.Contains(content, "events"); got != testCase.wantCoverage {
+				t.Errorf("stream renders its coverage disclosure = %t at height %d, want %t:\n%s", got, testCase.height, testCase.wantCoverage, content)
+			}
+			if !strings.Contains(content, "q quit") {
+				t.Errorf("stream at height %d loses the quit hint:\n%s", testCase.height, content)
+			}
+		})
+	}
+}
+
+// longDescriptionEvent is one event whose description outruns a narrow terminal,
+// so the row must be shortened to fit.
+func longDescriptionEvent(t *testing.T) []domain.Event {
+	t.Helper()
+	return []domain.Event{streamEvent(t, "1", "acme/backend", streamBase,
+		domain.CategoryPush, domain.EntityCommit, "alice", "pushed 3 commits to a long-lived feature branch")}
+}
+
+// TestStreamMarksRowsTheWidthCannotHold guards FR-010: a row the width cannot
+// hold is marked as shortened rather than cut silently, and the mark is paid for
+// out of the same width, so a marked row is never wider than an unmarked one.
+func TestStreamMarksRowsTheWidthCannotHold(t *testing.T) {
+	const width = 56
+
+	content := renderAt(t, streamModel(t, longDescriptionEvent(t)), width, wideHeight)
+	assertFits(t, content, width, wideHeight)
+
+	rows := eventRows(t, content)
+	if len(rows) != 1 {
+		t.Fatalf("stream rendered %d event rows, want 1:\n%s", len(rows), content)
+	}
+	if !strings.HasSuffix(rows[0], shortenedMark) {
+		t.Errorf("shortened row %q is not marked with %q", rows[0], shortenedMark)
+	}
+	if rendered := lipgloss.Width(rows[0]); rendered > width {
+		t.Errorf("marked row is %d cells wide, want at most %d: %q", rendered, width, rows[0])
+	}
+	// The mark replaces content rather than being appended to a full-width cut.
+	if kept := strings.TrimSuffix(rows[0], shortenedMark); !strings.Contains(truncate(rows[0], width), kept) {
+		t.Errorf("marked row %q does not keep a prefix of the unmarked row", rows[0])
+	}
+}
+
+// TestStreamLeavesContentThatFitsUnmarked guards the other half of FR-010: a row
+// the width holds carries no shortening mark, so the mark stays meaningful.
+func TestStreamLeavesContentThatFitsUnmarked(t *testing.T) {
+	content := renderAt(t, streamModel(t, longDescriptionEvent(t)), wideWidth, wideHeight)
+	assertFits(t, content, wideWidth, wideHeight)
+
+	for _, line := range bodyLines(t, content) {
+		if strings.Contains(line, shortenedMark) {
+			t.Errorf("body line %q is marked as shortened at width %d:\n%s", line, wideWidth, content)
+		}
+	}
+}
+
+// TestStreamReservesTheDeclaredChromeLines ties streamChrome to the chrome
+// streamContent actually builds. Production derives its row budget from the
+// lines it assembles rather than from the constant, and the scrolling tests
+// derive theirs from the constant, so a chrome line added or removed on one side
+// without the other would leave those budgets silently stale.
+func TestStreamReservesTheDeclaredChromeLines(t *testing.T) {
+	state := streamModel(t, detailedEvents(t)).state
+
+	chrome, lines, rowHeight := streamContent(state, wideWidth, wideHeight)
+
+	if len(chrome) != streamChrome {
+		t.Errorf("stream reserved %d chrome lines, want the declared %d: %q", len(chrome), streamChrome, chrome)
+	}
+	if want := wideHeight - streamChrome; rowHeight != want {
+		t.Errorf("stream windows its rows against %d lines, want %d", rowHeight, want)
+	}
+	if len(lines) != len(state.Snapshot.Events()) {
+		t.Errorf("stream laid out %d rows, want one per snapshot event (%d)", len(lines), len(state.Snapshot.Events()))
 	}
 }

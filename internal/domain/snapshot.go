@@ -36,6 +36,7 @@ type Aggregate struct {
 type Snapshot struct {
 	events     []Event
 	aggregates []Aggregate
+	truncated  bool
 }
 
 // NewSnapshot filters the returned activity to the Scope, then deduplicates,
@@ -51,14 +52,19 @@ func NewSnapshot(scope Scope, activities []RepositoryActivity) Snapshot {
 	}
 
 	events := SortByRecency(Deduplicate(scope.Filter(candidates)))
-	if len(events) > MaxSnapshotEvents {
+	truncated := len(events) > MaxSnapshotEvents
+	if truncated {
 		events = events[:MaxSnapshotEvents]
 	}
-	return Snapshot{events: events, aggregates: aggregate(scope, activities, events)}
+	return Snapshot{events: events, aggregates: aggregate(scope, activities, events), truncated: truncated}
 }
 
 // Events returns the bounded reverse-chronological events.
 func (s Snapshot) Events() []Event { return slices.Clone(s.events) }
+
+// Truncated reports whether the bound discarded events, so a view can say the
+// list is not the whole returned activity rather than ending silently (FR-006).
+func (s Snapshot) Truncated() bool { return s.truncated }
 
 // Aggregates returns the per-repository rows ordered by total descending, then
 // by display identity case-insensitively.

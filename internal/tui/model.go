@@ -176,7 +176,7 @@ func renderBody(lines []string, view viewport, width, height int) string {
 
 	rendered := make([]string, 0, max(len(visible), height))
 	for _, line := range visible {
-		rendered = append(rendered, bodyStyle.Render(truncate(line, width)))
+		rendered = append(rendered, bodyStyle.Render(shorten(line, width)))
 	}
 	for len(rendered) < height {
 		rendered = append(rendered, "")

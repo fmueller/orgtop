@@ -292,3 +292,59 @@ func TestNewSnapshotKeepsFirstReturnedDisplayIdentityPerRepository(t *testing.T)
 		t.Errorf("total = %d, want 2", aggregate.Total)
 	}
 }
+
+// pushEvents returns count push events for the repository, one second apart, so
+// a snapshot can be built at an exact distance from the FR-006 bound.
+func pushEvents(repo domain.Repository, count int) []domain.Event {
+	events := make([]domain.Event, 0, count)
+	for i := range count {
+		events = append(events, domain.Event{
+			ID:         fmt.Sprintf("event-%04d", i),
+			OccurredAt: time.Date(2026, time.August, 22, 0, 0, i, 0, time.UTC),
+			Repository: repo,
+			Category:   domain.CategoryPush,
+			EntityKind: domain.EntityCommit,
+		})
+	}
+	return events
+}
+
+// TestNewSnapshotRecordsWhetherTheBoundDiscardedEvents guards FR-006: the
+// snapshot retains whether the bound cut it, so a view reports a fact rather
+// than inferring one from the count reaching the limit.
+func TestNewSnapshotRecordsWhetherTheBoundDiscardedEvents(t *testing.T) {
+	cases := []struct {
+		name     string
+		returned int
+		want     bool
+	}{
+		{name: "below the bound", returned: domain.MaxSnapshotEvents - 1, want: false},
+		{name: "exactly at the bound", returned: domain.MaxSnapshotEvents, want: false},
+		{name: "one past the bound", returned: domain.MaxSnapshotEvents + 1, want: true},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			scope := mustNewScope(t, "owner/repo")
+			repo := mustParseRepository(t, "owner/repo")
+			events := pushEvents(repo, testCase.returned)
+
+			snapshot := domain.NewSnapshot(scope, []domain.RepositoryActivity{{Repository: repo, Events: events}})
+
+			if got := snapshot.Truncated(); got != testCase.want {
+				t.Errorf("Truncated() = %t for %d returned events, want %t", got, testCase.returned, testCase.want)
+			}
+			if got, want := len(snapshot.Events()), min(testCase.returned, domain.MaxSnapshotEvents); got != want {
+				t.Errorf("events = %d, want %d", got, want)
+			}
+		})
+	}
+}
+
+// TestZeroSnapshotIsNotTruncated guards the zero value: a snapshot that never
+// held events was never cut by the bound.
+func TestZeroSnapshotIsNotTruncated(t *testing.T) {
+	if (domain.Snapshot{}).Truncated() {
+		t.Error("the zero snapshot reports that the bound discarded events")
+	}
+}

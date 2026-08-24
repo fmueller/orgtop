@@ -1,12 +1,12 @@
 ---
 id: T-023-disclose-what-the-stream-list-covers-and-mark
 title: Disclose what the Stream list covers and mark shortened content
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.1.0.md#stream-view
 dependencies:
     - T-022-give-stream-sticky-column-headings
-updated_at: "2026-08-23T20:14:11Z"
+updated_at: "2026-08-24T09:15:17Z"
 ---
 
 # T-023-disclose-what-the-stream-list-covers-and-mark Disclose what the Stream list covers and mark shortened content
@@ -75,3 +75,4 @@ a shortened one. The reader has no signal that a branch name was removed.
 - `truncate` in `internal/tui/chrome.go` is shared by the header, the footer, and
   both bodies. Marking every caller is not obviously right: a truncated header
   field is already understood as tightened. Decide per caller and say why.
+- 2026-08-24T09:15:13Z: verification pass
