@@ -5,13 +5,14 @@ status: todo
 priority: medium
 spec_ref: specs/v0.1.0.md#integration-documentation-and-release-readiness
 dependencies:
+    - T-019-strip-link-references-from-extracted-changelog
     - T-020-render-event-age-instead-of-a-wall-clock-time-in
     - T-021-stop-restating-the-entity-class-in-event
     - T-022-give-stream-sticky-column-headings
     - T-023-disclose-what-the-stream-list-covers-and-mark
     - T-025-inject-a-fake-clock-into-tests
     - T-026-extend-the-host-clock-guard-to-time-until-and-pin
-updated_at: "2026-08-24T11:45:00Z"
+updated_at: "2026-08-24T12:05:00Z"
 ---
 
 # T-024-re-verify-v0-1-0-release-readiness-and-drift-after Re-verify v0.1.0 release readiness and drift after the Stream legibility work
@@ -76,7 +77,9 @@ and the amended spec have to be compared rather than assumed to agree.
   requirement set is unchanged; no v0.2+ behavior or dependency lands.
 - `CHANGELOG.md` still has a non-empty `## [0.1.0]` section and describes the
   Stream legibility work, so the release workflow will not refuse the tag and the
-  published notes match what shipped.
+  published notes match what shipped. Non-empty is judged the way T-019 leaves
+  `scripts/changelog-release-notes.sh` judging it, with link references
+  excluded, and the extracted notes carry no `[label]: url` line.
 
 ## Test Expectations
 
@@ -107,5 +110,11 @@ and the amended spec have to be compared rather than assumed to agree.
   footer change in `internal/tui/chrome.go`, and `releaseVersion` in
   `internal/toolchain/release_test.go` is a manual constant. Re-confirm both are
   still accurate rather than treating them as new.
-- T-019 covers the shell-side release-notes link-reference cruft and is
-  independent of this gate.
+- T-019 was first scoped as independent of this gate, on the reading that the
+  link-reference cruft is cosmetic. It is not: the changelog acceptance below
+  rests on `scripts/check-changelog-version.sh`, which delegates emptiness to
+  `scripts/changelog-release-notes.sh`, and that extractor still counts a link
+  reference as content. Until T-019 lands, a `## [0.1.0]` section holding
+  nothing but `[label]: url` lines reads as non-empty, so the gate would verify
+  the criterion with a script that cannot enforce it, and the notes the release
+  workflow publishes would carry the cruft. It is a dependency now.
