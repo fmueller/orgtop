@@ -9,7 +9,8 @@ dependencies:
     - T-021-stop-restating-the-entity-class-in-event
     - T-022-give-stream-sticky-column-headings
     - T-023-disclose-what-the-stream-list-covers-and-mark
-updated_at: "2026-08-23T20:14:17Z"
+    - T-025-inject-a-fake-clock-into-tests
+updated_at: "2026-08-24T07:30:00Z"
 ---
 
 # T-024-re-verify-v0-1-0-release-readiness-and-drift-after Re-verify v0.1.0 release readiness and drift after the Stream legibility work
@@ -32,6 +33,9 @@ What the preceding tasks move:
   arithmetic the A-010 contract rests on.
 - T-023 adds a coverage disclosure and a truncation mark, which change the
   narrowest layouts again.
+- T-025 injects a fake clock into the tests, so the age assertions T-020
+  introduced stop depending on the real one and the gate runs against a
+  deterministic surface.
 
 Unlike T-017, this one also has a spec to re-check. FR-005, FR-006, FR-007,
 FR-010, and A-010 were amended before T-020 started, so the implemented surface
