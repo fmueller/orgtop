@@ -2,7 +2,6 @@
 
 [![CI](https://github.com/fmueller/orgtop/actions/workflows/ci.yml/badge.svg)](https://github.com/fmueller/orgtop/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/fmueller/orgtop)](https://github.com/fmueller/orgtop/releases/latest)
-[![Go Report Card](https://goreportcard.com/badge/github.com/fmueller/orgtop)](https://goreportcard.com/report/github.com/fmueller/orgtop)
 [![Go Version](https://img.shields.io/github/go-mod/go-version/fmueller/orgtop)](go.mod)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 
