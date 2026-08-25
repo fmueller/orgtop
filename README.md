@@ -131,8 +131,9 @@ Quitting cancels whatever refresh is in flight and restores the terminal.
 
 ## Contributing
 
-Build requirements, the local check gate, commit-message policy, the Taskrail
-tracked-work flow, CI lanes, and the release process are in
+Run `task check` before opening a pull request: it is the full local gate and
+mirrors the CI `checks` job step for step. Build requirements, commit-message
+policy, the Taskrail tracked-work flow, CI lanes, and the release process are in
 [CONTRIBUTING.md](CONTRIBUTING.md). [`AGENTS.md`](AGENTS.md) is the
 authoritative guide for coding agents. Release notes live in
 [`CHANGELOG.md`](CHANGELOG.md).
