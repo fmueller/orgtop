@@ -12,7 +12,9 @@ dependencies:
     - T-023-disclose-what-the-stream-list-covers-and-mark
     - T-025-inject-a-fake-clock-into-tests
     - T-026-extend-the-host-clock-guard-to-time-until-and-pin
-updated_at: "2026-08-24T12:05:00Z"
+    - T-027-pin-exact-stripped-changelog-notes-in-the-go
+    - T-028-report-the-release-version-from-the-binary
+updated_at: "2026-08-25T00:00:00Z"
 ---
 
 # T-024-re-verify-v0-1-0-release-readiness-and-drift-after Re-verify v0.1.0 release readiness and drift after the Stream legibility work
@@ -43,8 +45,19 @@ What the preceding tasks move:
   it. Until it lands, the determinism guard is repository-wide in name only, so
   the gate cannot claim the surface it re-verifies is fully deterministic.
 
+- T-027 pins the exact stripped notes in the Go changelog guard, so the
+  changelog criterion below is enforced by two guards that cannot drift apart
+  silently rather than by the shell suite alone.
+- T-028 makes the binary report its own version and stamps that version at
+  release build time. It is a dependency because the gate below asserts the
+  release configuration still produces a correct `orgtop`: until the stamp
+  exists, `.goreleaser.yml` overrides GoReleaser's default `ldflags` and every
+  published archive would report an unstamped build, which this gate would
+  otherwise pass over.
+
 Unlike T-017, this one also has a spec to re-check. FR-005, FR-006, FR-007,
-FR-010, and A-010 were amended before T-020 started, so the implemented surface
+FR-010, and A-010 were amended before T-020 started, and FR-001, FR-011, and
+A-012 were amended for T-028, so the implemented surface
 and the amended spec have to be compared rather than assumed to agree.
 
 ## Acceptance
@@ -75,6 +88,9 @@ and the amended spec have to be compared rather than assumed to agree.
   checks through commands matching `task check`.
 - Build and release configuration still produces `orgtop`; the direct module
   requirement set is unchanged; no v0.2+ behavior or dependency lands.
+- A binary built the way the release builds it reports the tag through
+  `--version`, and a build without the stamp reports `dev`, so the published
+  archive can name itself in a bug report (FR-001, A-012).
 - `CHANGELOG.md` still has a non-empty `## [0.1.0]` section and describes the
   Stream legibility work, so the release workflow will not refuse the tag and the
   published notes match what shipped. Non-empty is judged the way T-019 leaves
@@ -97,8 +113,11 @@ and the amended spec have to be compared rather than assumed to agree.
 - Reference the T-017 verification artifact under
   `planning/artifacts/verify/T-017-re-verify-v0-1-0-release-readiness-before-tagging/`
   and note every assertion that had to change and why.
-- Record the spec-to-implementation comparison for each amended clause in FR-005,
-  FR-006, FR-007, FR-010, and A-010, naming the task and the test that covers it.
+- Record the spec-to-implementation comparison for each amended clause in FR-001,
+  FR-005, FR-006, FR-007, FR-010, A-010, and A-012, naming the task and the test
+  that covers it.
+- Record `task release:dry` and the `--version` output of the snapshot binary,
+  not only the unstamped local build.
 
 ## Implementation Notes
 
