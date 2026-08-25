@@ -1,12 +1,33 @@
 # OrgTop
 
-OrgTop is a terminal-native engineering activity awareness tool: `top` for your
-engineering organization. It is intended to provide a compact view of current
-activity across selected repositories without requiring a browser dashboard.
+[![CI](https://github.com/fmueller/orgtop/actions/workflows/ci.yml/badge.svg)](https://github.com/fmueller/orgtop/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/fmueller/orgtop)](https://github.com/fmueller/orgtop/releases/latest)
+[![Go Report Card](https://goreportcard.com/badge/github.com/fmueller/orgtop)](https://goreportcard.com/report/github.com/fmueller/orgtop)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/fmueller/orgtop)](go.mod)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 
-OrgTop v0.1 shows recent activity for an explicitly selected set of GitHub
+`top` for your engineering organization: a terminal-native view of what is
+happening across the repositories you care about, without opening a browser
+dashboard.
+
+OrgTop shows recent activity for an explicitly selected set of GitHub
 repositories in two views: an Overview of per-repository counts and a Stream of
-individual events.
+individual events. It reads; it never writes to GitHub, and it stores no
+credential of its own.
+
+## Installation
+
+Download the archive for your platform from the
+[latest release](https://github.com/fmueller/orgtop/releases/latest), or install
+with Go:
+
+```bash
+go install github.com/fmueller/orgtop/cmd/orgtop@latest
+```
+
+A `go install` build reports `dev` for `--version`; only release archives carry
+the tag. Build from source with `task build` or `go build ./cmd/orgtop`; see
+[CONTRIBUTING.md](CONTRIBUTING.md) for the development setup.
 
 ## Usage
 
@@ -28,11 +49,11 @@ concise cause, and makes no network request.
 `--version` (or `-v`) prints the release version on stdout and exits, and
 `--help` (or `-h`) prints usage and exits. Neither needs a `--repo` selection or
 a credential, and neither makes a network request, so a downloaded binary can be
-identified before it is configured. A build that was not produced by a release
-reports `dev`.
+identified before it is configured.
 
-```bash
-orgtop --version
+```console
+$ orgtop --version
+orgtop 0.1.0
 ```
 
 ### Authentication
@@ -48,6 +69,11 @@ A non-empty environment variable is used as-is and no `gh` process is started.
 If none of the three yields a token, startup exits non-zero and recommends
 setting `GH_TOKEN` or running `gh auth login`. The token value never appears in
 output, errors, or rendered views.
+
+An authenticated token gets 5000 GitHub REST requests per hour. OrgTop spends
+one request per selected repository per refresh, so a selection stays well
+inside the budget at the 60-second poll floor; a very large selection is bounded
+by that hourly limit rather than by OrgTop.
 
 ### Polling, not live
 
@@ -103,98 +129,14 @@ ends in `…`, marking that row as shortened rather than complete.
 
 Quitting cancels whatever refresh is in flight and restores the terminal.
 
-## Prerequisites
+## Contributing
 
-- Go 1.26.7 or a compatible newer release
-- [Task](https://taskfile.dev/) for the convenience commands
-- Taskrail for tracked specifications and work
-- [mise](https://mise.jdx.dev/) optionally provisions the pinned toolchain
-
-Run `mise install` to install the versions declared in `mise.toml`, or provide the
-tools through another mechanism.
-
-## Installation
-
-There is no published release yet. Build from source:
-
-```bash
-task build     # or: go build ./cmd/orgtop
-./orgtop --repo acme/backend
-```
-
-`task build` and the release build both produce a single static `orgtop`
-executable from `./cmd/orgtop`.
-
-## Development
-
-```bash
-task build
-task build:cross
-task test
-task run:smoke
-task fmt
-task fmt:check
-task lint
-task vet
-task licenses:check
-task workflow:validate
-task check
-task clean
-task hooks-install
-task test:mutate
-```
-
-`task check` is the full local gate and mirrors the CI `checks` job step for step.
-The corresponding direct Go commands remain available, including `go build
-./cmd/orgtop`, `go test ./...`, and `go vet ./...`.
-
-`task hooks-install` enables the opt-in Lefthook checks for formatting, vet,
-Taskrail validation, commit-message policy, and pre-push tests. CI remains the
-authoritative gate.
-
-`task test:mutate` runs differential Gremlins mutation testing against `main`
-(`BASE=<ref>` overrides it). The full `task test:mutate:gate` runs weekly in CI
-and on manual dispatch rather than on every pull request.
-
-## Continuous integration
-
-Two lanes split the work by what changed:
-
-- `CI` runs formatting, vet, lint, licenses, Taskrail validation, and release-config
-  checks, then a build/test matrix across Linux (x86-64 and arm64), Windows, and
-  macOS, plus a cross-compile smoke over every platform the release publishes.
-  Pull requests run the matrix on Linux only for fast feedback; pushes to `main`
-  and manual dispatch run all of it.
-- `Planning checks` is the fast lane for planning, spec, doc, and agent-skill
-  changes. It keeps the Taskrail and skill-mirror gates without starting the
-  matrix. Its trigger paths are the exact mirror of the paths `CI` ignores.
-
-Mutation testing runs weekly and on demand in its own workflow, never on a pull
-request.
-
-## Releases
-
-`CHANGELOG.md` follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
-is the source of release notes. Add a `## [<version>]` section before tagging: the
-release workflow refuses to publish a tag whose section is missing or empty.
-`docs/changelog.md` is the authoring policy for entries.
-Pushing a `v*` tag builds and publishes through GoReleaser; a manual dispatch
-builds a local snapshot and publishes nothing.
-
-## Taskrail
-
-Versioned product contracts live in `specs/`, and implementation tasks live in
-`planning/tasks/`. Before selecting work, run:
-
-```bash
-taskrail validate
-taskrail status
-taskrail next
-```
-
-Use the Taskrail lifecycle to start, complete, and verify tracked work. Do not edit
-`planning/STATE.md` execution fields manually.
+Build requirements, the local check gate, commit-message policy, the Taskrail
+tracked-work flow, CI lanes, and the release process are in
+[CONTRIBUTING.md](CONTRIBUTING.md). [`AGENTS.md`](AGENTS.md) is the
+authoritative guide for coding agents. Release notes live in
+[`CHANGELOG.md`](CHANGELOG.md).
 
 ## License
 
-OrgTop is licensed under the Apache License 2.0. See `LICENSE`.
+OrgTop is licensed under the Apache License 2.0. See [`LICENSE`](LICENSE).
