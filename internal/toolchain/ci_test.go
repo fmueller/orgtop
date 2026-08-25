@@ -262,8 +262,14 @@ func TestCrossCompileCoversEveryReleaseTarget(t *testing.T) {
 }
 
 // TestReleaseWorkflowGuardsChangelogNotes keeps the publish path from shipping a
-// release with an empty body. GoReleaser has its own changelog disabled, so the
-// CHANGELOG section is the only source of release notes.
+// release with an empty body. The CHANGELOG section is the only source of
+// release notes, and it reaches the release through `--release-notes`.
+//
+// v0.1.0 published an empty body because .goreleaser.yml carried
+// `changelog.disable: true`. GoReleaser reads `--release-notes` inside the
+// changelog pipe, whose Skip() honors that flag, so disabling the pipe throws
+// the extracted notes away without a warning. The pipe must stay enabled; it
+// returns before generating anything once `--release-notes` is set.
 func TestReleaseWorkflowGuardsChangelogNotes(t *testing.T) {
 	t.Parallel()
 
@@ -279,8 +285,12 @@ func TestReleaseWorkflowGuardsChangelogNotes(t *testing.T) {
 		}
 	}
 
-	if changelog := nodeAt(loadYAML(t, goreleaserConfig), "changelog", "disable"); changelog == nil || changelog.Value != "true" {
-		t.Error("GoReleaser's own changelog must stay disabled while CHANGELOG.md is the source of release notes")
+	if changelog := nodeAt(loadYAML(t, goreleaserConfig), "changelog", "disable"); changelog != nil && changelog.Value == "true" {
+		t.Error("GoReleaser's changelog pipe must stay enabled: it is what reads --release-notes, and disabling it publishes an empty release body")
+	}
+
+	if !strings.Contains(commands, "gh release view") {
+		t.Error("the release workflow must verify the published release body is non-empty, so an empty body reds the run instead of shipping quietly")
 	}
 }
 

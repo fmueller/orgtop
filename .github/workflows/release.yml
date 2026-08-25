@@ -51,6 +51,26 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: goreleaser release --clean --release-notes="${RUNNER_TEMP}/release-notes.md"
 
+      - name: Verify the published release body carries the notes
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # The guards above prove the notes file is non-empty; this proves the
+          # notes actually reached the published release. v0.1.0 passed every
+          # earlier guard and still shipped an empty body.
+          body="$(gh release view "${GITHUB_REF_NAME}" --json body --jq '.body')"
+          if [ -z "$(printf '%s' "$body" | tr -d '[:space:]')" ]; then
+            echo "guard: published release ${GITHUB_REF_NAME} has an empty body" >&2
+            exit 1
+          fi
+          expected="$(./scripts/changelog-release-notes.sh "${GITHUB_REF_NAME}")"
+          if [ "$(printf '%s' "$body" | tr -d '[:space:]')" != "$(printf '%s' "$expected" | tr -d '[:space:]')" ]; then
+            echo "guard: published release ${GITHUB_REF_NAME} does not carry the CHANGELOG notes" >&2
+            exit 1
+          fi
+          echo "guard: published release ${GITHUB_REF_NAME} carries the CHANGELOG notes"
+
       # --- Manual dispatch: snapshot only, no GitHub Release ---
 
       - name: Run GoReleaser (snapshot, no publish)

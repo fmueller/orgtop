@@ -37,5 +37,11 @@ archives:
 checksum:
   name_template: checksums.txt
 
+# The changelog pipe must stay ENABLED. GoReleaser reads `--release-notes`
+# inside this pipe (internal/pipe/changelog), and its Skip() returns early on
+# `disable: true` — so disabling it silently discards the extracted CHANGELOG
+# section and publishes an empty release body. The pipe returns before any
+# generation once `--release-notes` is set, so CHANGELOG.md stays the only
+# source of notes on the tag path.
 changelog:
-  disable: true
+  use: git
