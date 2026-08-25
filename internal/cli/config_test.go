@@ -189,3 +189,53 @@ func TestParseArgsReportsItsOwnRejectionsExactlyOnce(t *testing.T) {
 		})
 	}
 }
+
+// TestParseArgsReportsAVersionRequest keeps the version path ahead of every
+// other decision: both spellings report the sentinel, no --repo is required,
+// and nothing reaches the usage stream, which is stderr in the process
+// (FR-001, A-012).
+func TestParseArgsReportsAVersionRequest(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{name: "long flag", args: []string{"--version"}},
+		{name: "single dash long flag", args: []string{"-version"}},
+		{name: "short flag", args: []string{"-v"}},
+		{name: "alongside a repository", args: []string{"--repo", "acme/backend", "--version"}},
+		{name: "alongside a rejected argument", args: []string{"--version", "stray"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var output bytes.Buffer
+			_, err := cli.ParseArgs("orgtop", tt.args, &output)
+			if !errors.Is(err, cli.ErrVersionRequested) {
+				t.Fatalf("ParseArgs(%v) error = %v, want %v", tt.args, err, cli.ErrVersionRequested)
+			}
+			if output.Len() != 0 {
+				t.Errorf("a version request wrote %q to the usage stream, want none", output.String())
+			}
+		})
+	}
+}
+
+// TestVersionDefaultsToDev keeps an unstamped build honest: it reports dev
+// rather than an empty value the release linker flag was meant to fill.
+func TestVersionDefaultsToDev(t *testing.T) {
+	if cli.Version != "dev" {
+		t.Errorf("cli.Version = %q, want %q in an unstamped build", cli.Version, "dev")
+	}
+}
+
+// TestUsageDocumentsTheVersionFlag keeps usage listing every flag the parser
+// accepts, so --help names the version request a reader is looking for.
+func TestUsageDocumentsTheVersionFlag(t *testing.T) {
+	var output bytes.Buffer
+	if _, err := cli.ParseArgs("orgtop", nil, &output); err == nil {
+		t.Fatal("parsing an empty argument list must be rejected")
+	}
+	if !strings.Contains(output.String(), "--version") {
+		t.Errorf("usage output does not list --version:\n%s", output.String())
+	}
+}

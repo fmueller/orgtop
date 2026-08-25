@@ -251,3 +251,68 @@ func TestChangelogSectionDistinguishesAbsentFromSaysNothing(t *testing.T) {
 		})
 	}
 }
+
+// versionSymbol is the package-level variable, relative to the module path,
+// that the release stamp fills and the CLI prints.
+const versionSymbol = "internal/cli.Version"
+
+// TestReleaseStampsTheVersionSymbolTheBinaryReads keeps published archives from
+// reporting `dev`. GoReleaser's ldflags list replaces its default
+// `-X main.version=...`, so the assignment has to be written here explicitly,
+// and it has to name the symbol internal/cli actually declares: a rename on
+// either side un-stamps every release silently otherwise (FR-001, A-012). The
+// stamped variable's own `dev` default is guarded in internal/cli.
+func TestReleaseStampsTheVersionSymbolTheBinaryReads(t *testing.T) {
+	t.Parallel()
+
+	builds := child(loadYAML(t, goreleaserConfig), "builds")
+	if builds == nil || len(builds.Content) != 1 {
+		t.Fatal(".goreleaser.yml must declare exactly one build")
+	}
+	flags := stringSlice(child(builds.Content[0], "ldflags"))
+	for _, want := range []string{"-s", "-w"} {
+		if !contains(strings.Fields(strings.Join(flags, " ")), want) {
+			t.Errorf(".goreleaser.yml ldflags %v dropped %q", flags, want)
+		}
+	}
+
+	target, template, ok := linkerAssignment(flags)
+	if !ok {
+		t.Fatalf(".goreleaser.yml ldflags %v carry no -X version assignment", flags)
+	}
+	if want := modulePath(t) + "/" + versionSymbol; target != want {
+		t.Errorf("-X targets %q, want %q", target, want)
+	}
+	if normalized := strings.Join(strings.Fields(template), ""); normalized != "{{.Version}}" {
+		t.Errorf("-X assigns %q, want GoReleaser's {{ .Version }}", template)
+	}
+}
+
+// linkerAssignment splits the first `-X target=value` out of the ldflags list.
+// The value is read from the whole entry rather than a whitespace field because
+// GoReleaser's template spelling, `{{ .Version }}`, contains spaces.
+func linkerAssignment(flags []string) (target, template string, ok bool) {
+	for _, flag := range flags {
+		assignment, found := strings.CutPrefix(strings.TrimSpace(flag), "-X")
+		if !found {
+			continue
+		}
+		assignment = strings.TrimSpace(strings.TrimPrefix(assignment, "="))
+		target, template, ok = strings.Cut(assignment, "=")
+		return target, strings.TrimSpace(template), ok
+	}
+	return "", "", false
+}
+
+// modulePath returns the module path go.mod declares.
+func modulePath(t *testing.T) string {
+	t.Helper()
+
+	for _, line := range strings.Split(readFile(t, goModule), "\n") {
+		if path, ok := strings.CutPrefix(strings.TrimSpace(line), "module "); ok {
+			return strings.TrimSpace(path)
+		}
+	}
+	t.Fatal("go.mod declares no module path")
+	return ""
+}

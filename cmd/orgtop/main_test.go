@@ -25,7 +25,10 @@ type launchRecord struct {
 
 // harness builds a shell whose process seams are recorded rather than executed.
 type harness struct {
-	output   bytes.Buffer
+	output bytes.Buffer
+	// version receives the version line, which the process writes to stdout so
+	// a caller can read it apart from usage and failure copy.
+	version  bytes.Buffer
 	resolved bool
 	launched launchRecord
 	// credential is handed to launch when resolution is asked to succeed.
@@ -57,7 +60,8 @@ func (h *harness) shell() shell {
 			}
 			return h.launchErr
 		},
-		output: &h.output,
+		output:  &h.output,
+		version: &h.version,
 	}
 }
 
@@ -145,6 +149,69 @@ func TestHelpRequestExitsSuccessfullyWithoutLaunching(t *testing.T) {
 	}
 	if output := harness.output.String(); !strings.Contains(output, "Usage:") {
 		t.Errorf("a help request does not print usage:\n%s", output)
+	}
+}
+
+// TestVersionRequestExitsSuccessfullyWithoutLaunching keeps the version path
+// ahead of every other decision: neither spelling needs a --repo selection, a
+// credential, or the terminal UI (FR-001, A-012).
+func TestVersionRequestExitsSuccessfullyWithoutLaunching(t *testing.T) {
+	tests := []struct {
+		name   string
+		binary string
+		args   []string
+	}{
+		{name: "long flag", binary: "orgtop", args: []string{"--version"}},
+		{name: "short flag", binary: "orgtop", args: []string{"-v"}},
+		// The Windows archive ships orgtop.exe and a user may rename or symlink
+		// any copy, but the reported line stays the documented one (A-012).
+		{name: "windows executable name", binary: "orgtop.exe", args: []string{"--version"}},
+		{name: "renamed binary", binary: "orgtop-nightly", args: []string{"--version"}},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			harness := &harness{}
+			code := harness.shell().run(context.Background(), test.binary, test.args)
+
+			if code != exitSuccess {
+				t.Errorf("run(%q) exit code = %d, want %d", test.args, code, exitSuccess)
+			}
+			if harness.resolved || harness.launched.called {
+				t.Error("a version request resolved a credential or launched the terminal ui")
+			}
+			want := "orgtop " + cli.Version + "\n"
+			if got := harness.version.String(); got != want {
+				t.Errorf("version output = %q, want %q", got, want)
+			}
+			if got := harness.output.String(); got != "" {
+				t.Errorf("a version request wrote %q to the error stream, want nothing", got)
+			}
+		})
+	}
+}
+
+// TestHelpAndFailuresStayOffTheVersionStream keeps the two streams separable:
+// only the version line reaches stdout, so a caller reading it never has to
+// filter usage or a startup failure out of it.
+func TestHelpAndFailuresStayOffTheVersionStream(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{name: "help request", args: []string{"--help"}},
+		{name: "rejected configuration", args: nil},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			harness := &harness{}
+			harness.shell().run(context.Background(), "orgtop", test.args)
+
+			if got := harness.version.String(); got != "" {
+				t.Errorf("wrote %q to the version stream, want nothing", got)
+			}
+		})
 	}
 }
 

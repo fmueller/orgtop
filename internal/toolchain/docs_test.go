@@ -110,3 +110,17 @@ func TestReadmeClaimsNoDeferredFunctionality(t *testing.T) {
 		}
 	}
 }
+
+// TestReadmeDocumentsTheVersionAndHelpFlags guards FR-011 for the two flags a
+// bug reporter is asked to run first: the README has to name both spellings of
+// each, or a downloaded binary cannot be identified from its documentation.
+func TestReadmeDocumentsTheVersionAndHelpFlags(t *testing.T) {
+	t.Parallel()
+
+	readme := readFile(t, readmePath)
+	for _, flag := range []string{"--version", "-v", "--help", "-h"} {
+		if !strings.Contains(readme, "`"+flag+"`") {
+			t.Errorf("README.md does not document the %s flag", flag)
+		}
+	}
+}

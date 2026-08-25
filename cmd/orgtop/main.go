@@ -37,6 +37,9 @@ type shell struct {
 	launch  launchFunc
 	// output receives usage and every startup failure.
 	output io.Writer
+	// version receives the version line alone, so a caller reading it never has
+	// to filter usage or failure copy out of the same stream (FR-001).
+	version io.Writer
 }
 
 func main() {
@@ -47,6 +50,7 @@ func main() {
 		resolve: auth.NewResolver().Resolve,
 		launch:  launch,
 		output:  os.Stderr,
+		version: os.Stdout,
 	}.run(ctx, filepath.Base(os.Args[0]), os.Args[1:])
 	stop()
 	os.Exit(code)
@@ -63,6 +67,12 @@ func (s shell) run(ctx context.Context, name string, args []string) int {
 		// An explicit help request is a successful run rather than a rejected
 		// configuration.
 		if errors.Is(err, flag.ErrHelp) {
+			return exitSuccess
+		}
+		// A version request is answered before any credential or network work,
+		// on its own stream (A-012).
+		if errors.Is(err, cli.ErrVersionRequested) {
+			_, _ = fmt.Fprintln(s.version, cli.VersionLine())
 			return exitSuccess
 		}
 		return exitFailure

@@ -17,6 +17,7 @@ builds:
       - arm64
     ldflags:
       - -s -w
+      - -X github.com/fmueller/orgtop/internal/cli.Version={{ .Version }}
 
 archives:
   - id: orgtop

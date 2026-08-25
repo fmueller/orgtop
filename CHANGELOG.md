@@ -13,6 +13,13 @@ workflow refuses to publish otherwise.
 
 ### Added
 
+- `--version` and its `-v` short form print the release version and exit zero,
+  before any credential resolution, subprocess, or terminal UI, and without
+  needing a `--repo` selection. The single `orgtop <version>` line goes to
+  stdout while usage and startup failures stay on stderr, so a caller can read
+  one without the other. Release builds stamp the version onto the binary; a
+  build without that stamp reports `dev`.
+
 - Stream names its columns. A heading row sits directly under the shared header
   and stays there at every scroll position, so the age, repository, category, and
   actor/description columns remain identified once the events have scrolled. The

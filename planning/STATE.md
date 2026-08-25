@@ -1,14 +1,14 @@
 ---
 schema_version: 1
-updated_at: "2026-08-24T18:51:54Z"
+updated_at: "2026-08-25T19:26:09Z"
 active_spec_version: v0.1.0
 active_spec_path: specs/v0.1.0.md
 current_task: ""
 current_task_title: ""
 status_summary: idle
 blockers: []
-next_action: Implement T-028-report-the-release-version-from-the-binary, then re-verify with T-024
-last_verification_result: pass for T-026-extend-the-host-clock-guard-to-time-until-and-pin at 2026-08-24T18:51:49Z
+next_action: Select the next eligible task
+last_verification_result: pass for T-028-report-the-release-version-from-the-binary at 2026-08-25T19:26:05Z
 relevant_artifacts: []
 continuation_notes:
     - This repository is using manual Taskrail-style workflow scaffolding until the product replaces more of the bootstrap steps.
@@ -34,11 +34,11 @@ continuation_notes:
 
 ## Last Verification
 
-- pass for T-026-extend-the-host-clock-guard-to-time-until-and-pin at 2026-08-24T18:51:49Z
+- pass for T-028-report-the-release-version-from-the-binary at 2026-08-25T19:26:05Z
 
 ## Next Action
 
-- Implement T-028-report-the-release-version-from-the-binary, then re-verify with T-024
+- Select the next eligible task
 
 ## Relevant Artifacts
 
@@ -50,8 +50,8 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 2
+- todo: 1
 - in_progress: 0
-- completed: 26
+- completed: 27
 - blocked: 0
 - cancelled: 0

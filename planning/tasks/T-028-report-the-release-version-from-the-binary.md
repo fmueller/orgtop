@@ -1,12 +1,12 @@
 ---
 id: T-028-report-the-release-version-from-the-binary
 title: Report the release version from the binary
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.1.0.md#cli-and-authentication-boundary
 dependencies:
     - T-002-implement-cli-configuration-and-github-credential
-updated_at: "2026-08-25T00:00:00Z"
+updated_at: "2026-08-25T19:26:09Z"
 ---
 
 # T-028-report-the-release-version-from-the-binary Report the release version from the binary
@@ -90,3 +90,4 @@ build reports `dev`.
 - T-024 re-verifies release readiness and is still open; this task is a
   dependency of it, so the re-verification runs against the stamped binary and
   the gate cannot pass a release that reports `dev`.
+- 2026-08-25T19:26:05Z: verification pass

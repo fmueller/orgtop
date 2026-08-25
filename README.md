@@ -25,6 +25,16 @@ organization-wide selection: a launch without `--repo`, with a malformed
 identifier, or with glob syntax exits before the terminal UI with usage and a
 concise cause, and makes no network request.
 
+`--version` (or `-v`) prints the release version on stdout and exits, and
+`--help` (or `-h`) prints usage and exits. Neither needs a `--repo` selection or
+a credential, and neither makes a network request, so a downloaded binary can be
+identified before it is configured. A build that was not produced by a release
+reports `dev`.
+
+```bash
+orgtop --version
+```
+
 ### Authentication
 
 OrgTop uses an existing local GitHub credential and never stores one of its own.
