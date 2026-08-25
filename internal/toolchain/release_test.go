@@ -316,3 +316,29 @@ func modulePath(t *testing.T) string {
 	t.Fatal("go.mod declares no module path")
 	return ""
 }
+
+// releasedSurface names the shipped capabilities the release notes have to
+// describe. Everything implemented before the tag belongs under the version
+// heading, not under `## [Unreleased]`: the notes the release workflow publishes
+// are exactly that section, so an entry left above it ships silently.
+var releasedSurface = []string{
+	"--version", "column headings", "showing", "discarded", "shortened",
+}
+
+// TestChangelogAttributesTheShippedSurfaceToTheReleaseVersion keeps the
+// published notes matching what shipped. TestChangelogDocumentsTheReleaseVersion
+// only proves the section is non-empty, which a section describing half the
+// release also satisfies.
+func TestChangelogAttributesTheShippedSurfaceToTheReleaseVersion(t *testing.T) {
+	t.Parallel()
+
+	notes, documented := changelogSection(readFile(t, changelogPath), releaseVersion)
+	if !documented {
+		t.Fatalf("CHANGELOG.md has no '## [%s]' heading", releaseVersion)
+	}
+	for _, shipped := range releasedSurface {
+		if !strings.Contains(notes, shipped) {
+			t.Errorf("CHANGELOG.md's '## [%s]' section does not describe %q, so the published notes would omit it", releaseVersion, shipped)
+		}
+	}
+}

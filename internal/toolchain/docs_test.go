@@ -25,6 +25,21 @@ var documentedControls = []string{
 	"`1`", "`2`", "`tab`", "`up`", "`down`", "`pgup`", "`pgdown`", "`q`", "`ctrl+c`",
 }
 
+// streamColumnsHeading opens the README section that describes Stream's columns.
+// The column checks are scoped to it, because names as ordinary as "age" and
+// "repository" also occur in the usage prose, and a whole-file search for them
+// would pass whether or not the columns are documented at all.
+const streamColumnsHeading = "### stream columns"
+
+// documentedStreamColumns are the columns Stream renders, in the order its
+// heading row names them. Like documentedControls this repeats the shipped
+// spelling rather than deriving it, because the heading row is internal to
+// internal/tui; a README that stops naming a column misdescribes the view an
+// operator is looking at (FR-010, FR-011). Each is quoted as the README quotes
+// it, so the check cannot be satisfied by the same word used as ordinary prose
+// inside the section, such as the sentence explaining that times are ages.
+var documentedStreamColumns = []string{"`age`", "`repository`", "`category`", "`actor · description`"}
+
 // TestReadmeDocumentsTheDocumentedUsage keeps the documented invocation the one
 // the binary actually accepts. Deriving it from the parser rather than repeating
 // the string means a renamed or reshaped flag fails here instead of misleading a
@@ -123,4 +138,44 @@ func TestReadmeDocumentsTheVersionAndHelpFlags(t *testing.T) {
 			t.Errorf("README.md does not document the %s flag", flag)
 		}
 	}
+}
+
+// TestReadmeDescribesTheStreamColumnsAsRendered guards FR-011 for the surface
+// T-020 through T-023 changed: the README has to name Stream's columns, say that
+// its times are ages at the last successful refresh rather than clock times, and
+// describe the two affordances that explain an incomplete row or list — the
+// coverage disclosure and the shortening mark.
+func TestReadmeDescribesTheStreamColumnsAsRendered(t *testing.T) {
+	t.Parallel()
+
+	readme := strings.ToLower(readFile(t, readmePath))
+	section := streamColumnsSection(t, readme)
+	for _, column := range documentedStreamColumns {
+		if !strings.Contains(section, column) {
+			t.Errorf("README.md does not describe the Stream %q column", column)
+		}
+	}
+	for _, required := range []string{"age at the last successful refresh", "shortened", "showing"} {
+		if !strings.Contains(readme, required) {
+			t.Errorf("README.md does not document %q", required)
+		}
+	}
+}
+
+// streamColumnsSection returns the lowercased README section that describes
+// Stream's columns, from its heading to the next one. Scoping the search keeps a
+// column check able to fail: the surrounding usage prose already spells "age"
+// and "repository" for unrelated reasons.
+func streamColumnsSection(t *testing.T, readme string) string {
+	t.Helper()
+
+	start := strings.Index(readme, streamColumnsHeading)
+	if start < 0 {
+		t.Fatalf("README.md has no %q section describing the Stream columns", streamColumnsHeading)
+	}
+	rest := readme[start+len(streamColumnsHeading):]
+	if end := strings.Index(rest, "\n### "); end >= 0 {
+		return rest[:end]
+	}
+	return rest
 }

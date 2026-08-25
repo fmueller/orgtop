@@ -16,6 +16,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 
 	"github.com/fmueller/orgtop/internal/cli"
 	"github.com/fmueller/orgtop/internal/github"
@@ -905,4 +906,56 @@ func ages(t *testing.T, content string) []string {
 		kept = append(kept, strings.Fields(row)[0])
 	}
 	return kept
+}
+
+// shortenedMark is the mark the shared chrome appends to content it shortened.
+// It is duplicated here rather than exported, so a wired flow asserts the mark an
+// operator sees rather than whatever internal/tui currently calls it.
+const shortenedMark = "…"
+
+// narrowStreamAges are the rendered ages the fixture below must produce at the
+// narrowest size, spanning minutes to weeks so no single unit could have carried
+// the whole span.
+var narrowStreamAges = []string{"5m", "2h", "3d", "2w"}
+
+// TestStreamKeepsEveryLegibilityAffordanceAtTheNarrowestSize covers the whole
+// post-T-020 Stream surface through the wired binary at the size the contract is
+// narrowest for: a snapshot spanning minutes to weeks has to render its ages,
+// its sticky column headings, its coverage disclosure, and a shortening mark on
+// whatever no longer fits, all inside the 40x10 budget (FR-007, FR-010, A-010).
+// The pieces are asserted together because each one costs width or a chrome
+// line, so proving them one at a time cannot show they coexist.
+func TestStreamKeepsEveryLegibilityAffordanceAtTheNarrowestSize(t *testing.T) {
+	const day = 24 * time.Hour
+	endpoint := newEndpoint(map[string][]cannedResponse{
+		eventsPath("acme/backend"): {ok(agedEventsPage("acme/backend", 5*time.Minute, 2*time.Hour, 3*day, 20*day))},
+	})
+	run := newFlow(t, endpoint, "--repo", "acme/backend")
+	run.refresh()
+	run.press("2")
+
+	content := run.render(narrowWidth, narrowHeight)
+	lines := strings.Split(content, "\n")
+	if len(lines) > narrowHeight {
+		t.Errorf("stream used %d lines, want at most %d:\n%s", len(lines), narrowHeight, content)
+	}
+	for index, line := range lines {
+		if rendered := lipgloss.Width(line); rendered > narrowWidth {
+			t.Errorf("line %d is %d columns wide, want at most %d:\n%s", index, rendered, narrowWidth, content)
+		}
+	}
+
+	// The shared chrome and Stream's own two lines, above the event rows.
+	assertContains(t, content, "STREAM", "q quit", fmt.Sprintf("showing %d events", len(narrowStreamAges)))
+	if rendered := ages(t, content); !slices.Equal(rendered, narrowStreamAges) {
+		t.Fatalf("stream is aged %v, want %v:\n%s", rendered, narrowStreamAges, content)
+	}
+
+	// The detail column cannot fit at this width, so every row has to say it was
+	// shortened rather than end mid-word without a mark.
+	for index, row := range streamBody(t, content) {
+		if !strings.HasSuffix(strings.TrimRight(row, " "), shortenedMark) {
+			t.Errorf("row %d was shortened without the mark %q:\n%s", index, shortenedMark, row)
+		}
+	}
 }

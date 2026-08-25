@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-updated_at: "2026-08-25T19:26:09Z"
+updated_at: "2026-08-25T19:47:08Z"
 active_spec_version: v0.1.0
 active_spec_path: specs/v0.1.0.md
 current_task: ""
@@ -8,7 +8,7 @@ current_task_title: ""
 status_summary: idle
 blockers: []
 next_action: Select the next eligible task
-last_verification_result: pass for T-028-report-the-release-version-from-the-binary at 2026-08-25T19:26:05Z
+last_verification_result: pass for T-024-re-verify-v0-1-0-release-readiness-and-drift-after at 2026-08-25T19:47:01Z
 relevant_artifacts: []
 continuation_notes:
     - This repository is using manual Taskrail-style workflow scaffolding until the product replaces more of the bootstrap steps.
@@ -34,7 +34,7 @@ continuation_notes:
 
 ## Last Verification
 
-- pass for T-028-report-the-release-version-from-the-binary at 2026-08-25T19:26:05Z
+- pass for T-024-re-verify-v0-1-0-release-readiness-and-drift-after at 2026-08-25T19:47:01Z
 
 ## Next Action
 
@@ -50,8 +50,8 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 1
+- todo: 0
 - in_progress: 0
-- completed: 27
+- completed: 28
 - blocked: 0
 - cancelled: 0

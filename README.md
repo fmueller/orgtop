@@ -67,6 +67,28 @@ freshness marker beside `POLLING`:
 | `ERROR` | No refresh has ever succeeded; the cause is shown. |
 | `STALE` | A later refresh failed; the last successful snapshot stays visible with its last-success time and the cause. |
 
+### Stream columns
+
+Stream lists events newest first under a heading row that stays on screen while
+the list scrolls. A narrow terminal shortens the headings and the category
+names, so both spellings are listed:
+
+| Column | Narrow | Meaning |
+|---|---|---|
+| `age` | `age` | How long before the last successful refresh the event happened |
+| `repository` | `repo` | The repository the event belongs to |
+| `category` | `type` | The event category as text: `push`, `pull request`, `review`, `comment`, or `other`, shortened to `pr`, `rev`, `com`, and `oth` |
+| `actor · description` | `detail` | Who acted, and a concise description of what the event did |
+
+Times are ages, not clock times. A row reading `3d` is the event's
+age at the last successful refresh the header reports, so it stays put while a
+later failed refresh leaves the header `STALE`.
+
+Above the headings Stream states how much activity it is showing: the number of
+events in the current snapshot and, when the 500-event bound discarded older
+activity, that the list stops at that limit. Content too wide for the terminal
+ends in `…`, marking that row as shortened rather than complete.
+
 ### Controls
 
 | Key | Action |

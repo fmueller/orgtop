@@ -1,7 +1,7 @@
 ---
 id: T-024-re-verify-v0-1-0-release-readiness-and-drift-after
 title: Re-verify v0.1.0 release readiness and drift after the Stream legibility work
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.1.0.md#integration-documentation-and-release-readiness
 dependencies:
@@ -14,7 +14,7 @@ dependencies:
     - T-026-extend-the-host-clock-guard-to-time-until-and-pin
     - T-027-pin-exact-stripped-changelog-notes-in-the-go
     - T-028-report-the-release-version-from-the-binary
-updated_at: "2026-08-25T00:00:00Z"
+updated_at: "2026-08-25T19:47:08Z"
 ---
 
 # T-024-re-verify-v0-1-0-release-readiness-and-drift-after Re-verify v0.1.0 release readiness and drift after the Stream legibility work
@@ -137,3 +137,4 @@ and the amended spec have to be compared rather than assumed to agree.
   nothing but `[label]: url` lines reads as non-empty, so the gate would verify
   the criterion with a script that cannot enforce it, and the notes the release
   workflow publishes would carry the cruft. It is a dependency now.
+- 2026-08-25T19:47:01Z: verification pass

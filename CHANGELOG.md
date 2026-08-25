@@ -11,15 +11,31 @@ workflow refuses to publish otherwise.
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-08-25
+
 ### Added
 
+- Event domain types and repository scope parsing.
+- Command-line configuration and GitHub credential resolution.
+- A bounded GitHub activity source with payload normalization.
+- Filtered activity snapshots and per-repository aggregates.
+- A Bubble Tea application shell with an asynchronous refresh lifecycle.
+- Overview now lists every selected repository with its recent event,
+  pull-request, and push counts, and says so explicitly when a refresh returns
+  no activity at all.
+- Stream now lists recent events newest first with their age at the last
+  successful refresh, repository, text-encoded category, actor, and description.
+- Overview and Stream both scroll with the up, down, page up, and page down
+  keys, each keeping its own position across view switches.
+- The README documents the repeated `--repo` usage, the credential precedence
+  and its `gh auth login` fallback, the polling-not-live semantics, the
+  controls, and the development checks.
 - `--version` and its `-v` short form print the release version and exit zero,
   before any credential resolution, subprocess, or terminal UI, and without
   needing a `--repo` selection. The single `orgtop <version>` line goes to
   stdout while usage and startup failures stay on stderr, so a caller can read
   one without the other. Release builds stamp the version onto the binary; a
   build without that stamp reports `dev`.
-
 - Stream names its columns. A heading row sits directly under the shared header
   and stays there at every scroll position, so the age, repository, category, and
   actor/description columns remain identified once the events have scrolled. The
@@ -40,26 +56,6 @@ workflow refuses to publish otherwise.
   `opened pull request #42`. Descriptions without an entity reference still name
   the entity, and an issue-only comment keeps its noun because its category is
   `other`.
-
-## [0.1.0] - 2026-08-23
-
-### Added
-
-- Event domain types and repository scope parsing.
-- Command-line configuration and GitHub credential resolution.
-- A bounded GitHub activity source with payload normalization.
-- Filtered activity snapshots and per-repository aggregates.
-- A Bubble Tea application shell with an asynchronous refresh lifecycle.
-- Overview now lists every selected repository with its recent event,
-  pull-request, and push counts, and says so explicitly when a refresh returns
-  no activity at all.
-- Stream now lists recent events newest first with their age at the last
-  successful refresh, repository, text-encoded category, actor, and description.
-- Overview and Stream both scroll with the up, down, page up, and page down
-  keys, each keeping its own position across view switches.
-- The README documents the repeated `--repo` usage, the credential precedence
-  and its `gh auth login` fallback, the polling-not-live semantics, the
-  controls, and the development checks.
 
 ### Fixed
 
