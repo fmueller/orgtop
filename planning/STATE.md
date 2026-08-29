@@ -1,13 +1,13 @@
 ---
 schema_version: 1
-updated_at: "2026-08-25T20:28:18Z"
-active_spec_version: v0.1.0
-active_spec_path: specs/v0.1.0.md
+updated_at: "2026-08-29T09:29:04Z"
+active_spec_version: v0.2.0
+active_spec_path: specs/v0.2.0.md
 current_task: ""
 current_task_title: ""
 status_summary: idle
 blockers: []
-next_action: Select the next eligible task
+next_action: 'Start task T-031-close-the-unified-cli-contract: Close the unified CLI contract'
 last_verification_result: pass for T-029-restore-changelog-notes-to-the-published-release at 2026-08-25T20:08:09Z
 relevant_artifacts: []
 continuation_notes:
@@ -18,7 +18,7 @@ continuation_notes:
 
 ## Active Spec
 
-- `specs/v0.1.0.md`
+- `specs/v0.2.0.md`
 
 ## Current Focus
 
@@ -38,7 +38,7 @@ continuation_notes:
 
 ## Next Action
 
-- Select the next eligible task
+- Start task T-031-close-the-unified-cli-contract: Close the unified CLI contract
 
 ## Relevant Artifacts
 
@@ -50,7 +50,7 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 1
+- todo: 42
 - in_progress: 0
 - completed: 29
 - blocked: 0

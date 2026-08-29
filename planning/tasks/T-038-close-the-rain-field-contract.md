@@ -1,0 +1,38 @@
+---
+id: T-038-close-the-rain-field-contract
+title: Close the Rain field contract
+status: todo
+priority: high
+spec_ref: specs/v0.2.0.md#rg-006-rain-field-contract
+dependencies:
+    - T-036-close-the-unknown-membership-product-policy
+    - T-033-close-the-shared-visual-semantics-contract
+    - T-034-close-the-capacity-and-verification-budget
+updated_at: "2026-08-29T09:22:04Z"
+---
+
+# T-038-close-the-rain-field-contract Close the Rain field contract
+
+## Description
+
+Close RG-006 with deterministic, bounded Rain field state transitions and responsive column behavior.
+
+## Acceptance
+
+- The spec defines cadence, placement, movement, collisions, lifetime, bounds, arrival, delayed ticks, refresh replacement, mixed-Scope columns, and narrow-terminal behavior.
+- Identical explicit inputs produce identical state without wall-clock dependence.
+- Motion communicates arrival and recency only.
+
+## Test Expectations
+
+- Add explicit event, tick, refresh, and resize vectors covering expiry, delayed ticks, capacity, and narrow columns.
+
+## Verification Notes
+
+- Record every numeric bound and deterministic tie-break.
+- Record `taskrail validate`.
+
+## Implementation Notes
+
+- Do not add animation code in this task.
+- Keep Rain calculations outside rendering and do not introduce physics or Harmonica.
