@@ -1,14 +1,14 @@
 ---
 id: T-038-close-the-rain-field-contract
 title: Close the Rain field contract
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#rg-006-rain-field-contract
 dependencies:
     - T-036-close-the-unknown-membership-product-policy
     - T-033-close-the-shared-visual-semantics-contract
     - T-034-close-the-capacity-and-verification-budget
-updated_at: "2026-08-29T09:22:04Z"
+updated_at: "2026-08-29T12:44:53Z"
 ---
 
 # T-038-close-the-rain-field-contract Close the Rain field contract
@@ -38,3 +38,5 @@ Close RG-006 with deterministic, bounded Rain field state transitions and respon
 
 - Do not add animation code in this task.
 - Keep Rain calculations outside rendering and do not introduce physics or Harmonica.
+- 2026-08-29T12:44:49Z: verification pass
+- 2026-08-29T12:44:53Z: Closed RG-006 with user-approved repeating motion, configurable Rain window, deterministic placement/collisions, fair capacity, pause queue, refresh reconciliation, paging, and edge-state vectors A-049 through A-054.
