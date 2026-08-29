@@ -1,11 +1,11 @@
 ---
 id: T-041-close-the-distribution-channel-contract
 title: Close the distribution channel contract
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#rg-011-distribution-channel-contract
 dependencies: []
-updated_at: "2026-08-29T09:22:04Z"
+updated_at: "2026-08-29T13:52:46Z"
 ---
 
 # T-041-close-the-distribution-channel-contract Close the distribution channel contract
@@ -33,3 +33,5 @@ Close RG-011 with a normative, operational contract for GitHub CLI extension and
 
 - This is specification work only and creates no release infrastructure.
 - Preserve the existing archive path as a complete standalone installation route.
+- 2026-08-29T13:52:31Z: verification pass
+- 2026-08-29T13:52:46Z: Closed RG-011 and A-069 through A-074 with passing Taskrail, coverage, diff, toolchain, and independent semantic verification
