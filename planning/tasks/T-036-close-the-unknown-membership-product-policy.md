@@ -1,12 +1,12 @@
 ---
 id: T-036-close-the-unknown-membership-product-policy
 title: Close the unknown-membership product policy
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#rg-004-unknown-membership-product-policy
 dependencies:
     - T-035-close-the-github-enrichment-contract
-updated_at: "2026-08-29T09:22:04Z"
+updated_at: "2026-08-29T11:44:15Z"
 ---
 
 # T-036-close-the-unknown-membership-product-policy Close the unknown-membership product policy
@@ -37,3 +37,5 @@ Choose and normatively specify one honest end-to-end policy for unknown path mem
 
 - Do not implement the selected policy here.
 - Preserve tri-state information across boundaries rather than encoding unknown in rendering.
+- 2026-08-29T11:44:11Z: verification pass
+- 2026-08-29T11:44:15Z: Closed RG-004 with user-approved aggregation, per-view unknown behavior, current-PR qualification, combined state, retry, and recovery plus A-037 through A-042.
