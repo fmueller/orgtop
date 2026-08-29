@@ -1,7 +1,7 @@
 ---
 id: T-039-close-the-interesting-now-selection-contract
 title: Close the Interesting Now selection contract
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#rg-007-interesting-now-selection-contract
 dependencies:
@@ -9,7 +9,7 @@ dependencies:
     - T-038-close-the-rain-field-contract
     - T-033-close-the-shared-visual-semantics-contract
     - T-034-close-the-capacity-and-verification-budget
-updated_at: "2026-08-29T09:22:04Z"
+updated_at: "2026-08-29T13:08:49Z"
 ---
 
 # T-039-close-the-interesting-now-selection-contract Close the Interesting Now selection contract
@@ -38,3 +38,5 @@ Close RG-007 with a deterministic selection contract based only on directly obse
 
 - This is normative specification work only.
 - Keep selection in prepared application/domain state, not in a renderer.
+- 2026-08-29T13:08:45Z: verification pass
+- 2026-08-29T13:08:49Z: Closed RG-007 with user-approved direct eligibility, rotating Scope fairness, overlap/duplicate handling, explainable entries, monotonic aging, refresh replacement, and Option A collapse plus A-055 through A-060.
