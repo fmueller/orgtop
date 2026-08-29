@@ -5,7 +5,8 @@ status: todo
 priority: medium
 spec_ref: specs/v0.2.0.md#distribution-channels
 dependencies:
-    - T-067-configure-multi-channel-release-workflows
+    - T-069-integrate-the-closed-v0-2-0-binary-flow
+    - T-074-provision-and-validate-distribution-repositories
 updated_at: "2026-08-29T09:22:04Z"
 ---
 
@@ -17,13 +18,13 @@ Build and verify the closed channel artifact matrix and installation contracts w
 
 ## Acceptance
 
-- Archive, GitHub CLI extension, and Homebrew artifacts install/report one version, preserve arguments, and use unchanged credential precedence as required by RG-011.
+- Archive, GitHub CLI extension, and Homebrew artifacts redistribute matching per-target executable digests, install/report one version, preserve arguments, and use unchanged credential precedence as required by RG-011.
 - Raw extension executable names, Windows suffixes, checksums, provenance, companion metadata, and formula contents match the closed matrix.
 - A machine without GitHub CLI or Homebrew retains a complete archive installation path.
 
 ## Test Expectations
 
-- Run snapshot/dry release, cross-build, artifact-name checks, local install smokes, argument-forwarding fixtures, and partial-channel failure simulation.
+- Run snapshot/dry release of the integrated binary, cross-build, cross-channel digest checks, artifact-name checks, local install smokes, argument-forwarding fixtures, and partial-channel failure/retry simulation.
 
 ## Verification Notes
 

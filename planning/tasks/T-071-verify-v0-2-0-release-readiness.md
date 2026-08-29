@@ -20,7 +20,7 @@ Perform final deterministic verification of the integrated, documented, distribu
 
 - Every Potential Features area and normative acceptance scenario has objective passing evidence.
 - v0.1 compatibility, bounds, cancellation, determinism, architecture, secret safety, no-LIVE wording, and explicit non-goals are preserved.
-- Documentation and distribution parity are complete before this task verifies release readiness.
+- Documentation, external repository provisioning evidence, and post-integration distribution parity are complete before this task verifies release readiness.
 - Repository quality gates, Taskrail validation, cross-builds, startup smoke, release checks, and changelog requirements pass.
 
 ## Test Expectations

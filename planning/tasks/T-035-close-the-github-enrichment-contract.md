@@ -20,11 +20,12 @@ Close RG-003 by specifying the exact bounded GitHub changed-file enrichment flow
 
 - The spec selects API operations and versions and defines eligibility, auth, pagination completeness, request bounds, concurrency, timeouts, rate limits, renames, unsupported entities, errors, and atomicity impact.
 - Incomplete evidence is never classified as complete.
+- The contract defines API hard-cap, entity mutation between pages, force-push, deletion, and repeated observation semantics so current entity state is not silently assigned to historical events.
 - Transport and pagination types remain adapter-owned.
 
 ## Test Expectations
 
-- Add fixture-oriented acceptance vectors for pagination, malformed/incomplete responses, cancellation, rate limiting, authorization failures, unsupported entities, and sanitized errors.
+- Add fixture-oriented acceptance vectors for pagination, page mutation, API hard caps, force-push/deletion, malformed/incomplete responses, cancellation, rate limiting, authorization failures, unsupported entities, and sanitized errors.
 
 ## Verification Notes
 

@@ -18,12 +18,13 @@ Replace repository-only selection concepts with the closed unified repository/pa
 ## Acceptance
 
 - Scope construction, canonical identity, repository composition, equality, deduplication, and deterministic ordering implement the closed RG-001/RG-002 contracts.
+- Scope-set construction enforces closed RG-009 exact/path Scope and matcher capacities with deterministic errors before network work begins.
 - Repository scopes preserve v0.1 identity and behavior.
 - Domain types contain no GitHub payload, SQLite, or Bubble Tea types.
 
 ## Test Expectations
 
-- Add table-driven domain tests for canonical identities, mixed sets, duplicates, ordering, invalid construction, and v0.1 repository compatibility.
+- Add table-driven domain tests for canonical identities, mixed sets, duplicates, ordering, capacity boundaries, invalid construction, and v0.1 repository compatibility.
 
 ## Verification Notes
 

@@ -17,13 +17,13 @@ Implement the closed private SQLite schema, platform location, permissions, migr
 
 ## Acceptance
 
-- Storage implements the closed RG-005 schema and platform contract exactly.
+- Storage implements the closed RG-005 schema, repository/entity evidence identity, physical-file, concurrent-process, and platform contract exactly.
 - Complete and incomplete records cannot be confused, and interrupted writes cannot expose partial evidence as complete.
 - Credentials, headers, raw payloads, rendered screens, and speculative history are never persisted.
 
 ## Test Expectations
 
-- Add temporary-database tests for initialization, permissions where testable, schema versions, migrations, hits, misses, atomic writes, and corruption.
+- Add temporary-database tests for initialization, permissions where testable, schema versions, migrations, concurrent locking/crash recovery, hits, misses, atomic writes, WAL/SHM accounting, and corruption.
 
 ## Verification Notes
 

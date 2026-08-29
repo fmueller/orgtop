@@ -18,13 +18,13 @@ Implement deterministic Interesting Now eligibility, ordering, retention, and bo
 
 ## Acceptance
 
-- Selection implements all closed RG-007/RG-009 rules for ties, duplicates, unknowns, refresh, recency, stored and visible limits.
+- Selection implements all closed RG-007/RG-009 rules for ties, duplicate source events, multi-Scope fairness/global selection, unknowns, refresh, recency, stored and visible limits.
 - Entries contain only normalized in-Scope directly observable events.
 - No baseline, anomaly, productivity, severity, inferred importance, or opaque score is calculated.
 
 ## Test Expectations
 
-- Add pure table tests for over-limit inputs, ordering ties, duplicates, unknowns, refresh replacement, expiry, and empty results.
+- Add pure table tests for over-limit inputs, ordering ties, duplicate source events, multi-Scope membership, fairness/starvation, unknowns, refresh replacement, expiry, and empty results.
 
 ## Verification Notes
 

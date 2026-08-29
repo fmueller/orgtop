@@ -16,7 +16,7 @@ updated_at: "2026-08-29T09:22:04Z"
 
 ## Description
 
-Implement the closed resize, overflow, paging/scrolling, label shortening, and constrained-layout policies across all three views.
+Implement the closed RG-012 resize, overflow, paging/scrolling, label shortening, and constrained-layout policies across all three views.
 
 ## Acceptance
 

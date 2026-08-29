@@ -16,13 +16,13 @@ Close RG-011 with a normative, operational contract for GitHub CLI extension and
 
 ## Acceptance
 
-- The spec names repository ownership, release production, exact platform assets, formula location/update, checksums/provenance, channel failure, and withdrawal behavior.
-- Every channel redistributes the same standalone version without changing credentials or requiring its installer at runtime.
+- The spec names repository ownership, release production, exact platform assets, formula location/update, checksums/provenance, publication staging/order, idempotent retry, reconciliation, channel failure, and withdrawal behavior.
+- Every channel redistributes the byte-identical standalone executable for each platform target without changing credentials or requiring its installer at runtime.
 - GitHub CLI naming/topic constraints and trust limitations are explicitly handled.
 
 ## Test Expectations
 
-- Add channel-parity acceptance vectors for asset names, versions, checksums, argument forwarding, credentials, absent tools, and partial publication failure.
+- Add channel-parity acceptance vectors for asset names, cross-channel executable digests, versions, checksums, argument forwarding, credentials, absent tools, staged visibility, partial publication failure, retry, reconciliation, and withdrawal.
 
 ## Verification Notes
 

@@ -20,10 +20,11 @@ Integrate bounded re-expansion and immutable per-refresh selection snapshots int
 - Re-expansion timing, request budget, atomic snapshot use, truncation disclosure, provenance, failure degradation, and recovery implement the closed RG-010 policy.
 - Failed re-expansion retains the last successful selection rather than narrowing or emptying it.
 - Expanded and exact repository Scopes are behaviorally identical downstream.
+- Organization-only startup distinguishes loading, initial failure, successful empty expansion, and later failed re-expansion.
 
 ## Test Expectations
 
-- Add deterministic lifecycle tests for additions/removals during refresh, failed re-expansion, recovery, deduplication, truncation, and empty organizations.
+- Add deterministic lifecycle tests for first expansion, organization-only empty/error startup, additions/removals during refresh, failed re-expansion, recovery, deduplication, multi-selector global truncation, and empty organizations.
 
 ## Verification Notes
 

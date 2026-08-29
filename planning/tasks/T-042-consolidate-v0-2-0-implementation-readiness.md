@@ -16,6 +16,7 @@ dependencies:
     - T-034-close-the-capacity-and-verification-budget
     - T-040-close-the-organization-selection-contract
     - T-041-close-the-distribution-channel-contract
+    - T-072-close-the-mixed-scope-presentation-contract
 updated_at: "2026-08-29T09:22:04Z"
 ---
 
@@ -23,18 +24,18 @@ updated_at: "2026-08-29T09:22:04Z"
 
 ## Description
 
-Review the eleven completed gate revisions together and convert v0.2.0 from a contradictory Draft into one coherent implementation-ready normative specification.
+Review the twelve completed gate revisions together and convert v0.2.0 from a contradictory Draft into one coherent implementation-ready normative specification.
 
 ## Acceptance
 
-- RG-001 through RG-011 are all closed in normative text with corresponding acceptance coverage.
+- RG-001 through RG-012 are all closed in normative text with corresponding acceptance coverage.
 - Cross-gate values, terminology, limits, state transitions, and dependencies agree without unresolved placeholders.
 - Draft/not-ready language is removed or updated only when the complete specification supports that status change.
 - No implementation task is started before this consolidation completes.
 
 ## Test Expectations
 
-- Cross-check CLI identity with matcher/cache keys, unknown policy with every view, all capacity budgets, and distribution/documentation contracts.
+- Cross-check Scope identity against separate evidence cache keys, unknown policy with every view, presentation ordering/overflow, all combined capacity budgets, Rain pause/overlap, cache controls, and distribution/documentation contracts.
 - Run structural and coverage validation for the revised spec.
 
 ## Verification Notes

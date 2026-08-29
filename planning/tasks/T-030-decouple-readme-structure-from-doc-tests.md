@@ -4,7 +4,8 @@ title: Decouple README structure from the toolchain documentation tests
 status: todo
 priority: medium
 spec_ref: specs/v0.2.0.md#fr-012-documentation
-dependencies: []
+dependencies:
+    - T-042-consolidate-v0-2-0-implementation-readiness
 updated_at: "2026-08-25T20:28:18Z"
 ---
 

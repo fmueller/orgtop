@@ -21,6 +21,7 @@ Present source, enrichment, membership, cache, organization-expansion, rate-limi
 
 - Distinct user consequences receive the distinct states and recovery transitions defined by the closed RG-004/RG-005/RG-010 contracts.
 - Unknown or stale data is never presented as complete, empty by default, LIVE, or current contrary to the policy.
+- Path-Scope output quantifies unknown coverage or states its lower-bound meaning, including all-unknown and combined degraded conditions.
 - Polling, navigation, resize, and quit remain responsive during degraded work.
 
 ## Test Expectations

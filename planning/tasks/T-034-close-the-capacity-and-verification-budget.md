@@ -19,12 +19,14 @@ Close RG-009 by setting coherent tested resource limits and deterministic verifi
 ## Acceptance
 
 - The spec sets limits for Scopes, matchers, changed files, enrichment concurrency and queueing, SQLite work, Rain items, and strip items.
-- Limits align with responsiveness, API discipline, and organization expansion.
+- One combined work ledger bounds organization expansion, polling, pagination, enrichment, and SQLite work per cycle.
+- The contract fixes the global 500-event truncation stage, prohibits enrichment of already discarded events, gives exact selections deterministic capacity precedence, and discloses every omitted class.
+- Limits align with responsiveness, API discipline, organization expansion, Rain overlap representations, and paused-arrival queueing.
 - Deterministic fixtures demonstrate behavior at and beyond each bound.
 
 ## Test Expectations
 
-- Specify fixture sizes, expected bounded outcomes, cancellation checks, and TUI responsiveness vectors without live services or sleeps.
+- Specify fixture sizes, combined request counts, truncation stages, expected bounded outcomes, cancellation checks, and TUI responsiveness vectors without live services or sleeps.
 
 ## Verification Notes
 

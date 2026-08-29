@@ -19,7 +19,7 @@ Update README and help text for the implemented closed v0.2.0 contracts after th
 
 ## Acceptance
 
-- Documentation matches the closed Scope syntax, mixed examples, matcher semantics, unknown policy, cache location/bounds/cleanup, controls, Rain, Interesting Now, organization selection, and distribution channels.
+- Documentation matches the closed Scope syntax, mixed examples, matcher semantics, unknown policy, cache location/bounds/cleanup/disable/reset, controls, Rain overlap/pause, Interesting Now, organization selection, and distribution channels.
 - Additional GitHub request/rate-limit/degraded behavior is explained.
 - v0.1 auth, secret safety, POLLING/not-LIVE, standalone installation, and non-goal honesty are preserved.
 

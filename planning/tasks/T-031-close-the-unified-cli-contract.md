@@ -12,17 +12,18 @@ updated_at: "2026-08-29T09:22:04Z"
 
 ## Description
 
-Revise the normative v0.2.0 specification to close RG-001 without implementing the CLI. Define the complete repository, path, and mixed-Scope invocation contract while preserving exact v0.1 `--repo` behavior.
+Revise the normative v0.2.0 specification to close RG-001 without implementing the CLI. Define the repository, path, mixed-Scope, and cache-control invocation contract while preserving exact v0.1 `--repo` behavior and reserving organization-selector syntax for RG-010.
 
 ## Acceptance
 
-- The spec normatively defines syntax, repetition, composition, deduplication, usage text, include/exclude availability, and invalid-input behavior.
+- The spec normatively defines repository/path syntax, repetition, composition, deduplication, usage text, include/exclude availability, cache disable/reset flags, and invalid-input behavior.
 - Existing exact repeated `--repo owner/repository` invocations retain their shipped meaning.
-- Corresponding acceptance coverage is added and no unresolved CLI choice remains.
+- Organization-selector syntax is explicitly delegated to RG-010 without reopening the closed repository/path grammar.
+- Corresponding acceptance coverage is added and no unresolved RG-001 CLI choice remains.
 
 ## Test Expectations
 
-- Add specification scenarios for valid repository-only, path-only, mixed, repeated, deduplicated, and invalid invocations.
+- Add specification scenarios for valid repository-only, path-only, mixed, repeated, deduplicated, cache-control, and invalid invocations.
 - Include explicit v0.1 compatibility cases.
 
 ## Verification Notes

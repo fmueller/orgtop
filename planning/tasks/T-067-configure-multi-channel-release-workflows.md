@@ -17,9 +17,9 @@ Implement the closed release automation for existing archives, GitHub CLI extens
 
 ## Acceptance
 
-- Repository handoff, platform matrix, exact asset names, formula update, checksums, provenance, credentials, and failure behavior implement RG-011.
-- All channels derive the same version and standalone executable source.
-- A failed channel fails publication according to the closed contract rather than silently leaving versions divergent.
+- Repository handoff, platform matrix, exact asset names, formula update, checksums, provenance, credentials, staging, idempotent retry, reconciliation, and failure behavior implement RG-011.
+- All channels redistribute the byte-identical standalone executable for each platform target.
+- A failed channel triggers the closed reconciliation/withdrawal policy rather than silently reporting divergent versions as a successful release.
 
 ## Test Expectations
 

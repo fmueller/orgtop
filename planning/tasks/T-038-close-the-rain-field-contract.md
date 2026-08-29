@@ -20,12 +20,14 @@ Close RG-006 with deterministic, bounded Rain field state transitions and respon
 ## Acceptance
 
 - The spec defines cadence, placement, movement, collisions, lifetime, bounds, arrival, delayed ticks, refresh replacement, mixed-Scope columns, and narrow-terminal behavior.
+- One event matching multiple visible Scopes creates one bounded item per matching column, with deterministic column/global capacity accounting.
+- `p` pauses movement and expiry while bounded arrivals queue; resume admission and motion remain deterministic without stopping polling.
 - Identical explicit inputs produce identical state without wall-clock dependence.
 - Motion communicates arrival and recency only.
 
 ## Test Expectations
 
-- Add explicit event, tick, refresh, and resize vectors covering expiry, delayed ticks, capacity, and narrow columns.
+- Add explicit event, tick, pause, bounded-arrival, resume, refresh, overlap, and resize vectors covering expiry, delayed ticks, capacity, and narrow columns.
 
 ## Verification Notes
 

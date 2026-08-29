@@ -17,7 +17,7 @@ Revise the normative specification to close RG-002 with an exact, testable path 
 ## Acceptance
 
 - The spec defines grammar, escaping, normalization, separators, root and directory semantics, case behavior, dotfiles, invalid patterns, overlap, and rename treatment.
-- Canonical Scope identity is fully specified for CLI, domain, cache, tests, and presentation use.
+- Canonical Scope identity is fully specified for CLI, domain, tests, and presentation use and is explicitly distinct from repository/entity evidence cache identity.
 - The contract does not rely on implicit shell glob behavior.
 
 ## Test Expectations

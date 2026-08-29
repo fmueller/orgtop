@@ -19,13 +19,14 @@ Close RG-005 with a complete, measurable contract for the disposable local SQLit
 
 ## Acceptance
 
-- The spec defines location, permissions, schema, migrations, keys, completeness, positive and negative caching, freshness, transactions, corruption, reset/disable behavior, bounds, cleanup, and failures.
+- The spec defines location, permissions, schema, migrations, repository/entity evidence keys, completeness, positive and negative caching, freshness, transactions, corruption, mandatory reset/disable behavior, bounds, cleanup, and failures.
+- Physical bounds account for the database, WAL, SHM, cleanup headroom, checkpoint/vacuum behavior, bounded concurrent-process locking, and crash recovery during migration or cleanup.
 - Cache state stores no credentials, headers, raw payloads, rendered screens, or speculative history.
 - Equivalent reacquired evidence produces identical membership after cache deletion.
 
 ## Test Expectations
 
-- Add normative vectors for hit, miss, expiry, interrupted write, migration, corruption, unavailable storage, cleanup ordering, and every bound.
+- Add normative vectors for hit, miss, expiry, disabled operation, safe reset, interrupted write, migration, concurrent processes, corruption, unavailable storage, physical growth, cleanup ordering, and every bound.
 
 ## Verification Notes
 

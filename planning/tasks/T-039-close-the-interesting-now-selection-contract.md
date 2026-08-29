@@ -21,12 +21,13 @@ Close RG-007 with a deterministic selection contract based only on directly obse
 ## Acceptance
 
 - The spec defines eligibility, ordering, tie-breaks, visible and stored bounds, recency window, duplicate handling, refresh, unknown membership, and narrow-height collapse.
+- Duplicate handling distinguishes duplicate source events from legitimate multi-Scope membership and defines deterministic cross-Scope fairness or an explicit global-selection rule.
 - The contract introduces no anomaly, baseline, productivity, severity, derived signal, or opaque ranking.
 - Every selected entry is explainable from normalized facts.
 
 ## Test Expectations
 
-- Add vectors for over-limit input, ties, duplicates, refresh replacement, unknown membership, expiry, and constrained height.
+- Add vectors for over-limit input, ties, duplicate source events, multi-Scope membership, Scope fairness, refresh replacement, unknown membership, expiry, and constrained height.
 
 ## Verification Notes
 

@@ -17,13 +17,13 @@ Implement the closed cache validity, revalidation, retention, and bounded cleanu
 
 ## Acceptance
 
-- Positive/negative caching, freshness, expiry, byte/row/age limits, cleanup triggers, ordering, and work budgets implement RG-005/RG-009 exactly.
+- Positive/negative caching, freshness, expiry, total physical byte/row/age limits, checkpoint/vacuum behavior, cleanup triggers, ordering, and work budgets implement RG-005/RG-009 exactly.
 - Expired, invalid, or incomplete entries never satisfy complete evidence.
 - Cleanup deterministically returns the store to documented bounds without an unbounded foreground pause.
 
 ## Test Expectations
 
-- Use controlled clocks and temporary stores to test every boundary, tie-break, trigger, cleanup batch, and equivalent-evidence result.
+- Use controlled clocks and temporary stores to test every logical/physical boundary, WAL/SHM growth, lock outcome, tie-break, trigger, cleanup batch, and equivalent-evidence result.
 
 ## Verification Notes
 

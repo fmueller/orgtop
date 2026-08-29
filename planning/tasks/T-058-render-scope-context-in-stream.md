@@ -17,7 +17,7 @@ Extend Stream with deterministic, bounded Scope context while preserving reverse
 
 ## Acceptance
 
-- Scope labels, overlap presentation, unknown/incomplete coverage, scrolling, ordering, stale/degraded state, and compact rendering implement the closed contracts.
+- Scope labels, RG-012 overlap presentation, quantitative unknown/incomplete coverage, scrolling/position indicators, ordering, stale/degraded state, and compact rendering implement the closed contracts.
 - A multi-Scope event is neither accidentally duplicated nor stripped of membership context.
 - Existing Stream order and v0.1 state retention remain intact.
 

@@ -18,13 +18,14 @@ Implement Rain as a pure bounded state transition driven by scoped events, expli
 
 ## Acceptance
 
-- Cadence, placement, movement, collisions, lifetime, item/column limits, delayed ticks, refresh replacement, and column allocation implement closed RG-006/RG-009 values.
+- Cadence, placement, movement, collisions, lifetime, item/column limits, delayed ticks, refresh replacement, one-item-per-matching-Scope overlap, and column allocation implement closed RG-006/RG-009 values.
+- `p` pause freezes movement and expiry, queues arrivals within existing bounds, and resumes admission deterministically without stopping refreshes.
 - Identical inputs yield identical state and expired items are removed.
 - State density represents direct displayed events only.
 
 ## Test Expectations
 
-- Add pure tests for every normative transition vector, bound, tie-break, delayed tick, refresh, and resize case without sleeps.
+- Add pure tests for every normative transition vector, overlap, pause, bounded paused arrival, resume, bound, tie-break, delayed tick, refresh, and resize case without sleeps.
 
 ## Verification Notes
 

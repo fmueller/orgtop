@@ -18,7 +18,7 @@ Build immutable application snapshots containing normalized events, per-Scope ou
 
 ## Acceptance
 
-- Snapshot inclusion, unknown handling, overlap, event categories, mixed-Scope ordering, and aggregation implement the closed normative contracts.
+- Snapshot inclusion, quantitative unknown coverage, overlap, event categories, RG-012 mixed-Scope ordering, and aggregation implement the closed normative contracts.
 - Repository counts retain v0.1 direct semantics; path counts use only outcomes allowed by the closed policy.
 - Overlapping Scope sums are never represented as a deduplicated organization total.
 
