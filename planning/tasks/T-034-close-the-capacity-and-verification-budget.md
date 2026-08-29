@@ -1,13 +1,13 @@
 ---
 id: T-034-close-the-capacity-and-verification-budget
 title: Close the capacity and verification budget
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#rg-009-capacity-and-verification-budget
 dependencies:
     - T-031-close-the-unified-cli-contract
     - T-032-close-the-path-matcher-contract
-updated_at: "2026-08-29T09:22:04Z"
+updated_at: "2026-08-29T11:11:45Z"
 ---
 
 # T-034-close-the-capacity-and-verification-budget Close the capacity and verification budget
@@ -37,3 +37,5 @@ Close RG-009 by setting coherent tested resource limits and deterministic verifi
 
 - This task defines budgets; it does not optimize or implement them.
 - Avoid introducing generalized scalability architecture beyond the release requirements.
+- 2026-08-29T11:11:34Z: verification pass
+- 2026-08-29T11:11:45Z: Closed RG-009 with user-approved capacities, refresh ledger, UI state bounds, disclosures, and deterministic verification vectors A-028 through A-030.

@@ -1,11 +1,11 @@
 ---
 id: T-032-close-the-path-matcher-contract
 title: Close the path matcher contract
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#rg-002-path-matcher-contract
 dependencies: []
-updated_at: "2026-08-29T09:22:04Z"
+updated_at: "2026-08-29T10:49:58Z"
 ---
 
 # T-032-close-the-path-matcher-contract Close the path matcher contract
@@ -34,3 +34,5 @@ Revise the normative specification to close RG-002 with an exact, testable path 
 
 - Do not implement the matcher in this task.
 - Keep matching source-independent and avoid importing GitHub, SQLite, or Bubble Tea types into the contract.
+- 2026-08-29T10:49:52Z: verification pass
+- 2026-08-29T10:49:58Z: Closed RG-002 in normative spec with user-approved matcher semantics, canonical identity, and acceptance scenarios A-021 through A-024.

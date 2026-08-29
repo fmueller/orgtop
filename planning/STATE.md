@@ -1,14 +1,14 @@
 ---
 schema_version: 1
-updated_at: "2026-08-29T09:55:50Z"
+updated_at: "2026-08-29T11:11:45Z"
 active_spec_version: v0.2.0
 active_spec_path: specs/v0.2.0.md
 current_task: ""
 current_task_title: ""
 status_summary: idle
 blockers: []
-next_action: 'Start task T-031-close-the-unified-cli-contract: Close the unified CLI contract'
-last_verification_result: pass for T-029-restore-changelog-notes-to-the-published-release at 2026-08-25T20:08:09Z
+next_action: Select the next eligible task
+last_verification_result: pass for T-034-close-the-capacity-and-verification-budget at 2026-08-29T11:11:34Z
 relevant_artifacts: []
 continuation_notes:
     - This repository is using manual Taskrail-style workflow scaffolding until the product replaces more of the bootstrap steps.
@@ -34,11 +34,11 @@ continuation_notes:
 
 ## Last Verification
 
-- pass for T-029-restore-changelog-notes-to-the-published-release at 2026-08-25T20:08:09Z
+- pass for T-034-close-the-capacity-and-verification-budget at 2026-08-29T11:11:34Z
 
 ## Next Action
 
-- Start task T-031-close-the-unified-cli-contract: Close the unified CLI contract
+- Select the next eligible task
 
 ## Relevant Artifacts
 
@@ -50,8 +50,8 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 45
+- todo: 41
 - in_progress: 0
-- completed: 29
+- completed: 33
 - blocked: 0
 - cancelled: 0

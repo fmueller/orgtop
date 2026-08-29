@@ -1,11 +1,11 @@
 ---
 id: T-031-close-the-unified-cli-contract
 title: Close the unified CLI contract
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#rg-001-unified-cli-contract
 dependencies: []
-updated_at: "2026-08-29T09:22:04Z"
+updated_at: "2026-08-29T10:39:12Z"
 ---
 
 # T-031-close-the-unified-cli-contract Close the unified CLI contract
@@ -35,3 +35,5 @@ Revise the normative v0.2.0 specification to close RG-001 without implementing t
 
 - This is readiness work only; do not change production code.
 - Keep parsing at the CLI boundary and share the resulting canonical Scope semantics with the domain contract.
+- 2026-08-29T10:38:59Z: verification pass
+- 2026-08-29T10:39:12Z: Closed RG-001 in normative spec with user-approved CLI behavior and acceptance scenarios A-016 through A-020.
