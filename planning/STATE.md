@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-updated_at: "2026-08-29T13:08:49Z"
+updated_at: "2026-08-29T13:29:52Z"
 active_spec_version: v0.2.0
 active_spec_path: specs/v0.2.0.md
 current_task: ""
@@ -8,7 +8,7 @@ current_task_title: ""
 status_summary: idle
 blockers: []
 next_action: Select the next eligible task
-last_verification_result: pass for T-039-close-the-interesting-now-selection-contract at 2026-08-29T13:08:45Z
+last_verification_result: pass for T-040-close-the-organization-selection-contract at 2026-08-29T13:29:43Z
 relevant_artifacts: []
 continuation_notes:
     - This repository is using manual Taskrail-style workflow scaffolding until the product replaces more of the bootstrap steps.
@@ -34,7 +34,7 @@ continuation_notes:
 
 ## Last Verification
 
-- pass for T-039-close-the-interesting-now-selection-contract at 2026-08-29T13:08:45Z
+- pass for T-040-close-the-organization-selection-contract at 2026-08-29T13:29:43Z
 
 ## Next Action
 
@@ -50,8 +50,8 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 36
+- todo: 35
 - in_progress: 0
-- completed: 38
+- completed: 39
 - blocked: 0
 - cancelled: 0

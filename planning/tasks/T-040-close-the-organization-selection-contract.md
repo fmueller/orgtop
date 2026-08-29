@@ -1,13 +1,13 @@
 ---
 id: T-040-close-the-organization-selection-contract
 title: Close the organization selection contract
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#rg-010-organization-selection-contract
 dependencies:
     - T-031-close-the-unified-cli-contract
     - T-034-close-the-capacity-and-verification-budget
-updated_at: "2026-08-29T09:22:04Z"
+updated_at: "2026-08-29T13:29:52Z"
 ---
 
 # T-040-close-the-organization-selection-contract Close the organization selection contract
@@ -37,3 +37,5 @@ Close RG-010 with an exact bounded organization selector and re-expansion contra
 
 - Do not implement organization calls here.
 - Keep organization selectors and GitHub listing types out of downstream domain and TUI models.
+- 2026-08-29T13:29:43Z: verification pass
+- 2026-08-29T13:29:52Z: Closed RG-010 with user-approved dual selector syntax, source-backed eligibility, fair page/capacity allocation, provenance, 15-minute snapshots, initial/empty/failure states, and atomic recovery plus A-061 through A-068.
