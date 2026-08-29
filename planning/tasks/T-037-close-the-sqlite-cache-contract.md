@@ -1,14 +1,14 @@
 ---
 id: T-037-close-the-sqlite-cache-contract
 title: Close the SQLite cache contract
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#rg-005-sqlite-cache-contract
 dependencies:
     - T-035-close-the-github-enrichment-contract
     - T-036-close-the-unknown-membership-product-policy
     - T-034-close-the-capacity-and-verification-budget
-updated_at: "2026-08-29T09:22:04Z"
+updated_at: "2026-08-29T12:13:42Z"
 ---
 
 # T-037-close-the-sqlite-cache-contract Close the SQLite cache contract
@@ -37,3 +37,5 @@ Close RG-005 with a complete, measurable contract for the disposable local SQLit
 
 - This is specification work only.
 - Keep SQLite behind the smallest enrichment-focused boundary and out of domain models.
+- 2026-08-29T12:13:38Z: verification pass
+- 2026-08-29T12:13:42Z: Closed RG-005 with user-approved location, schema, freshness, physical/logical bounds, cleanup, concurrency, reset, crash recovery, and degraded fallback plus A-043 through A-048.
