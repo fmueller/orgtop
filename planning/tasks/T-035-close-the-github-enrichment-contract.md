@@ -1,13 +1,13 @@
 ---
 id: T-035-close-the-github-enrichment-contract
 title: Close the GitHub enrichment contract
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#rg-003-github-enrichment-contract
 dependencies:
     - T-032-close-the-path-matcher-contract
     - T-034-close-the-capacity-and-verification-budget
-updated_at: "2026-08-29T09:22:04Z"
+updated_at: "2026-08-29T11:30:33Z"
 ---
 
 # T-035-close-the-github-enrichment-contract Close the GitHub enrichment contract
@@ -36,3 +36,5 @@ Close RG-003 by specifying the exact bounded GitHub changed-file enrichment flow
 
 - This task changes normative specification only.
 - Define normalized outcomes suitable for the domain without leaking GitHub payload types.
+- 2026-08-29T11:30:24Z: verification pass
+- 2026-08-29T11:30:33Z: Closed RG-003 with user-approved GitHub API, evidence, completeness, failure, rate-limit, and atomicity contracts plus A-031 through A-036.

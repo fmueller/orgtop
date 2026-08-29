@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-updated_at: "2026-08-29T11:11:45Z"
+updated_at: "2026-08-29T11:30:33Z"
 active_spec_version: v0.2.0
 active_spec_path: specs/v0.2.0.md
 current_task: ""
@@ -8,7 +8,7 @@ current_task_title: ""
 status_summary: idle
 blockers: []
 next_action: Select the next eligible task
-last_verification_result: pass for T-034-close-the-capacity-and-verification-budget at 2026-08-29T11:11:34Z
+last_verification_result: pass for T-035-close-the-github-enrichment-contract at 2026-08-29T11:30:24Z
 relevant_artifacts: []
 continuation_notes:
     - This repository is using manual Taskrail-style workflow scaffolding until the product replaces more of the bootstrap steps.
@@ -34,7 +34,7 @@ continuation_notes:
 
 ## Last Verification
 
-- pass for T-034-close-the-capacity-and-verification-budget at 2026-08-29T11:11:34Z
+- pass for T-035-close-the-github-enrichment-contract at 2026-08-29T11:30:24Z
 
 ## Next Action
 
@@ -50,8 +50,8 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 41
+- todo: 40
 - in_progress: 0
-- completed: 33
+- completed: 34
 - blocked: 0
 - cancelled: 0
