@@ -1,12 +1,12 @@
 ---
 id: T-044-implement-the-unified-scope-domain-model
 title: Implement the unified Scope domain model
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#unified-repository-and-path-scopes
 dependencies:
     - T-043-guard-the-v0-2-0-toolchain-and-dependency-baseline
-updated_at: "2026-08-29T09:22:04Z"
+updated_at: "2026-08-31T21:50:07Z"
 ---
 
 # T-044-implement-the-unified-scope-domain-model Implement the unified Scope domain model
@@ -34,3 +34,5 @@ Replace repository-only selection concepts with the closed unified repository/pa
 
 - Keep Scope source-independent and make it the shared downstream selection unit.
 - Do not scaffold future source abstractions.
+- 2026-08-31T21:29:57Z: verification pass
+- 2026-08-31T21:50:07Z: verification pass

@@ -32,7 +32,7 @@ type fakeSource struct {
 	contexts []context.Context
 }
 
-func (s *fakeSource) Refresh(ctx context.Context, _ domain.Scope) (Result, error) {
+func (s *fakeSource) Refresh(ctx context.Context, _ domain.ScopeSet) (Result, error) {
 	s.calls++
 	s.contexts = append(s.contexts, ctx)
 	if len(s.outcomes) == 0 {

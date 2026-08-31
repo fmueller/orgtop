@@ -45,7 +45,7 @@ type Snapshot struct {
 // report a repository at most once; a repeated repository keeps its first
 // returned display identity. Activity outside the Scope is ignored, and the
 // inputs are not modified.
-func NewSnapshot(scope Scope, activities []RepositoryActivity) Snapshot {
+func NewSnapshot(scope ScopeSet, activities []RepositoryActivity) Snapshot {
 	var candidates []Event
 	for _, activity := range activities {
 		candidates = append(candidates, activity.Events...)
@@ -74,7 +74,7 @@ func (s Snapshot) Aggregates() []Aggregate { return slices.Clone(s.aggregates) }
 // Scope entry keeps its requested spelling until the refresh returns one, and
 // the first returned spelling wins if a caller reports a repository more than
 // once.
-func aggregate(scope Scope, activities []RepositoryActivity, events []Event) []Aggregate {
+func aggregate(scope ScopeSet, activities []RepositoryActivity, events []Event) []Aggregate {
 	identities := make(map[string]Repository, len(activities))
 	for _, activity := range activities {
 		key := activity.Repository.Key()

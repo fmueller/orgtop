@@ -83,7 +83,7 @@ func TestAdapterReportsTheSourceRetryDelayOnFailure(t *testing.T) {
 func TestAdapterReportsNoDelayForAFailureWithoutSchedulingMetadata(t *testing.T) {
 	adapter := sourceAdapter{source: github.Source{BaseURL: "https://github.test"}}
 
-	result, err := adapter.Refresh(context.Background(), domain.Scope{})
+	result, err := adapter.Refresh(context.Background(), domain.ScopeSet{})
 	if !errors.Is(err, domain.ErrEmptyScope) {
 		t.Fatalf("Refresh error = %v, want %v", err, domain.ErrEmptyScope)
 	}

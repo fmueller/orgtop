@@ -48,9 +48,9 @@ func sentinelCredential(t *testing.T) auth.Credential {
 	return credential
 }
 
-func mustScope(t *testing.T, values ...string) domain.Scope {
+func mustScope(t *testing.T, values ...string) domain.ScopeSet {
 	t.Helper()
-	scope, err := domain.NewScope(values)
+	scope, err := domain.NewRepositoryScopeSet(values)
 	if err != nil {
 		t.Fatalf("building the scope %v failed: %v", values, err)
 	}
@@ -619,7 +619,7 @@ func TestRefreshRejectsAnEmptyScope(t *testing.T) {
 	server := newFixtureServer(t, map[string]stubResponse{})
 	source, client := newTestSource(t, server)
 
-	refresh, err := source.Refresh(context.Background(), domain.Scope{})
+	refresh, err := source.Refresh(context.Background(), domain.ScopeSet{})
 	if err == nil {
 		t.Fatalf("refresh succeeded with %d repositories, want an error", len(refresh.Repositories))
 	}

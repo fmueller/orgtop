@@ -55,7 +55,7 @@ func (h *harness) shell() shell {
 		launch: func(_ context.Context, config cli.Config, credential auth.Credential) error {
 			h.launched.called = true
 			h.launched.token = credential.Token()
-			for _, repository := range config.Scope.Repositories() {
+			for _, repository := range config.Scopes.Repositories() {
 				h.launched.repositories = append(h.launched.repositories, repository.String())
 			}
 			return h.launchErr

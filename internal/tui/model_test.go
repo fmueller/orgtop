@@ -29,9 +29,9 @@ const (
 // than the activity it publishes.
 var fixedInstant = time.Date(2026, time.August, 22, 12, 0, 0, 0, time.UTC)
 
-func testScope(t *testing.T, values ...string) domain.Scope {
+func testScope(t *testing.T, values ...string) domain.ScopeSet {
 	t.Helper()
-	scope, err := domain.NewScope(values)
+	scope, err := domain.NewRepositoryScopeSet(values)
 	if err != nil {
 		t.Fatalf("building the test scope %v failed: %v", values, err)
 	}
@@ -485,9 +485,25 @@ func TestTheShellRendersOnTheAlternateScreen(t *testing.T) {
 // only free-form text the header carries: repository identities are ASCII by
 // construction, so a relayed upstream cause is the one field whose byte length
 // and rendered width differ.
+// TestHeaderOmitsScopeContextForAnEmptySelection pins that a State carrying no
+// Scope renders no scope context at all rather than an empty or zero-count
+// summary. Only a selected Scope earns header space (FR-002).
+func TestHeaderOmitsScopeContextForAnEmptySelection(t *testing.T) {
+	state := State{Freshness: FreshnessCurrent}
+
+	for _, candidate := range headerCandidates(state, ModeOverview) {
+		rendered := plainFields(candidate)
+		for _, unwanted := range []string{"repository", "repositories"} {
+			if strings.Contains(rendered, unwanted) {
+				t.Errorf("header candidate %q contains scope context %q for an empty selection", rendered, unwanted)
+			}
+		}
+	}
+}
+
 func TestHeaderMeasuresWideRunesByTheirRenderedWidth(t *testing.T) {
 	state := State{
-		Scope:     testScope(t, "acme/backend"),
+		Scopes:    testScope(t, "acme/backend"),
 		Freshness: FreshnessStale,
 		Cause:     "仓库不可访问",
 	}
@@ -512,7 +528,7 @@ func TestHeaderMeasuresWideRunesByTheirRenderedWidth(t *testing.T) {
 // while the last-success time is live state nothing else reports.
 func TestStaleHeaderKeepsTheLastSuccessTimeOverScopeContext(t *testing.T) {
 	state := State{
-		Scope:       testScope(t, "acme/backend", "acme/frontend"),
+		Scopes:      testScope(t, "acme/backend", "acme/frontend"),
 		Freshness:   FreshnessStale,
 		LastSuccess: time.Date(2026, time.August, 22, 12, 34, 56, 0, time.UTC),
 		Cause:       "refreshing acme/frontend: unexpected github response: status 500",

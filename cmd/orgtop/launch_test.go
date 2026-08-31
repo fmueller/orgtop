@@ -28,7 +28,7 @@ func newBlockingSource() blockingSource {
 	return blockingSource{started: make(chan struct{}, 1), canceled: make(chan error, 1)}
 }
 
-func (b blockingSource) Refresh(ctx context.Context, _ domain.Scope) (tui.Result, error) {
+func (b blockingSource) Refresh(ctx context.Context, _ domain.ScopeSet) (tui.Result, error) {
 	b.started <- struct{}{}
 	<-ctx.Done()
 	b.canceled <- ctx.Err()
@@ -36,12 +36,12 @@ func (b blockingSource) Refresh(ctx context.Context, _ domain.Scope) (tui.Result
 }
 
 // mustScope builds a Scope for the launch and adapter tests.
-func mustScope(t *testing.T, values ...string) domain.Scope {
+func mustScope(t *testing.T, values ...string) domain.ScopeSet {
 	t.Helper()
 
-	scope, err := domain.NewScope(values)
+	scope, err := domain.NewRepositoryScopeSet(values)
 	if err != nil {
-		t.Fatalf("NewScope(%v) failed: %v", values, err)
+		t.Fatalf("NewRepositoryScopeSet(%v) failed: %v", values, err)
 	}
 	return scope
 }

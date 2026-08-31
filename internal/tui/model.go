@@ -71,13 +71,13 @@ func WithClock(now func() time.Time) Option {
 // owns, and reported as ErrNoSource. Deferring it would surface the failure
 // inside the refresh command Bubble Tea runs on its own goroutine, where the
 // caller that built the model is no longer on the stack.
-func New(ctx context.Context, scope domain.Scope, source Source, options ...Option) (Model, error) {
+func New(ctx context.Context, scopes domain.ScopeSet, source Source, options ...Option) (Model, error) {
 	if source == nil {
 		return Model{}, ErrNoSource
 	}
 	refreshCtx, cancel := context.WithCancel(ctx)
 	model := Model{
-		state:   State{Scope: scope, Freshness: FreshnessLoading},
+		state:   State{Scopes: scopes, Freshness: FreshnessLoading},
 		ctx:     refreshCtx,
 		cancel:  cancel,
 		source:  source,

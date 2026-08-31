@@ -1,5 +1,5 @@
 // Package cli parses OrgTop's launch configuration from command-line arguments.
-// It validates the requested repository Scope before any authentication or
+// It validates the requested repository Scopes before any authentication or
 // network work happens.
 package cli
 
@@ -46,7 +46,7 @@ const (
 
 // Config is the validated launch configuration.
 type Config struct {
-	Scope domain.Scope
+	Scopes domain.ScopeSet
 }
 
 // ParseArgs parses args, which excludes the program name, into a Config. Every
@@ -77,14 +77,14 @@ func ParseArgs(name string, args []string, output io.Writer) (Config, error) {
 		return Config{}, reject(output, flags, fmt.Errorf("unexpected argument %q", flags.Arg(0)))
 	}
 
-	scope, err := domain.NewScope(values)
+	scopes, err := domain.NewRepositoryScopeSet(values)
 	if err != nil {
 		if errors.Is(err, domain.ErrEmptyScope) {
 			return Config{}, reject(output, flags, ErrMissingRepository)
 		}
 		return Config{}, reject(output, flags, fmt.Errorf("--%s: %w", repoFlag, err))
 	}
-	return Config{Scope: scope}, nil
+	return Config{Scopes: scopes}, nil
 }
 
 // reject writes usage and the actionable cause, then returns that cause. The

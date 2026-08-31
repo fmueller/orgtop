@@ -13,8 +13,8 @@ import (
 	"github.com/fmueller/orgtop/internal/domain"
 )
 
-func repositoryStrings(scope domain.Scope) []string {
-	repositories := scope.Repositories()
+func repositoryStrings(scopes domain.ScopeSet) []string {
+	repositories := scopes.Repositories()
 	out := make([]string, 0, len(repositories))
 	for _, repository := range repositories {
 		out = append(out, repository.String())
@@ -50,7 +50,7 @@ func TestParseArgsCollectsRepeatedRepositories(t *testing.T) {
 			if err != nil {
 				t.Fatalf("ParseArgs(%v) returned error: %v", tt.args, err)
 			}
-			got := repositoryStrings(config.Scope)
+			got := repositoryStrings(config.Scopes)
 			if !slices.Equal(got, tt.want) {
 				t.Fatalf("Scope repositories = %v, want %v", got, tt.want)
 			}

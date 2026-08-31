@@ -115,8 +115,8 @@ func NewSource(credential auth.Credential) Source {
 // Refresh retrieves one events page for every Scope entry. It is atomic: the
 // first repository failure fails the whole refresh, and no partial data is
 // returned. The caller ctx cancels in-flight work.
-func (s Source) Refresh(ctx context.Context, scope domain.Scope) (Refresh, error) {
-	repositories := scope.Repositories()
+func (s Source) Refresh(ctx context.Context, scopes domain.ScopeSet) (Refresh, error) {
+	repositories := scopes.Repositories()
 	if len(repositories) == 0 {
 		return Refresh{}, domain.ErrEmptyScope
 	}

@@ -65,8 +65,8 @@ func (f Freshness) Marker() string {
 // State is the shared application state the root model owns and both views
 // read. The refresh lifecycle produces it; the shell only stores and renders it.
 type State struct {
-	// Scope is the selected repository inclusion set.
-	Scope domain.Scope
+	// Scopes is the validated selection the views render.
+	Scopes domain.ScopeSet
 	// Snapshot is the latest completely successful activity snapshot.
 	Snapshot domain.Snapshot
 	// Freshness is the marker shown next to the transport label.

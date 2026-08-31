@@ -271,7 +271,7 @@ func newFlow(t *testing.T, endpoint *eventsEndpoint, args ...string) *flow {
 	}
 
 	adapter := serveEndpoint(t, endpoint)
-	model, err := tui.New(t.Context(), config.Scope, adapter, tui.WithClock(func() time.Time { return wiredInstant }))
+	model, err := tui.New(t.Context(), config.Scopes, adapter, tui.WithClock(func() time.Time { return wiredInstant }))
 	if err != nil {
 		t.Fatalf("building the shell for %v failed: %v", args, err)
 	}

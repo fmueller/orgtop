@@ -32,7 +32,7 @@ type Result struct {
 // and render path. Implementations bind their I/O to the passed context and
 // return no partial data with an error.
 type Source interface {
-	Refresh(ctx context.Context, scope domain.Scope) (Result, error)
+	Refresh(ctx context.Context, scopes domain.ScopeSet) (Result, error)
 }
 
 // refreshedMsg reports one completed refresh attempt back into the update loop.
@@ -47,9 +47,9 @@ type refreshDueMsg struct{}
 // refresh returns the command that performs one refresh. The command owns all
 // source I/O, so keyboard, resize, and quit handling never wait for it.
 func (m Model) refresh() tea.Cmd {
-	ctx, source, scope := m.ctx, m.source, m.state.Scope
+	ctx, source, scopes := m.ctx, m.source, m.state.Scopes
 	return func() tea.Msg {
-		result, err := source.Refresh(ctx, scope)
+		result, err := source.Refresh(ctx, scopes)
 		return refreshedMsg{result: result, err: err}
 	}
 }
@@ -79,7 +79,7 @@ func (m Model) applyRefresh(message refreshedMsg) (tea.Model, tea.Cmd) {
 // published replaces the snapshot atomically and clears the failure state. An
 // empty but complete success still records a last-success instant (FR-008).
 func published(state State, result Result, at time.Time) State {
-	state.Snapshot = domain.NewSnapshot(state.Scope, result.Repositories)
+	state.Snapshot = domain.NewSnapshot(state.Scopes, result.Repositories)
 	state.Freshness = FreshnessCurrent
 	state.LastSuccess = at
 	state.Cause = ""

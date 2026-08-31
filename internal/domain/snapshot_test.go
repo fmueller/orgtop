@@ -41,7 +41,7 @@ func findAggregate(t *testing.T, snapshot domain.Snapshot, key string) domain.Ag
 }
 
 func TestNewSnapshotFiltersBeforeAggregating(t *testing.T) {
-	scope := mustNewScope(t, "owner/selected")
+	scope := mustNewScopeSet(t, "owner/selected")
 	activities := []domain.RepositoryActivity{{
 		Repository: mustParseRepository(t, "owner/selected"),
 		Events: []domain.Event{
@@ -62,7 +62,7 @@ func TestNewSnapshotFiltersBeforeAggregating(t *testing.T) {
 }
 
 func TestNewSnapshotDeduplicatesSortsAndBoundsEvents(t *testing.T) {
-	scope := mustNewScope(t, "owner/repo")
+	scope := mustNewScopeSet(t, "owner/repo")
 	events := []domain.Event{
 		testEvent(t, "b", 2, "owner/repo", domain.CategoryPush, domain.EntityCommit),
 		testEvent(t, "a", 3, "owner/repo", domain.CategoryPush, domain.EntityCommit),
@@ -81,7 +81,7 @@ func TestNewSnapshotDeduplicatesSortsAndBoundsEvents(t *testing.T) {
 }
 
 func TestNewSnapshotKeepsNewest500Events(t *testing.T) {
-	scope := mustNewScope(t, "owner/repo")
+	scope := mustNewScopeSet(t, "owner/repo")
 	repo := mustParseRepository(t, "owner/repo")
 	const returned = 600
 	events := make([]domain.Event, 0, returned)
@@ -115,7 +115,7 @@ func TestNewSnapshotKeepsNewest500Events(t *testing.T) {
 }
 
 func TestNewSnapshotCountsCategoriesUnderFR006(t *testing.T) {
-	scope := mustNewScope(t, "owner/repo")
+	scope := mustNewScopeSet(t, "owner/repo")
 	repo := mustParseRepository(t, "owner/repo")
 	events := []domain.Event{
 		testEvent(t, "1", 1, "owner/repo", domain.CategoryPush, domain.EntityCommit),
@@ -141,7 +141,7 @@ func TestNewSnapshotCountsCategoriesUnderFR006(t *testing.T) {
 }
 
 func TestNewSnapshotExcludesIssueCommentsFromPullRequestActivity(t *testing.T) {
-	scope := mustNewScope(t, "owner/repo")
+	scope := mustNewScopeSet(t, "owner/repo")
 	repo := mustParseRepository(t, "owner/repo")
 	events := []domain.Event{
 		testEvent(t, "1", 1, "owner/repo", domain.CategoryComment, domain.EntityOther),
@@ -158,7 +158,7 @@ func TestNewSnapshotExcludesIssueCommentsFromPullRequestActivity(t *testing.T) {
 }
 
 func TestNewSnapshotUsesReturnedDisplayIdentityAndRequestedFallback(t *testing.T) {
-	scope := mustNewScope(t, "owner/mixedcase", "owner/empty")
+	scope := mustNewScopeSet(t, "owner/mixedcase", "owner/empty")
 	activities := []domain.RepositoryActivity{
 		{
 			Repository: mustParseRepository(t, "Owner/MixedCase"),
@@ -182,7 +182,7 @@ func TestNewSnapshotUsesReturnedDisplayIdentityAndRequestedFallback(t *testing.T
 }
 
 func TestNewSnapshotOrdersRowsByTotalThenName(t *testing.T) {
-	scope := mustNewScope(t, "owner/beta", "owner/Alpha", "owner/busy", "owner/quiet")
+	scope := mustNewScopeSet(t, "owner/beta", "owner/Alpha", "owner/busy", "owner/quiet")
 	activities := []domain.RepositoryActivity{
 		{
 			Repository: mustParseRepository(t, "owner/beta"),
@@ -211,7 +211,7 @@ func TestNewSnapshotOrdersRowsByTotalThenName(t *testing.T) {
 }
 
 func TestNewSnapshotIsRepeatableAndDoesNotMutateInputs(t *testing.T) {
-	scope := mustNewScope(t, "owner/repo")
+	scope := mustNewScopeSet(t, "owner/repo")
 	repo := mustParseRepository(t, "owner/repo")
 	events := []domain.Event{
 		testEvent(t, "1", 1, "owner/repo", domain.CategoryPush, domain.EntityCommit),
@@ -235,7 +235,7 @@ func TestNewSnapshotIsRepeatableAndDoesNotMutateInputs(t *testing.T) {
 }
 
 func TestSnapshotAccessorsDoNotExposeInternalState(t *testing.T) {
-	scope := mustNewScope(t, "owner/repo")
+	scope := mustNewScopeSet(t, "owner/repo")
 	repo := mustParseRepository(t, "owner/repo")
 	snapshot := domain.NewSnapshot(scope, []domain.RepositoryActivity{{
 		Repository: repo,
@@ -257,7 +257,7 @@ func TestSnapshotAccessorsDoNotExposeInternalState(t *testing.T) {
 }
 
 func TestNewSnapshotWithoutActivitiesStillRendersScopeRows(t *testing.T) {
-	scope := mustNewScope(t, "owner/repo")
+	scope := mustNewScopeSet(t, "owner/repo")
 
 	snapshot := domain.NewSnapshot(scope, nil)
 
@@ -270,7 +270,7 @@ func TestNewSnapshotWithoutActivitiesStillRendersScopeRows(t *testing.T) {
 }
 
 func TestNewSnapshotKeepsFirstReturnedDisplayIdentityPerRepository(t *testing.T) {
-	scope := mustNewScope(t, "owner/repo")
+	scope := mustNewScopeSet(t, "owner/repo")
 	activities := []domain.RepositoryActivity{
 		{
 			Repository: mustParseRepository(t, "Owner/Repo"),
@@ -325,7 +325,7 @@ func TestNewSnapshotRecordsWhetherTheBoundDiscardedEvents(t *testing.T) {
 
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
-			scope := mustNewScope(t, "owner/repo")
+			scope := mustNewScopeSet(t, "owner/repo")
 			repo := mustParseRepository(t, "owner/repo")
 			events := pushEvents(repo, testCase.returned)
 

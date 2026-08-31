@@ -55,9 +55,9 @@ func headerCandidates(state State, mode Mode) [][]field {
 		cause = []field{{text: state.Cause, style: causeStyle}}
 	}
 	var listed, counted []field
-	if state.Scope.Len() > 0 {
-		listed = []field{{text: scopeList(state.Scope), style: contextStyle}}
-		counted = []field{{text: scopeCount(state.Scope), style: contextStyle}}
+	if state.Scopes.Len() > 0 {
+		listed = []field{{text: scopeList(state.Scopes), style: contextStyle}}
+		counted = []field{{text: scopeCount(state.Scopes), style: contextStyle}}
 	}
 	var updated []field
 	if !state.LastSuccess.IsZero() {
@@ -105,20 +105,20 @@ var footerCandidates = []string{
 }
 
 // scopeList names every selected repository in request order.
-func scopeList(scope domain.Scope) string {
-	names := make([]string, 0, scope.Len())
-	for _, repository := range scope.Repositories() {
+func scopeList(scopes domain.ScopeSet) string {
+	names := make([]string, 0, scopes.Len())
+	for _, repository := range scopes.Repositories() {
 		names = append(names, repository.String())
 	}
 	return strings.Join(names, ", ")
 }
 
 // scopeCount summarizes the scope when the full list does not fit (FR-002).
-func scopeCount(scope domain.Scope) string {
-	if scope.Len() == 1 {
+func scopeCount(scopes domain.ScopeSet) string {
+	if scopes.Len() == 1 {
 		return "1 repository"
 	}
-	return fmt.Sprintf("%d repositories", scope.Len())
+	return fmt.Sprintf("%d repositories", scopes.Len())
 }
 
 // joinFields renders the fields with their semantic styles.

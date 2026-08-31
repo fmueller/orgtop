@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-updated_at: "2026-08-31T21:04:24Z"
+updated_at: "2026-08-31T21:50:07Z"
 active_spec_version: v0.2.0
 active_spec_path: specs/v0.2.0.md
 current_task: ""
@@ -8,7 +8,7 @@ current_task_title: ""
 status_summary: idle
 blockers: []
 next_action: Select the next eligible task
-last_verification_result: pass for T-075-make-the-changelog-release-guards-portable-to-bsd at 2026-08-31T21:04:24Z
+last_verification_result: pass for T-044-implement-the-unified-scope-domain-model at 2026-08-31T21:50:07Z
 relevant_artifacts: []
 continuation_notes:
     - This repository is using manual Taskrail-style workflow scaffolding until the product replaces more of the bootstrap steps.
@@ -34,7 +34,7 @@ continuation_notes:
 
 ## Last Verification
 
-- pass for T-075-make-the-changelog-release-guards-portable-to-bsd at 2026-08-31T21:04:24Z
+- pass for T-044-implement-the-unified-scope-domain-model at 2026-08-31T21:50:07Z
 
 ## Next Action
 
@@ -50,8 +50,8 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 31
+- todo: 30
 - in_progress: 0
-- completed: 44
+- completed: 45
 - blocked: 0
 - cancelled: 0
