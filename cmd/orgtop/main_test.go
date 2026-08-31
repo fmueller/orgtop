@@ -60,8 +60,8 @@ func (h *harness) shell() shell {
 			}
 			return h.launchErr
 		},
-		output:  &h.output,
-		version: &h.version,
+		output: &h.output,
+		report: &h.version,
 	}
 }
 
@@ -117,8 +117,8 @@ func TestRejectedConfigurationReportsUsageBeforeAnyAuthenticationWork(t *testing
 			harness := &harness{}
 			code := harness.shell().run(context.Background(), "orgtop", test.args)
 
-			if code != exitFailure {
-				t.Errorf("run(%q) exit code = %d, want %d", test.args, code, exitFailure)
+			if code != exitUsage {
+				t.Errorf("run(%q) exit code = %d, want %d", test.args, code, exitUsage)
 			}
 			if harness.resolved {
 				t.Error("a rejected configuration resolved a credential")
@@ -134,6 +134,21 @@ func TestRejectedConfigurationReportsUsageBeforeAnyAuthenticationWork(t *testing
 				t.Errorf("output reports %q %d times, want once:\n%s", test.want, got, output)
 			}
 		})
+	}
+}
+
+// TestStartupFailureExitsDistinctlyFromARejectedConfiguration keeps the two
+// non-zero outcomes apart: a rejected invocation exits 2 with usage (RG-001),
+// while a failure after a complete configuration exits 1.
+func TestStartupFailureExitsDistinctlyFromARejectedConfiguration(t *testing.T) {
+	harness := &harness{resolveErr: errors.New("no credential")}
+	code := harness.shell().run(context.Background(), "orgtop", []string{"--repo", "acme/backend"})
+
+	if code != exitFailure {
+		t.Errorf("exit code = %d, want %d", code, exitFailure)
+	}
+	if output := harness.output.String(); strings.Contains(output, "Usage:") {
+		t.Errorf("a startup failure printed usage:\n%s", output)
 	}
 }
 
@@ -295,5 +310,29 @@ func TestStartupFailuresNeverReportACredentialValue(t *testing.T) {
 	}
 	if !strings.Contains(output, "[redacted]") {
 		t.Errorf("the reported cause does not redact the credential:\n%s", output)
+	}
+}
+
+// TestCacheResetExitsBeforeAnyAuthenticationWork keeps the standalone
+// administrative reset off the launch path: it resolves no credential, makes no
+// request, starts no terminal UI, and reports its outcome on stdout (A-019).
+func TestCacheResetExitsBeforeAnyAuthenticationWork(t *testing.T) {
+	harness := &harness{credential: sentinelCredential(t)}
+	code := harness.shell().run(context.Background(), "orgtop", []string{"--reset-cache"})
+
+	if code != exitSuccess {
+		t.Errorf("exit code = %d, want %d", code, exitSuccess)
+	}
+	if harness.resolved {
+		t.Error("a cache reset resolved a credential")
+	}
+	if harness.launched.called {
+		t.Error("a cache reset started the terminal ui")
+	}
+	if got := harness.version.String(); !strings.Contains(got, "cache") {
+		t.Errorf("a cache reset reported %q, want it to report the cache outcome", got)
+	}
+	if harness.output.Len() != 0 {
+		t.Errorf("a successful cache reset wrote %q to the failure stream, want none", harness.output.String())
 	}
 }

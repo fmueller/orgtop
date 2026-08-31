@@ -163,7 +163,7 @@ func NewScopeSet(scopes []Scope) (ScopeSet, error) {
 			set.repositories = append(set.repositories, scope.repository)
 		}
 	}
-	if err := checkSelectionCapacity(len(set.repositories), len(set.scopes)); err != nil {
+	if err := CheckSelectionCapacity(len(set.repositories), len(set.scopes)); err != nil {
 		return ScopeSet{}, err
 	}
 	return set, nil
@@ -225,7 +225,11 @@ func (s ScopeSet) Filter(events []Event) []Event {
 	return filtered
 }
 
-func checkSelectionCapacity(repositories, scopes int) error {
+// CheckSelectionCapacity reports whether a selection of the given distinct
+// repository and Scope counts fits the closed selection capacities. Callers
+// expanding a selection use it to reject an oversized request before the
+// expansion is materialized; explicit selections are never truncated.
+func CheckSelectionCapacity(repositories, scopes int) error {
 	if repositories > MaxSelectedRepositories {
 		return fmt.Errorf("%w: %d distinct repositories requested, at most %d are allowed", ErrScopeCapacity, repositories, MaxSelectedRepositories)
 	}

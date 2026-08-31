@@ -11,6 +11,22 @@ workflow refuses to publish otherwise.
 
 ## [Unreleased]
 
+### Added
+
+- `--path` selects path Scopes. A bare `PATTERN` filters every `--repo`
+  selection, a qualified `OWNER/REPOSITORY:PATTERN` stands on its own, and both
+  forms may be repeated and mixed. Equivalent Scopes are deduplicated and keep
+  their first requested spelling.
+- `--no-cache` runs a launch without any enrichment-cache operation, and
+  `--reset-cache` is a standalone administrative action that exits without
+  resolving a credential, making a request, or starting the terminal UI.
+
+### Changed
+
+- Bare `--path` patterns turn their `--repo` selections into filtered path
+  Scopes rather than whole-repository Scopes. Repository-only invocations keep
+  their v0.1 meaning.
+
 ## [0.1.0] - 2026-08-25
 
 ### Added

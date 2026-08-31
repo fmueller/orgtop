@@ -31,7 +31,10 @@ the tag. Build from source with `task build` or `go build ./cmd/orgtop`; see
 ## Usage
 
 ```bash
-orgtop --repo owner/repository [--repo owner/repository ...]
+orgtop --repo OWNER/REPOSITORY [--repo OWNER/REPOSITORY ...] [--path (PATTERN | OWNER/REPOSITORY:PATTERN) ...] [--no-cache]
+orgtop --path OWNER/REPOSITORY:PATTERN [--path OWNER/REPOSITORY:PATTERN ...] [--repo OWNER/REPOSITORY ...] [--no-cache]
+orgtop --reset-cache
+orgtop --version
 ```
 
 Repeat `--repo` to select several repositories:
@@ -41,9 +44,34 @@ orgtop --repo acme/backend --repo acme/frontend
 ```
 
 Every repository is named exactly as `owner/repository`. There is no glob or
-organization-wide selection: a launch without `--repo`, with a malformed
-identifier, or with glob syntax exits before the terminal UI with usage and a
-concise cause, and makes no network request.
+organization-wide repository selection: a launch without a selection, with a
+malformed identifier, or with glob syntax in a repository name exits before the
+terminal UI with usage and a concise cause, and makes no network request.
+
+`--path` narrows a selection to the files an event changed. A bare pattern
+filters every `--repo` selection, so the repositories become filtered selections
+rather than whole-repository selections:
+
+```bash
+orgtop --repo acme/backend --repo acme/frontend --path 'src/**' --path 'docs/**'
+```
+
+A qualified `OWNER/REPOSITORY:PATTERN` pattern names its own repository and
+needs no `--repo`, and both forms may be mixed:
+
+```bash
+orgtop --repo acme/backend --path 'acme/frontend:src/**'
+```
+
+A pattern is `/`-separated on every platform, matches case-sensitively, uses `*`
+within one segment and `**` as a complete recursive segment, and escapes a
+literal `*`, `:`, or `\` with a backslash. Patterns are inclusive only; quote
+them so the shell passes them through unchanged.
+
+`--no-cache` runs without opening, reading, or writing the enrichment cache.
+`--reset-cache` removes OrgTop's cached enrichment state and exits without
+resolving a credential, making a request, or starting the terminal UI; it
+accepts no other flag.
 
 `--version` (or `-v`) prints the release version on stdout and exits, and
 `--help` (or `-h`) prints usage and exits. Neither needs a `--repo` selection or

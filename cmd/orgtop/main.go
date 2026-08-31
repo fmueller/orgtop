@@ -21,7 +21,11 @@ import (
 // The process exit codes the launch sequence reports.
 const (
 	exitSuccess = 0
+	// exitFailure reports a failure after the invocation was accepted.
 	exitFailure = 1
+	// exitUsage reports a rejected invocation, which prints usage and its cause
+	// instead of starting any launch work (RG-001).
+	exitUsage = 2
 )
 
 // resolveFunc resolves the github.com credential the launch authenticates with.
@@ -37,9 +41,11 @@ type shell struct {
 	launch  launchFunc
 	// output receives usage and every startup failure.
 	output io.Writer
-	// version receives the version line alone, so a caller reading it never has
-	// to filter usage or failure copy out of the same stream (FR-001).
-	version io.Writer
+	// report receives the successful non-TUI output a caller reads: the version
+	// line and the administrative cache-reset outcome. Keeping it apart from
+	// output means a caller never has to filter usage or failure copy out of the
+	// same stream (FR-001).
+	report io.Writer
 }
 
 func main() {
@@ -50,7 +56,7 @@ func main() {
 		resolve: auth.NewResolver().Resolve,
 		launch:  launch,
 		output:  os.Stderr,
-		version: os.Stdout,
+		report:  os.Stdout,
 	}.run(ctx, filepath.Base(os.Args[0]), os.Args[1:])
 	stop()
 	os.Exit(code)
@@ -72,10 +78,19 @@ func (s shell) run(ctx context.Context, name string, args []string) int {
 		// A version request is answered before any credential or network work,
 		// on its own stream (A-012).
 		if errors.Is(err, cli.ErrVersionRequested) {
-			_, _ = fmt.Fprintln(s.version, cli.VersionLine())
+			_, _ = fmt.Fprintln(s.report, cli.VersionLine())
 			return exitSuccess
 		}
-		return exitFailure
+		return exitUsage
+	}
+
+	// The administrative cache reset is answered before any credential, network,
+	// or terminal work. OrgTop writes no enrichment cache yet, so there is no
+	// state to remove and the reset reports that outcome and exits zero; the
+	// removal itself is wired to the RG-005 store when that store lands.
+	if config.ResetCache {
+		_, _ = fmt.Fprintln(s.report, "orgtop: no cached enrichment state to remove")
+		return exitSuccess
 	}
 
 	credential, err := s.resolve(ctx)
