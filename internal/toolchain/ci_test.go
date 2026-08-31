@@ -326,30 +326,75 @@ func TestChangelogGuardsRejectAnEmptySection(t *testing.T) {
 }
 
 // TestLocalCheckMirrorsTheCIChecksJob keeps `task check` a faithful local rehearsal
-// of the CI checks job. A gate that only exists in the workflow is one a
-// contributor first meets after pushing.
+// of the gates CI runs on every change. The mirror is exact in both directions: a
+// gate that only exists in the workflow is one a contributor first meets after
+// pushing, and a gate that only exists locally reds the pre-push run for a
+// standard nobody is actually held to.
+//
+// "the CI checks" means every job that gates every change — `checks` and
+// `build-test` together — not the job literally named `checks`. `task check` has
+// always run `build`, `test`, and `run:smoke`, which live in `build-test`, so
+// comparing against the single named job would declare a composition that was
+// deliberate from the start to be out of mirror. `cross-compile` is the one gate
+// left out on purpose: it compiles six platforms and belongs to CI alone.
 func TestLocalCheckMirrorsTheCIChecksJob(t *testing.T) {
 	t.Parallel()
 
-	tasks := readFile(t, taskfile)
-	start := strings.Index(tasks, "\n  check:\n")
-	if start < 0 {
-		t.Fatal("Taskfile.yml must declare a `check` target")
-	}
-	body := tasks[start:]
-	if end := strings.Index(body[1:], "\n  clean:"); end >= 0 {
-		body = body[:end+1]
-	}
+	local := checkTargets(t)
+	remote := ciTaskTargets(t)
 
-	for _, target := range jobStepValues(loadYAML(t, ciWorkflow), "checks", "run") {
-		target = strings.TrimSpace(strings.TrimPrefix(target, "task "))
-		if target == "" {
-			continue
-		}
-		if !strings.Contains(body, "task: "+target) {
+	for _, target := range remote {
+		if !contains(local, target) {
 			t.Errorf("`task check` must run %q so the local gate mirrors CI", target)
 		}
 	}
+	for _, target := range local {
+		if !contains(remote, target) {
+			t.Errorf("`task check` runs %q, which no CI job runs; add it to ci.yml or drop it locally", target)
+		}
+	}
+}
+
+// ciTaskTargets returns the targets the CI jobs that gate every change run.
+func ciTaskTargets(t *testing.T) []string {
+	t.Helper()
+
+	workflow := loadYAML(t, ciWorkflow)
+
+	var targets []string
+	for _, job := range []string{"checks", "build-test"} {
+		for _, command := range jobStepValues(workflow, job, "run") {
+			target := strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(command), "task "))
+			if target != "" {
+				targets = append(targets, target)
+			}
+		}
+	}
+	if len(targets) == 0 {
+		t.Fatal("ci.yml must run at least one task target")
+	}
+	return targets
+}
+
+// checkTargets returns the targets the Taskfile's `check` aggregate delegates to.
+func checkTargets(t *testing.T) []string {
+	t.Helper()
+
+	cmds := nodeAt(loadYAML(t, taskfile), "tasks", "check", "cmds")
+	if cmds == nil || len(cmds.Content) == 0 {
+		t.Fatal("Taskfile.yml must declare a `check` target that delegates to other targets")
+	}
+
+	targets := make([]string, 0, len(cmds.Content))
+	for _, command := range cmds.Content {
+		target := child(command, "task")
+		if target == nil {
+			t.Errorf("`task check` must delegate to named targets, not inline commands: %q", command.Value)
+			continue
+		}
+		targets = append(targets, target.Value)
+	}
+	return targets
 }
 
 // TestGremlinsIsInstalledOnDemand prevents an occasional mutation tool from

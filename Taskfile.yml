@@ -28,6 +28,11 @@ tasks:
 
   test:
     desc: Run all tests
+    # CGO_ENABLED=0 matches how every build path links, so the suite exercises
+    # the same pure-Go dependencies the published binary ships with. Guarded by
+    # TestEveryBuildPathDisablesCGO.
+    env:
+      CGO_ENABLED: "0"
     cmds:
       - go test ./...
 
@@ -96,7 +101,7 @@ tasks:
   licenses:check:
     desc: Fail if any dependency license is outside the allowed set
     cmds:
-      - go-licenses check ./... --allowed_licenses=Apache-2.0,MIT,BSD-2-Clause,BSD-3-Clause,ISC
+      - go-licenses check ./... --include_tests --allowed_licenses=Apache-2.0,MIT,BSD-2-Clause,BSD-3-Clause,ISC
 
   workflow:validate:
     aliases: [taskrail-validate]
