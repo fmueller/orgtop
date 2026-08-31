@@ -48,10 +48,22 @@ notes="$(
       gsub(/^[[:space:]]+|[[:space:]]+$/, "", line)
       if (line !~ /^\[.*\]: ./) { print }
     }
-  ' "$changelog"
+  ' "$changelog" |
+    # Drop the blank lines padding the section, keeping those between entries:
+    # a blank run is held back until a later non-blank line proves it interior,
+    # so the trailing run is never emitted. `sed` did this with GNU's `:a`/`ba`
+    # branch labels, which BSD sed rejects, silently reporting a well-formed
+    # section as empty on macOS.
+    awk '
+      /[^[:space:]]/ {
+        while (pending > 0) { print ""; pending-- }
+        print
+        started = 1
+        next
+      }
+      started { pending++ }
+    '
 )"
-# Trim leading and trailing blank lines.
-notes="$(printf '%s\n' "$notes" | sed -e '/[^[:space:]]/,$!d' | sed -e ':a' -e '/^[[:space:]]*$/{$d;N;ba}')"
 
 if [ -z "$notes" ]; then
   echo "guard: no non-empty '## [$version]' section found in $changelog" >&2

@@ -119,6 +119,28 @@ link_midsection="$(write link-midsection '# Changelog
 
 - An older change.')"
 
+# A section whose entries are separated by blank lines and whose tail is
+# whitespace-only. The trim must drop the padding at both ends without
+# collapsing the blank runs between entries. The second gap is two lines long:
+# a trim that merely notices a gap, rather than counting it, resizes the notes
+# it publishes.
+padded="$(write padded '# Changelog
+
+## [0.1.0] - 2026-08-22
+
+
+### Added
+
+- First entry.
+
+- Second entry.
+
+
+- Third entry.
+   
+	
+')"
+
 prerelease="$(write prerelease '# Changelog
 
 ## [0.1.0-rc1] - 2026-08-20
@@ -152,6 +174,18 @@ assert_notes strip-link-footer v0.1.0 "$link_footer" '### Added
 assert_notes strip-link-midsection v0.1.0 "$link_midsection" '### Added
 
 - An entry whose text contains a stray ]: sequence.'
+
+# Blank padding goes at both ends; a blank line between entries is content.
+assert_notes trim-padding v0.1.0 "$padded" '### Added
+
+- First entry.
+
+- Second entry.
+
+
+- Third entry.'
+
+assert_accepts padded v0.1.0 "$padded"
 
 # A missing section must fail rather than fall back to notes naming the tag.
 if "$extractor" v0.2.0 "$documented" >/dev/null 2>&1; then
