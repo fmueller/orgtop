@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-updated_at: "2026-08-29T13:52:46Z"
+updated_at: "2026-08-31T11:29:54Z"
 active_spec_version: v0.2.0
 active_spec_path: specs/v0.2.0.md
 current_task: ""
@@ -8,7 +8,7 @@ current_task_title: ""
 status_summary: idle
 blockers: []
 next_action: Select the next eligible task
-last_verification_result: pass for T-041-close-the-distribution-channel-contract at 2026-08-29T13:52:31Z
+last_verification_result: pass for T-042-consolidate-v0-2-0-implementation-readiness at 2026-08-31T11:29:33Z
 relevant_artifacts: []
 continuation_notes:
     - This repository is using manual Taskrail-style workflow scaffolding until the product replaces more of the bootstrap steps.
@@ -34,7 +34,7 @@ continuation_notes:
 
 ## Last Verification
 
-- pass for T-041-close-the-distribution-channel-contract at 2026-08-29T13:52:31Z
+- pass for T-042-consolidate-v0-2-0-implementation-readiness at 2026-08-31T11:29:33Z
 
 ## Next Action
 
@@ -50,8 +50,8 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 34
+- todo: 32
 - in_progress: 0
-- completed: 40
+- completed: 42
 - blocked: 0
 - cancelled: 0

@@ -1,7 +1,7 @@
 ---
 id: T-072-close-the-mixed-scope-presentation-contract
 title: Close the mixed-Scope presentation contract
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#rg-012-mixed-scope-presentation-contract
 dependencies:
@@ -9,7 +9,7 @@ dependencies:
     - T-036-close-the-unknown-membership-product-policy
     - T-034-close-the-capacity-and-verification-budget
     - T-038-close-the-rain-field-contract
-updated_at: "2026-08-29T09:55:21Z"
+updated_at: "2026-08-31T10:18:04Z"
 ---
 
 # T-072-close-the-mixed-scope-presentation-contract Close the mixed-Scope presentation contract
@@ -38,3 +38,5 @@ Close RG-012 with one deterministic presentation contract for mixed repository a
 
 - This is readiness work only; do not change production code.
 - Keep presentation identity separate from enrichment evidence identity and consume prepared Scope membership state.
+- 2026-08-31T10:17:31Z: verification pass
+- 2026-08-31T10:18:04Z: Closed RG-012 and A-075 through A-081 with passing Taskrail validation, advisory coverage, diff hygiene, and independent semantic verification
