@@ -244,3 +244,38 @@ func TestOpenIsIdempotent(t *testing.T) {
 		t.Errorf("reopen replaced the database: %v -> %v", before.ModTime(), after.ModTime())
 	}
 }
+
+// TestOpenLeavesNothingToNarrow proves an ordinary launch settles the cache
+// permissions completely. A platform whose reported mode is not its real access
+// control must report no pending narrowing, or every later open would escalate
+// to exclusive lifecycle access and refuse every concurrent launch.
+func TestOpenLeavesNothingToNarrow(t *testing.T) {
+	t.Parallel()
+
+	store, location := openTestStore(t)
+
+	broad, err := inspectOwnedPaths(store.root, location)
+	if err != nil {
+		t.Fatalf("inspectOwnedPaths() error = %v", err)
+	}
+	if broad {
+		t.Error("a freshly opened cache still reports a pending permission repair, so every open would take the lifecycle region exclusively")
+	}
+}
+
+// TestConcurrentOpensShareTheLifecycleRegion proves two launches can use one
+// existing healthy cache at the same time. Ordinary use holds shared lifecycle
+// access; only creation, repair, and rebuild exclude other launches.
+func TestConcurrentOpensShareTheLifecycleRegion(t *testing.T) {
+	t.Parallel()
+
+	_, location := openTestStore(t)
+
+	second, err := Open(location)
+	if err != nil {
+		t.Fatalf("second Open() error = %v", err)
+	}
+	if err := second.Close(); err != nil {
+		t.Errorf("second Close() error = %v", err)
+	}
+}

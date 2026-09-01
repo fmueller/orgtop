@@ -147,6 +147,10 @@ func TestStoreRecoversAnUncleanShutdown(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Open() error = %v", err)
 	}
+	// The database handle is closed at the end of the test rather than before
+	// the reopen: Windows refuses to remove a file another handle still holds,
+	// so leaking it would only break cleanup, not prove anything about crashes.
+	t.Cleanup(func() { _ = store.Close() })
 	store = store.WithClock(func() time.Time { return referenceTime })
 	entry := compareEntry(t, "src/main.go")
 	if err := store.Save(context.Background(), entry); err != nil {

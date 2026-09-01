@@ -37,3 +37,15 @@ func checkFileOwnership(_ *os.Root, name string, info fs.FileInfo) error {
 	}
 	return nil
 }
+
+// directoryModeNeedsNarrowing reports whether the cache directory grants access
+// beyond the owner. On POSIX the reported mode is the access control.
+func directoryModeNeedsNarrowing(info fs.FileInfo) bool {
+	return info.Mode().Perm() != directoryMode
+}
+
+// fileNeedsNarrowing reports whether a mutable cache file grants access beyond
+// the owner.
+func fileNeedsNarrowing(info fs.FileInfo) bool {
+	return info.Mode().Perm() != fileMode
+}

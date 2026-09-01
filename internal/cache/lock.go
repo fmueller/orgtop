@@ -92,10 +92,11 @@ func releaseLockFile(path string) error {
 // directory. It holds no cache data: it exists only so path mutation, setup,
 // and mutating transactions cannot race another OrgTop process.
 type maintenanceLock struct {
-	file  *os.File
-	path  string
-	held  map[int]*heldRegion
-	mutex sync.Mutex
+	file   *os.File
+	path   string
+	held   map[int]*heldRegion
+	closed bool
+	mutex  sync.Mutex
 }
 
 type heldRegion struct {
@@ -161,6 +162,11 @@ func (l *maintenanceLock) convert(region int, wait time.Duration) error {
 // may remain open past this point.
 func (l *maintenanceLock) close() error {
 	l.mutex.Lock()
+	if l.closed {
+		l.mutex.Unlock()
+		return nil
+	}
+	l.closed = true
 	regions := make([]int, 0, len(l.held))
 	for region := range l.held {
 		regions = append(regions, region)

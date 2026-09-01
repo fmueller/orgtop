@@ -40,3 +40,15 @@ func checkFileOwnership(root *os.Root, name string, info fs.FileInfo) error {
 	}
 	return nil
 }
+
+// directoryModeNeedsNarrowing reports no POSIX narrowing on Windows. Go derives
+// the reported mode from the read-only attribute alone, so a correctly secured
+// cache directory still reads as 0777 and a mode comparison would demand a
+// repair that can never succeed. Escalating to exclusive lifecycle access on
+// every open would then refuse every concurrent launch. Windows access is
+// governed by ownership and inherited ACLs, which T-078 closes.
+func directoryModeNeedsNarrowing(fs.FileInfo) bool { return false }
+
+// fileNeedsNarrowing reports no POSIX narrowing on Windows, for the same reason
+// as the directory: a mutable cache file reads as 0666 however it is secured.
+func fileNeedsNarrowing(fs.FileInfo) bool { return false }

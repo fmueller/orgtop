@@ -64,7 +64,7 @@ func inspectOwnedPaths(root *os.Root, location Location) (bool, error) {
 		if err := checkFileOwnership(root, name, info); err != nil {
 			return false, err
 		}
-		broad = broad || info.Mode().Perm() != fileMode
+		broad = broad || fileNeedsNarrowing(info)
 	}
 	return broad, nil
 }
@@ -90,7 +90,7 @@ func repairOwnedPaths(root *os.Root, location Location) error {
 		if err != nil {
 			return fmt.Errorf("%w: %w", ErrUnavailable, err)
 		}
-		if info.Mode().Perm() == fileMode {
+		if !fileNeedsNarrowing(info) {
 			continue
 		}
 		if err := root.Chmod(name, fileMode); err != nil {
@@ -100,15 +100,17 @@ func repairOwnedPaths(root *os.Root, location Location) error {
 	return nil
 }
 
-// directoryNeedsNarrowing reports whether the cache directory grants access
-// beyond the effective user. Windows ownership follows inherited ACLs, which
-// carry no POSIX mode, so the mode check applies where a mode is meaningful.
+// directoryNeedsNarrowing reports whether the cache directory still grants
+// access beyond the effective user. The decision is platform-specific: only a
+// platform whose reported mode is the real access control may answer yes, or an
+// ordinary launch would escalate to exclusive lifecycle access on every open
+// and refuse every concurrent launch.
 func directoryNeedsNarrowing(location Location) (bool, error) {
 	info, err := os.Lstat(location.Directory())
 	if err != nil {
 		return false, fmt.Errorf("%w: %w", ErrUnavailable, err)
 	}
-	return info.Mode().Perm() != directoryMode, nil
+	return directoryModeNeedsNarrowing(info), nil
 }
 
 // openOwnedFile opens or creates one cache file relative to the cache directory
