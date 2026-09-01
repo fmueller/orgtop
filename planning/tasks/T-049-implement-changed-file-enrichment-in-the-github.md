@@ -1,12 +1,12 @@
 ---
 id: T-049-implement-changed-file-enrichment-in-the-github
 title: Implement changed-file enrichment in the GitHub adapter
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#changed-file-enrichment
 dependencies:
     - T-043-guard-the-v0-2-0-toolchain-and-dependency-baseline
-updated_at: "2026-08-29T09:22:04Z"
+updated_at: "2026-09-01T22:13:19Z"
 ---
 
 # T-049-implement-changed-file-enrichment-in-the-github Implement changed-file enrichment in the GitHub adapter
@@ -33,3 +33,4 @@ Implement the closed GitHub changed-file operations and normalize their results 
 
 - Return typed normalized paths and outcomes.
 - Do not perform domain membership matching in the adapter.
+- 2026-09-01T22:13:15Z: verification pass

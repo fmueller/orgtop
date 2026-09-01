@@ -49,6 +49,11 @@ type Event struct {
 	EntityRef string
 	// Description is concise human-readable detail.
 	Description string
+	// Evidence names the changed-file evidence this event needs before its path
+	// membership can be decided. It is always populated by a successful
+	// normalization; an event with no supported evidence form carries a settled
+	// unsupported descriptor rather than a zero value.
+	Evidence EvidenceDescriptor
 }
 
 // Deduplicate returns the events with repeated source event IDs removed, keeping

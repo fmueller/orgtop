@@ -28,17 +28,33 @@ type repoPayload struct {
 type detailPayload struct {
 	Action      string              `json:"action"`
 	Ref         string              `json:"ref"`
+	Before      string              `json:"before"`
 	Head        string              `json:"head"`
 	Size        *int                `json:"size"`
 	PullRequest *pullRequestPayload `json:"pull_request"`
 	Issue       *issuePayload       `json:"issue"`
 	Review      *reviewPayload      `json:"review"`
+	Comment     *commentPayload     `json:"comment"`
 }
 
 // pullRequestPayload is the pull request a pull-request-scoped event refers to.
 type pullRequestPayload struct {
-	Number int  `json:"number"`
-	Merged bool `json:"merged"`
+	Number int         `json:"number"`
+	Merged bool        `json:"merged"`
+	Base   *refPayload `json:"base"`
+	Head   *refPayload `json:"head"`
+}
+
+// refPayload is the base or head end of a pull request. Only the immutable
+// object SHA is modelled: a branch name is never evidence identity.
+type refPayload struct {
+	SHA string `json:"sha"`
+}
+
+// commentPayload is the comment a review-comment event refers to. A file-specific
+// review comment names exactly one repository-relative path.
+type commentPayload struct {
+	Path string `json:"path"`
 }
 
 // issuePayload is the issue an IssueCommentEvent refers to. A non-nil PullRequest

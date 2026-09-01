@@ -13,12 +13,14 @@ import (
 	"github.com/fmueller/orgtop/internal/domain"
 )
 
-// The documented v0.1.0 request contract (FR-004). A retired contract requires a
-// spec revision rather than an implicit behavior change here.
+// The documented request contract (FR-004). A retired contract requires a spec
+// revision rather than an implicit behavior change here. RG-003 moves polling and
+// enrichment onto one API version together, so both send apiVersion and one
+// fixture set describes one contract.
 const (
 	defaultBaseURL  = "https://api.github.com"
 	acceptMediaType = "application/vnd.github+json"
-	apiVersion      = "2022-11-28"
+	apiVersion      = "2026-03-10"
 	perPage         = "100"
 	userAgent       = "orgtop/0.1.0"
 	requestTimeout  = 30 * time.Second
@@ -174,6 +176,16 @@ func drainBody(body io.Reader) {
 	_, _ = io.Copy(io.Discard, io.LimitReader(body, bodyDrainLimit))
 }
 
+// setDocumentedHeaders applies the documented request headers every polling and
+// enrichment request shares, so both stages can never drift apart. The bearer
+// credential is set here and never carried into an error or a log line.
+func setDocumentedHeaders(request *http.Request, credential auth.Credential) {
+	request.Header.Set("Accept", acceptMediaType)
+	request.Header.Set("X-GitHub-Api-Version", apiVersion)
+	request.Header.Set("User-Agent", userAgent)
+	request.Header.Set("Authorization", "Bearer "+credential.Token())
+}
+
 // do sends the documented bounded events request for one repository.
 func (s Source) do(ctx context.Context, repository domain.Repository) (*http.Response, error) {
 	endpoint := fmt.Sprintf("%s/repos/%s/%s/events?per_page=%s",
@@ -182,10 +194,7 @@ func (s Source) do(ctx context.Context, repository domain.Repository) (*http.Res
 	if err != nil {
 		return nil, fmt.Errorf("%w: the request could not be built", ErrTransport)
 	}
-	request.Header.Set("Accept", acceptMediaType)
-	request.Header.Set("X-GitHub-Api-Version", apiVersion)
-	request.Header.Set("User-Agent", userAgent)
-	request.Header.Set("Authorization", "Bearer "+s.Credential.Token())
+	setDocumentedHeaders(request, s.Credential)
 
 	response, err := s.client().Do(request)
 	if err != nil {

@@ -217,8 +217,8 @@ func TestRefreshRequestsOneDocumentedPagePerScopeEntry(t *testing.T) {
 		if got := request.header.Get("Accept"); got != "application/vnd.github+json" {
 			t.Errorf("request %d Accept = %q, want %q", index, got, "application/vnd.github+json")
 		}
-		if got := request.header.Get("X-GitHub-Api-Version"); got != "2022-11-28" {
-			t.Errorf("request %d X-GitHub-Api-Version = %q, want %q", index, got, "2022-11-28")
+		if got := request.header.Get("X-GitHub-Api-Version"); got != "2026-03-10" {
+			t.Errorf("request %d X-GitHub-Api-Version = %q, want %q", index, got, "2026-03-10")
 		}
 		if request.header.Get("Authorization") != "Bearer "+sentinelToken {
 			t.Errorf("request %d does not carry the resolved bearer credential", index)

@@ -89,6 +89,7 @@ func normalizeEvent(requested domain.Repository, index int, payload eventPayload
 		EntityKind:  kind,
 		EntityRef:   ref,
 		Description: description,
+		Evidence:    changedFileEvidence(repository, payload),
 	}, nil
 }
 
