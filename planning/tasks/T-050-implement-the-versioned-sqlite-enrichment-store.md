@@ -1,12 +1,12 @@
 ---
 id: T-050-implement-the-versioned-sqlite-enrichment-store
 title: Implement the versioned SQLite enrichment store
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#bounded-sqlite-cache
 dependencies:
     - T-043-guard-the-v0-2-0-toolchain-and-dependency-baseline
-updated_at: "2026-08-29T09:22:04Z"
+updated_at: "2026-09-01T22:47:18Z"
 ---
 
 # T-050-implement-the-versioned-sqlite-enrichment-store Implement the versioned SQLite enrichment store
@@ -33,3 +33,4 @@ Implement the closed private SQLite schema, platform location, permissions, migr
 
 - Keep this a narrow enrichment cache, not a generic repository persistence layer.
 - SQLite types must not enter the domain.
+- 2026-09-01T22:46:33Z: verification pass
