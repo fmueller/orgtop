@@ -29,14 +29,8 @@ func openTestStore(t *testing.T) (*Store, Location) {
 func queryScalar[T any](t *testing.T, location Location, query string) T {
 	t.Helper()
 
-	db, err := sql.Open("sqlite", location.Database())
-	if err != nil {
-		t.Fatalf("sql.Open() error = %v", err)
-	}
-	defer func() { _ = db.Close() }()
-
 	var value T
-	if err := db.QueryRow(query).Scan(&value); err != nil {
+	if err := openDirectly(t, location).QueryRow(query).Scan(&value); err != nil {
 		t.Fatalf("query %q error = %v", query, err)
 	}
 	return value

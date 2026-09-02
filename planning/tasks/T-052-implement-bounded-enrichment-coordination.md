@@ -22,10 +22,15 @@ Coordinate cache reuse and GitHub enrichment as bounded, cancelable, coalesced a
 - Concurrency, queueing, request bounds, timeouts, cache reuse, duplicate coalescing, rate-limit delays, and retries match the closed RG-003/RG-005/RG-009 contracts.
 - Identical entities shared by events or Scopes do not trigger one request per Scope.
 - Work never runs synchronously in rendering or keyboard handling.
+- Coordination drives the store's freshness and maintenance surface that T-051 shipped
+  but left without a caller: one batched hit touch per refresh, a maintenance check, and
+  at most one bounded cleanup batch, all outside TUI input and rendering paths.
 
 ## Test Expectations
 
 - Add deterministic fake-adapter/cache tests for coalescing, bounds, cancellation, cache hits/misses, rate limits, and no-tight-retry behavior.
+- Prove the refresh performs at most one touch transaction and one cleanup batch, and that
+  a skipped or contended cache operation degrades the refresh without failing it.
 
 ## Verification Notes
 
@@ -34,3 +39,6 @@ Coordinate cache reuse and GitHub enrichment as bounded, cancelable, coalesced a
 ## Implementation Notes
 
 - Keep orchestration in application/source services, not the domain or TUI renderer.
+- `internal/cache` exposes `Lookup`, `Save`, `Touch`, `MaintenanceDue`, and `Maintain`; the
+  cache has no caller yet, so this task closes RG-009's requirement that cleanup runs as
+  bounded background work rather than inside a renderer or key handler.

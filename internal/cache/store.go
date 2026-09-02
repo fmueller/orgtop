@@ -56,6 +56,17 @@ type Store struct {
 	lock     *maintenanceLock
 	db       *sql.DB
 	now      func() time.Time
+	limits   bounds
+	// invalid holds the exact keys of rows that failed their invariants on
+	// read. Reads open no invalidation transaction, so the next bounded
+	// cleanup batch deletes exactly these records first.
+	invalid []Key
+	// touched holds the proven hits of this refresh for its single batched
+	// touch transaction.
+	touched []Key
+	// disabled stops cache work for this process after an unrecovered
+	// physical state. OrgTop stays interactive and falls back to GitHub.
+	disabled bool
 }
 
 // Open prepares the fixed cache location and returns a usable version-1 store.
@@ -72,7 +83,7 @@ func Open(location Location) (*Store, error) {
 		_ = root.Close()
 		return nil, err
 	}
-	store := &Store{location: location, root: root, lock: lock}
+	store := &Store{location: location, root: root, lock: lock, limits: defaultBounds()}
 
 	// Ordinary cache use holds shared lifecycle access, so concurrent launches
 	// do not exclude each other. Only creation, permission repair, and rebuild
@@ -142,6 +153,13 @@ func (s *Store) underExclusiveLifecycle(step func() error) error {
 // read at an arbitrary moment.
 func (s *Store) WithClock(now func() time.Time) *Store {
 	s.now = now
+	return s
+}
+
+// withBounds returns the store using shrunken capacities. Only tests use it:
+// production always runs on the closed defaultBounds.
+func (s *Store) withBounds(limits bounds) *Store {
+	s.limits = limits
 	return s
 }
 
@@ -418,16 +436,37 @@ func (s *Store) PhysicalBytes() (int64, error) {
 	}
 	var total int64
 	for _, name := range ownedNames() {
-		info, err := s.root.Lstat(name)
-		if errors.Is(err, fs.ErrNotExist) {
-			continue
-		}
+		size, err := s.ownedSize(name)
 		if err != nil {
-			return 0, fmt.Errorf("%w: %w", ErrUnavailable, err)
+			return 0, err
 		}
-		total += info.Size()
+		total += size
 	}
 	return total, nil
+}
+
+// usable reports whether cache work is still allowed in this process. An
+// unrecovered physical state disables the cache without failing the launch.
+func (s *Store) usable() error {
+	if s.db == nil {
+		return fmt.Errorf("%w: the store is closed", ErrUnavailable)
+	}
+	if s.disabled {
+		return fmt.Errorf("%w: cache use is disabled for this process, run --reset-cache", ErrOverCapacity)
+	}
+	return nil
+}
+
+// ownedSize reports the apparent length of one owned file, zero when absent.
+func (s *Store) ownedSize(name string) (int64, error) {
+	info, err := s.root.Lstat(name)
+	if errors.Is(err, fs.ErrNotExist) {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, fmt.Errorf("%w: %w", ErrUnavailable, err)
+	}
+	return info.Size(), nil
 }
 
 // Lookup returns the complete record stored under an exact typed key. A
@@ -435,8 +474,8 @@ func (s *Store) PhysicalBytes() (int64, error) {
 // refresh: the returned error reports the degradation cause and never turns
 // incomplete state into complete evidence.
 func (s *Store) Lookup(ctx context.Context, key Key) (Entry, bool, error) {
-	if s.db == nil {
-		return Entry{}, false, fmt.Errorf("%w: the store is closed", ErrUnavailable)
+	if err := s.usable(); err != nil {
+		return Entry{}, false, err
 	}
 	if key.IsZero() {
 		return Entry{}, false, fmt.Errorf("%w: no typed key", ErrInvalidRecord)
@@ -446,6 +485,14 @@ func (s *Store) Lookup(ctx context.Context, key Key) (Entry, bool, error) {
 	}
 	defer s.lock.release(admissionRegion)
 
+	// The physical proof runs inside the admission region, so two processes
+	// cannot both pass admission against the same stale byte figures. A read
+	// reserves no temporary headroom, but a cache already above the retained
+	// ceiling admits no hit at all.
+	if err := s.admit(0); err != nil {
+		return Entry{}, false, err
+	}
+
 	transaction, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return Entry{}, false, fmt.Errorf("%w: %w", ErrContended, err)
@@ -453,14 +500,30 @@ func (s *Store) Lookup(ctx context.Context, key Key) (Entry, bool, error) {
 	defer func() { _ = transaction.Rollback() }()
 
 	entry, found, err := readEntry(ctx, transaction, key)
-	if err != nil || !found {
+	if err != nil {
+		// A row that failed its structural invariants is queued first for
+		// bounded cleanup; the read itself changes nothing.
+		if errors.Is(err, ErrInvalidRecord) {
+			s.queueInvalid(key)
+		}
 		return Entry{}, false, err
 	}
-	if err := entry.validate(s.clock()); err != nil {
+	if !found {
+		return Entry{}, false, nil
+	}
+	now := s.clock()
+	if err := entry.validate(now); err != nil {
 		// A failed row invariant is a miss. Reads never open an invalidation
-		// transaction; bounded cleanup removes the record later.
+		// transaction; the record is queued first for bounded cleanup.
+		s.queueInvalid(key)
 		return Entry{}, false, err
 	}
+	if entry.expired(now) {
+		// Expired evidence never satisfies complete evidence. It stays stored
+		// until bounded cleanup or a successful exact-key replacement.
+		return Entry{}, false, fmt.Errorf("%w: acquired at %s", ErrExpired, entry.AcquiredAt.Format(time.RFC3339))
+	}
+	s.queueTouch(key)
 	return entry, true, nil
 }
 
@@ -545,8 +608,8 @@ func readPaths(ctx context.Context, transaction *sql.Tx, id int64, pathCount int
 // the previous complete record or the replacement, never working rows, and a
 // rolled-back write never invalidates the API evidence of the current refresh.
 func (s *Store) Save(ctx context.Context, entry Entry) error {
-	if s.db == nil {
-		return fmt.Errorf("%w: the store is closed", ErrUnavailable)
+	if err := s.usable(); err != nil {
+		return err
 	}
 	now := s.clock()
 	entry.Paths = sortedPaths(entry.Paths)
@@ -563,6 +626,12 @@ func (s *Store) Save(ctx context.Context, entry Entry) error {
 		return err
 	}
 	defer s.lock.release(admissionRegion)
+
+	// Admission is proven under the region a competing process must also take,
+	// so no two processes can both admit a write against the same figures.
+	if err := s.admitWrite(ctx, entry); err != nil {
+		return err
+	}
 
 	transaction, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -608,7 +677,6 @@ func writeEntry(ctx context.Context, transaction *sql.Tx, entry Entry, reference
 		return fmt.Errorf("%w: %w", ErrContended, err)
 	}
 	id, err := result.LastInsertId()
-
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrContended, err)
 	}

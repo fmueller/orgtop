@@ -1,12 +1,12 @@
 ---
 id: T-051-implement-cache-freshness-and-deterministic
 title: Implement cache freshness and deterministic cleanup
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#bounded-sqlite-cache
 dependencies:
     - T-050-implement-the-versioned-sqlite-enrichment-store
-updated_at: "2026-08-29T09:22:04Z"
+updated_at: "2026-09-02T05:50:31Z"
 ---
 
 # T-051-implement-cache-freshness-and-deterministic Implement cache freshness and deterministic cleanup
@@ -32,3 +32,4 @@ Implement the closed cache validity, revalidation, retention, and bounded cleanu
 ## Implementation Notes
 
 - Run cache work outside TUI input and rendering paths.
+- 2026-09-02T05:50:27Z: verification pass
