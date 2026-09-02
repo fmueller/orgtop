@@ -1,13 +1,13 @@
 ---
 id: T-053-implement-explicit-scope-membership-outcomes
 title: Implement explicit Scope membership outcomes
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#explicit-scope-membership
 dependencies:
     - T-046-implement-canonical-path-matching
     - T-052-implement-bounded-enrichment-coordination
-updated_at: "2026-08-29T09:22:04Z"
+updated_at: "2026-09-02T22:15:41Z"
 ---
 
 # T-053-implement-explicit-scope-membership-outcomes Implement explicit Scope membership outcomes
@@ -34,3 +34,4 @@ Implement domain evaluation of repository and path Scopes with explicit member, 
 
 - Use an explicit typed outcome rather than a boolean.
 - Keep policy and matching out of render functions.
+- 2026-09-02T22:15:38Z: verification pass
