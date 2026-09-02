@@ -1,14 +1,14 @@
 ---
 id: T-052-implement-bounded-enrichment-coordination
 title: Implement bounded enrichment coordination
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#changed-file-enrichment
 dependencies:
     - T-049-implement-changed-file-enrichment-in-the-github
     - T-051-implement-cache-freshness-and-deterministic
     - T-044-implement-the-unified-scope-domain-model
-updated_at: "2026-08-29T09:22:04Z"
+updated_at: "2026-09-02T22:00:07Z"
 ---
 
 # T-052-implement-bounded-enrichment-coordination Implement bounded enrichment coordination
@@ -42,3 +42,5 @@ Coordinate cache reuse and GitHub enrichment as bounded, cancelable, coalesced a
 - `internal/cache` exposes `Lookup`, `Save`, `Touch`, `MaintenanceDue`, and `Maintain`; the
   cache has no caller yet, so this task closes RG-009's requirement that cleanup runs as
   bounded background work rather than inside a renderer or key handler.
+- 2026-09-02T21:54:40Z: verification pass
+- 2026-09-02T22:00:07Z: verification pass
