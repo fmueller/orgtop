@@ -136,26 +136,62 @@ func (s *Store) admitWrite(ctx context.Context, entry Entry) error {
 		return fmt.Errorf("%w: a replacement projects %d evidence and %d child rows above the %d and %d limits",
 			ErrOverCapacity, evidence, paths, s.limits.evidenceRecords, s.limits.childRecords)
 	}
-	return s.admitProjectedBytes(ctx)
+	return s.admitProjectedBytes(ctx, replacementBytes(entry))
+}
+
+// Storage estimates of one replacement's own rows. A B-tree cell carries its
+// payload plus a header and rowid, and evidence_path repeats every path in the
+// unique index that proves paths are stored once, so a stored path is counted
+// twice. The estimates are deliberately generous: admission has to bound the
+// growth a write can cause, and overstating it skips a write while
+// understating it would grow the cache past the ceiling it must respect.
+const (
+	evidenceRowBytes = 512
+	pathRowBytes     = 96
+)
+
+// replacementBytes estimates the physical bytes one replacement's own rows add:
+// the parent row and, for every path, its child row and index entry.
+func replacementBytes(entry Entry) int64 {
+	total := int64(evidenceRowBytes)
+	for _, path := range entry.Paths {
+		total += 2*int64(len(path.String())) + pathRowBytes
+	}
+	return total
 }
 
 // admitProjectedBytes proves the store stays within the retained ceiling once
-// the write-ahead log is checkpointed back into the main database.
-func (s *Store) admitProjectedBytes(ctx context.Context) error {
-	var pages int64
-	if err := s.db.QueryRowContext(ctx, "PRAGMA page_count").Scan(&pages); err != nil {
+// the pending operation's own growth is written and the write-ahead log is
+// checkpointed back into the main database. Measuring only the pre-write state
+// would admit a replacement whose own rows cross the ceiling.
+func (s *Store) admitProjectedBytes(ctx context.Context, growth int64) error {
+	var pages, free int64
+	if err := s.db.QueryRowContext(ctx,
+		"SELECT (SELECT * FROM pragma_page_count), (SELECT * FROM pragma_freelist_count)").Scan(&pages, &free); err != nil {
 		return fmt.Errorf("%w: %w", ErrContended, err)
 	}
 	retained, err := s.retainedSidecarBytes()
 	if err != nil {
 		return err
 	}
-	projected := pages*pageSize + retained
+	projected := (pages+growthPages(growth, free))*pageSize + retained
 	if projected > s.limits.retainedBytes {
 		return fmt.Errorf("%w: the operation projects %d retained bytes above the %d byte ceiling",
 			ErrOverCapacity, projected, s.limits.retainedBytes)
 	}
 	return nil
+}
+
+// growthPages reports the pages an operation adds beyond the free pages the
+// database can already reuse. Incremental auto-vacuum keeps freed pages on the
+// free list rather than returning them to the filesystem, so the pages an
+// exact-key deletion releases are exactly the ones its replacement rewrites.
+func growthPages(growth, free int64) int64 {
+	pages := (growth + pageSize - 1) / pageSize
+	if pages <= free {
+		return 0
+	}
+	return pages - free
 }
 
 // retainedSidecarBytes sums the owned files that survive a checkpoint. The main

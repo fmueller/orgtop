@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"testing"
+	"time"
 )
 
 // TestOpenPreservesAForeignApplicationID proves a nonzero application ID that is
@@ -79,24 +80,28 @@ func TestOpenBypassesAnUnknownSchemaVersion(t *testing.T) {
 	}
 }
 
-// TestOpenReportsStructuralCorruption proves a database carrying OrgTop's exact
-// application ID and version but a damaged schema is corruption, never a partial
-// hit against whichever table survived.
-func TestOpenReportsStructuralCorruption(t *testing.T) {
+// TestOpenDiscardsAStructurallyCorruptDatabase proves a database carrying
+// OrgTop's exact application ID and version but a damaged schema is corruption,
+// never a partial hit against whichever table survived: the rebuild replaces the
+// whole database rather than serving the rows that happen to have survived.
+func TestOpenDiscardsAStructurallyCorruptDatabase(t *testing.T) {
 	t.Parallel()
 
-	location := LocationIn(t.TempDir())
-	store, err := Open(location)
-	if err != nil {
-		t.Fatalf("Open() error = %v", err)
-	}
+	store, location := fixedClockStore(t)
+	seedEntry(t, store, "kept", referenceTime.Add(-time.Hour), referenceTime.Add(-time.Hour), "a.go")
 	if err := store.Close(); err != nil {
 		t.Fatalf("Close() error = %v", err)
 	}
 	execDatabase(t, location, "DROP TABLE evidence_path")
 
-	if _, err := Open(location); !errors.Is(err, ErrCorrupt) {
-		t.Fatalf("Open() error = %v, want ErrCorrupt", err)
+	rebuilt, err := Open(location)
+	if err != nil {
+		t.Fatalf("Open() error = %v, want the corrupt database discarded", err)
+	}
+	defer func() { _ = rebuilt.Close() }()
+
+	if got := queryScalar[int](t, location, "SELECT count(*) FROM evidence"); got != 0 {
+		t.Errorf("evidence rows = %d, want the surviving table discarded with the corrupt database", got)
 	}
 }
 

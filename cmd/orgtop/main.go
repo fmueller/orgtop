@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 
 	"github.com/fmueller/orgtop/internal/auth"
+	"github.com/fmueller/orgtop/internal/cache"
 	"github.com/fmueller/orgtop/internal/cli"
 )
 
@@ -34,11 +35,29 @@ type resolveFunc func(ctx context.Context) (auth.Credential, error)
 // launchFunc runs the terminal UI for a validated configuration until it exits.
 type launchFunc func(ctx context.Context, config cli.Config, credential auth.Credential) error
 
+// resetFunc removes OrgTop's cached enrichment state at the fixed cache
+// location. It is a process seam so the administrative path is testable without
+// touching the user's real cache directory.
+type resetFunc func() error
+
+// resetCache removes the cached enrichment state at the fixed RG-005 location.
+// An unresolvable cache directory is reported like any other reset failure: the
+// user asked for a removal, so silence would claim work that never happened.
+func resetCache() error {
+	location, err := cache.DefaultLocation()
+	if err != nil {
+		return err
+	}
+	return cache.Reset(location)
+}
+
 // shell is the launch sequence with its process seams injected, so startup is
 // testable without a terminal, a credential, or GitHub.
 type shell struct {
 	resolve resolveFunc
 	launch  launchFunc
+	// resetCache performs the standalone administrative cache removal.
+	resetCache resetFunc
 	// output receives usage and every startup failure.
 	output io.Writer
 	// report receives the successful non-TUI output a caller reads: the version
@@ -53,10 +72,11 @@ func main() {
 	// runs, the source request in flight behind it (NFR-001).
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	code := shell{
-		resolve: auth.NewResolver().Resolve,
-		launch:  launch,
-		output:  os.Stderr,
-		report:  os.Stdout,
+		resolve:    auth.NewResolver().Resolve,
+		launch:     launch,
+		resetCache: resetCache,
+		output:     os.Stderr,
+		report:     os.Stdout,
 	}.run(ctx, filepath.Base(os.Args[0]), os.Args[1:])
 	stop()
 	os.Exit(code)
@@ -85,11 +105,14 @@ func (s shell) run(ctx context.Context, name string, args []string) int {
 	}
 
 	// The administrative cache reset is answered before any credential, network,
-	// or terminal work. OrgTop writes no enrichment cache yet, so there is no
-	// state to remove and the reset reports that outcome and exits zero; the
-	// removal itself is wired to the RG-005 store when that store lands.
+	// or terminal work. It removes the disposable enrichment cache and exits;
+	// any failure is sanitized, reported on the failure stream, and nonzero
+	// (RG-005).
 	if config.ResetCache {
-		_, _ = fmt.Fprintln(s.report, "orgtop: no cached enrichment state to remove")
+		if err := s.resetCache(); err != nil {
+			return s.fail(err)
+		}
+		_, _ = fmt.Fprintln(s.report, "orgtop: removed the cached enrichment state")
 		return exitSuccess
 	}
 

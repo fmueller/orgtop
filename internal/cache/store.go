@@ -67,6 +67,10 @@ type Store struct {
 	// disabled stops cache work for this process after an unrecovered
 	// physical state. OrgTop stays interactive and falls back to GitHub.
 	disabled bool
+	// rebuilt records that this process spent its one structural rebuild
+	// attempt. A second confirmed corruption is reported rather than
+	// discarding another database.
+	rebuilt bool
 }
 
 // Open prepares the fixed cache location and returns a usable version-1 store.
@@ -111,16 +115,31 @@ func (s *Store) prepare() error {
 	if err != nil {
 		return err
 	}
-	if broad || !exists {
+	// A tombstone is an unfinished reset. It forces the same sidecar-first
+	// cleanup before any canonical create or open, so no database is used
+	// beside write-ahead state that no longer describes it.
+	pending, err := s.ownedExists(tombstoneName)
+	if err != nil {
+		return err
+	}
+	if broad || pending || !exists {
 		if err := s.underExclusiveLifecycle(s.setUp); err != nil {
 			return err
 		}
 	}
-	if err := s.checkHeader(); err != nil {
-		return err
-	}
-	if err := s.openDatabase(); err != nil {
-		return err
+	if err := s.openCanonical(); err != nil {
+		if !errors.Is(err, ErrCorrupt) || s.rebuilt {
+			return err
+		}
+		// Confirmed structural corruption of exact v1 gets one rebuild
+		// attempt per process. A failed rebuild reports its cause and leaves
+		// cache work disabled for this launch rather than retrying.
+		if err := s.underExclusiveLifecycle(s.rebuild); err != nil {
+			return err
+		}
+		if err := s.openCanonical(); err != nil {
+			return err
+		}
 	}
 	// SQLite creates its WAL and SHM sidecars on first open. They are mutable
 	// cache files, so a broader inherited mode is narrowed like any other.
@@ -146,6 +165,31 @@ func (s *Store) underExclusiveLifecycle(step func() error) error {
 		return err
 	}
 	return s.lock.convert(lifecycleRegion, busyWait)
+}
+
+// openCanonical proves the canonical file is OrgTop's exact version 1 and opens
+// it. Both steps are one unit because either one can confirm the corruption the
+// single rebuild attempt answers.
+func (s *Store) openCanonical() error {
+	if err := s.checkHeader(); err != nil {
+		return err
+	}
+	return s.openDatabase()
+}
+
+// rebuild spends this process's one structural rebuild attempt: the corrupt
+// database goes through the same tombstone procedure `--reset-cache` uses and a
+// complete empty version 1 replaces it. The attempt is recorded before the work
+// so a failure is never retried. It must hold exclusive lifecycle access.
+func (s *Store) rebuild() error {
+	s.rebuilt = true
+	if err := discardDatabase(s.root, s.location); err != nil {
+		return err
+	}
+	// bootstrap repeats the orphan cleanup discardDatabase just ran. That is
+	// deliberate: bootstrap owns the precondition for its own exclusive create
+	// on every path that reaches it, and removing an absent file succeeds.
+	return s.bootstrap()
 }
 
 // WithClock returns the store reading time from the refresh's fixed clock. Tests
@@ -178,6 +222,15 @@ func (s *Store) setUp() error {
 	if err := repairOwnedPaths(s.root, s.location); err != nil {
 		return err
 	}
+	pending, err := s.ownedExists(tombstoneName)
+	if err != nil {
+		return err
+	}
+	if pending {
+		if err := clearInterruptedReset(s.root); err != nil {
+			return err
+		}
+	}
 	exists, err := s.canonicalExists()
 	if err != nil {
 		return err
@@ -189,7 +242,12 @@ func (s *Store) setUp() error {
 }
 
 func (s *Store) canonicalExists() (bool, error) {
-	_, err := s.root.Lstat(databaseName)
+	return s.ownedExists(databaseName)
+}
+
+// ownedExists reports whether one owned cache file is present.
+func (s *Store) ownedExists(name string) (bool, error) {
+	_, err := s.root.Lstat(name)
 	if errors.Is(err, fs.ErrNotExist) {
 		return false, nil
 	}
@@ -204,10 +262,11 @@ func (s *Store) canonicalExists() (bool, error) {
 // sidecars and a previous owned bootstrap file are removed first; a crash
 // therefore leaves no canonical file rather than a partial one.
 func (s *Store) bootstrap() error {
-	for _, name := range append(sidecarNames(), tombstoneName, bootstrapName) {
-		if err := removeOwnedFile(s.root, name); err != nil {
-			return err
-		}
+	if err := clearInterruptedReset(s.root); err != nil {
+		return err
+	}
+	if err := removeOwnedFile(s.root, bootstrapName); err != nil {
+		return err
 	}
 	file, err := s.root.OpenFile(bootstrapName, os.O_RDWR|os.O_CREATE|os.O_EXCL, fileMode)
 	if err != nil {
@@ -271,9 +330,43 @@ func createSchema(path string) error {
 // checkHeader applies the closed unknown-version policy by reading the raw
 // SQLite header. A foreign or ambiguous file is never opened as OrgTop's.
 func (s *Store) checkHeader() error {
-	file, err := s.root.Open(databaseName)
-	if err != nil {
+	identity, err := readIdentity(s.root)
+	if errors.Is(err, fs.ErrNotExist) {
+		// Only a concurrent reset removes the canonical file between setup and
+		// open. That is an unavailable cache, not a cause without a sentinel
+		// the caller can act on.
 		return fmt.Errorf("%w: %w", ErrUnavailable, err)
+	}
+	if err != nil {
+		return err
+	}
+	if identity.application != applicationID {
+		return fmt.Errorf("%w: application id %#08x", ErrForeignDatabase, identity.application)
+	}
+	if identity.version != schemaVersion {
+		return fmt.Errorf("%w: schema version %d", ErrIncompatibleVersion, identity.version)
+	}
+	return nil
+}
+
+// databaseIdentity is the pair of raw SQLite header fields that names a
+// database without opening it.
+type databaseIdentity struct {
+	application uint32
+	version     uint32
+}
+
+// readIdentity reads the header fields of the canonical database through the
+// directory-relative handle. An absent file reports fs.ErrNotExist so a caller
+// can distinguish "no cache" from "not OrgTop's cache"; anything that does not
+// read as a database header at all is foreign and preserved.
+func readIdentity(root *os.Root) (databaseIdentity, error) {
+	file, err := root.Open(databaseName)
+	if errors.Is(err, fs.ErrNotExist) {
+		return databaseIdentity{}, err
+	}
+	if err != nil {
+		return databaseIdentity{}, fmt.Errorf("%w: %w", ErrUnavailable, err)
 	}
 	defer func() { _ = file.Close() }()
 
@@ -282,18 +375,14 @@ func (s *Store) checkHeader() error {
 	// database is never misclassified as foreign by a partial read.
 	if _, err := io.ReadFull(file, header); err != nil {
 		if errors.Is(err, io.EOF) {
-			return fmt.Errorf("%w: cache header is unreadable", ErrForeignDatabase)
+			return databaseIdentity{}, fmt.Errorf("%w: cache header is unreadable", ErrForeignDatabase)
 		}
-		return fmt.Errorf("%w: cache header is truncated", ErrForeignDatabase)
+		return databaseIdentity{}, fmt.Errorf("%w: cache header is truncated", ErrForeignDatabase)
 	}
-	identifier := binary.BigEndian.Uint32(header[headerApplicationOffset:])
-	if identifier != applicationID {
-		return fmt.Errorf("%w: application id %#08x", ErrForeignDatabase, identifier)
-	}
-	if version := binary.BigEndian.Uint32(header[headerUserVersionOffset:]); version != schemaVersion {
-		return fmt.Errorf("%w: schema version %d", ErrIncompatibleVersion, version)
-	}
-	return nil
+	return databaseIdentity{
+		application: binary.BigEndian.Uint32(header[headerApplicationOffset:]),
+		version:     binary.BigEndian.Uint32(header[headerUserVersionOffset:]),
+	}, nil
 }
 
 // openDatabase opens the canonical database and keeps the handle only once it

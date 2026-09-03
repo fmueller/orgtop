@@ -40,6 +40,10 @@ type harness struct {
 	// resolveCtxErr records the cancellation state of the context credential
 	// resolution ran under.
 	resolveCtxErr error
+	// resetCache records that the administrative cache removal ran, and
+	// resetErr fails it when non-nil.
+	resetCache bool
+	resetErr   error
 }
 
 func (h *harness) shell() shell {
@@ -59,6 +63,10 @@ func (h *harness) shell() shell {
 				h.launched.repositories = append(h.launched.repositories, repository.String())
 			}
 			return h.launchErr
+		},
+		resetCache: func() error {
+			h.resetCache = true
+			return h.resetErr
 		},
 		output: &h.output,
 		report: &h.version,
@@ -315,7 +323,8 @@ func TestStartupFailuresNeverReportACredentialValue(t *testing.T) {
 
 // TestCacheResetExitsBeforeAnyAuthenticationWork keeps the standalone
 // administrative reset off the launch path: it resolves no credential, makes no
-// request, starts no terminal UI, and reports its outcome on stdout (A-019).
+// request, starts no terminal UI, runs the cache removal, and reports its
+// outcome on stdout (A-019).
 func TestCacheResetExitsBeforeAnyAuthenticationWork(t *testing.T) {
 	harness := &harness{credential: sentinelCredential(t)}
 	code := harness.shell().run(context.Background(), "orgtop", []string{"--reset-cache"})
@@ -329,10 +338,34 @@ func TestCacheResetExitsBeforeAnyAuthenticationWork(t *testing.T) {
 	if harness.launched.called {
 		t.Error("a cache reset started the terminal ui")
 	}
+	if !harness.resetCache {
+		t.Error("a cache reset performed no cache removal")
+	}
 	if got := harness.version.String(); !strings.Contains(got, "cache") {
 		t.Errorf("a cache reset reported %q, want it to report the cache outcome", got)
 	}
 	if harness.output.Len() != 0 {
 		t.Errorf("a successful cache reset wrote %q to the failure stream, want none", harness.output.String())
+	}
+}
+
+// TestFailedCacheResetIsReportedAndNonzero proves a reset that cannot complete
+// exits nonzero with its sanitized cause on the failure stream, and reports no
+// success a user could mistake for a removed cache (RG-005).
+func TestFailedCacheResetIsReportedAndNonzero(t *testing.T) {
+	harness := &harness{
+		credential: sentinelCredential(t),
+		resetErr:   errors.New("enrichment cache unavailable: cache file does not belong to orgtop"),
+	}
+	code := harness.shell().run(context.Background(), "orgtop", []string{"--reset-cache"})
+
+	if code != exitFailure {
+		t.Errorf("exit code = %d, want %d", code, exitFailure)
+	}
+	if got := harness.output.String(); !strings.Contains(got, "does not belong to orgtop") {
+		t.Errorf("failure stream = %q, want the sanitized reset cause", got)
+	}
+	if harness.version.Len() != 0 {
+		t.Errorf("a failed cache reset reported %q as a successful outcome", harness.version.String())
 	}
 }

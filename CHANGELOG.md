@@ -31,8 +31,15 @@ workflow refuses to publish otherwise.
   not admit everything, and marks a selection that a failed re-expansion left
   behind as `SELECTION STALE` beside the primary state.
 - `--no-cache` runs a launch without any enrichment-cache operation, and
-  `--reset-cache` is a standalone administrative action that exits without
-  resolving a credential, making a request, or starting the terminal UI.
+  `--reset-cache` is a standalone administrative action that removes the
+  disposable enrichment cache and exits without resolving a credential, making
+  a request, or starting the terminal UI. The removal renames the database
+  before deleting its write-ahead sidecars, so no launch ever opens a fresh
+  database beside stale write-ahead state, and it preserves a database OrgTop
+  does not own rather than deleting it.
+- A launch recovers from a structurally corrupt enrichment cache once per
+  process by discarding it and creating an empty one, and never serves the rows
+  that happened to survive the damage.
 
 ### Changed
 
