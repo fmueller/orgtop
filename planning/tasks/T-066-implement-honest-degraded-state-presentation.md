@@ -35,3 +35,8 @@ Present source, enrichment, membership, cache, organization-expansion, rate-limi
 ## Implementation Notes
 
 - Prepare state outside renderers and preserve token secrecy in errors and fixtures.
+- Rate limiting currently reaches application state only as a sanitized cause
+  string: T-048 keeps the expansion retry delay and rate-limit bit for
+  scheduling, and the repository poll surfaces neither. Carry both as prepared
+  state rather than re-deriving `RATE LIMITED <retry>` from cause text
+  (found while completing T-080).
