@@ -69,6 +69,17 @@ type State struct {
 	Scopes domain.ScopeSet
 	// Snapshot is the latest completely successful activity snapshot.
 	Snapshot domain.Snapshot
+	// Scoped is the prepared per-Scope snapshot of the same refresh: its
+	// retained events, their explicit per-Scope membership, and the direct
+	// aggregates the views render.
+	Scoped domain.ScopedSnapshot
+	// CacheDegraded is the sanitized cause of the latest refresh's skipped or
+	// failed enrichment cache work. A degraded cache never invalidates the
+	// evidence the refresh did acquire (RG-004).
+	CacheDegraded string
+	// EnrichmentRetryAt is the earliest instructed enrichment retry the latest
+	// refresh was given, and stays zero when nothing was rate limited.
+	EnrichmentRetryAt time.Time
 	// Freshness is the marker shown next to the transport label.
 	Freshness Freshness
 	// LastSuccess is the instant of the last complete refresh success. It stays

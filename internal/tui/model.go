@@ -40,6 +40,10 @@ type Model struct {
 	// expander performs one bounded organization expansion. It stays nil for an
 	// invocation without an organization selector, which never expands.
 	expander Expander
+	// enricher settles the changed-file evidence of a refresh's retained events.
+	// It stays nil for a build without evidence coordination, which leaves path
+	// membership undecided rather than deciding it without evidence.
+	enricher Enricher
 	// selection is the fixed selection every poll of one refresh reads. It is
 	// valid only once hasSelection reports a successful expansion, or from
 	// construction for an invocation without a selector.
@@ -82,6 +86,18 @@ func WithExpander(expander Expander) Option {
 		if expander != nil {
 			model.expander = expander
 			model.selection, model.hasSelection = Selection{}, false
+		}
+	}
+}
+
+// WithEnricher binds the changed-file evidence coordination the lifecycle runs
+// between a successful poll and aggregation. Without one the lifecycle polls
+// and aggregates exactly as v0.1 does, and a path Scope it cannot decide stays
+// unknown. A nil enricher keeps that default.
+func WithEnricher(enricher Enricher) Option {
+	return func(model *Model) {
+		if enricher != nil {
+			model.enricher = enricher
 		}
 	}
 }

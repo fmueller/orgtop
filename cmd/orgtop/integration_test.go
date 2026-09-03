@@ -729,7 +729,7 @@ func TestQuitEndsTheWiredProgramAndCancelsTheInFlightRequest(t *testing.T) {
 
 	exit := make(chan error, 1)
 	go func() {
-		exit <- launchProgram(context.Background(), mustScope(t, "acme/backend"), adapter, nil, headless(input)...)
+		exit <- launchProgram(context.Background(), mustScope(t, "acme/backend"), adapter, nil, nil, headless(input)...)
 	}()
 
 	endpoint.awaitRequest(t, "the launch")

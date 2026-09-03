@@ -238,3 +238,15 @@ func CheckSelectionCapacity(repositories, scopes int) error {
 	}
 	return nil
 }
+
+// HasPathScopes reports whether the selection holds a path Scope and therefore
+// needs changed-file evidence. A repository-only selection is decided from
+// repository identity alone, so it performs no enrichment (FR-003).
+func (s ScopeSet) HasPathScopes() bool {
+	for _, scope := range s.scopes {
+		if scope.kind == ScopePath {
+			return true
+		}
+	}
+	return false
+}

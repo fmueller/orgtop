@@ -98,13 +98,9 @@ type ScopedSnapshot struct {
 
 // NewScopedSnapshot filters the returned activity to the Scope set's
 // repositories, deduplicates, sorts, and bounds it exactly as the v0.1 snapshot
-// does, then evaluates every retained event against every selected Scope of its
-// repository and aggregates the settled outcomes.
-//
-// Every retained event keeps one explicit outcome per selected Scope of its
-// repository, so not-member and unknown stay countable. Canceled evidence
-// publishes no membership at all rather than a synthesized unknown, so such an
-// event is retained nowhere. The inputs are not modified.
+// does, then builds the snapshot over the retained set. A refresh that enriches
+// before it aggregates retains first through Retain and publishes through
+// NewRetainedSnapshot instead.
 func NewScopedSnapshot(scope ScopeSet, activities []ScopedActivity) ScopedSnapshot {
 	outcomes := make(map[string]EvidenceOutcome, len(activities))
 	var candidates []Event
@@ -119,21 +115,56 @@ func NewScopedSnapshot(scope ScopeSet, activities []ScopedActivity) ScopedSnapsh
 	}
 
 	// The outcome map already kept the first evidence of a repeated source ID, so
-	// Deduplicate is a no-op here. It stays because the retained event set is the
-	// v0.1 pipeline's, and both paths must keep the same first-occurrence rule.
-	bounded := SortByRecency(Deduplicate(scope.Filter(candidates)))
-	truncated := len(bounded) > MaxSnapshotEvents
-	if truncated {
-		bounded = bounded[:MaxSnapshotEvents]
-	}
-
-	var events []ScopedEvent
+	// the retention below deduplicates nothing new here. It stays because the
+	// retained event set is the v0.1 pipeline's, and both paths must keep the
+	// same first-occurrence rule.
+	bounded, truncated := retain(scope, candidates)
+	retained := make([]EventEvidence, 0, len(bounded))
 	for _, event := range bounded {
-		memberships, published := scope.Evaluate(event, outcomes[event.ID])
+		retained = append(retained, EventEvidence{Event: event, Outcome: outcomes[event.ID]})
+	}
+	return NewRetainedSnapshot(scope, retained, truncated)
+}
+
+// Retain returns the bounded, deduplicated, reverse-chronological event set one
+// refresh publishes and whether the FR-006 bound discarded events. A refresh
+// enriches exactly this set, so an event the bound discarded causes no cache,
+// enrichment, or matcher work (A-028). The inputs are not modified.
+func Retain(scope ScopeSet, activities []RepositoryActivity) ([]Event, bool) {
+	var candidates []Event
+	for _, activity := range activities {
+		candidates = append(candidates, activity.Events...)
+	}
+	return retain(scope, candidates)
+}
+
+// retain applies the shared filtering, deduplication, ordering, and bound to
+// already collected candidates.
+func retain(scope ScopeSet, candidates []Event) ([]Event, bool) {
+	bounded := SortByRecency(Deduplicate(scope.Filter(candidates)))
+	if len(bounded) > MaxSnapshotEvents {
+		return bounded[:MaxSnapshotEvents], true
+	}
+	return bounded, false
+}
+
+// NewRetainedSnapshot evaluates an already retained event set against every
+// selected Scope of its repository and aggregates the settled outcomes. It
+// carries the truncation Retain decided, so a snapshot built after enrichment
+// still reports the events the bound discarded before enrichment ran.
+//
+// Every retained event keeps one explicit outcome per selected Scope of its
+// repository, so not-member and unknown stay countable. Canceled evidence
+// publishes no membership at all rather than a synthesized unknown, so such an
+// event is retained nowhere. The inputs are not modified.
+func NewRetainedSnapshot(scope ScopeSet, retained []EventEvidence, truncated bool) ScopedSnapshot {
+	var events []ScopedEvent
+	for _, evidence := range retained {
+		memberships, published := scope.Evaluate(evidence.Event, evidence.Outcome)
 		if !published {
 			continue
 		}
-		events = append(events, ScopedEvent{Event: event, Memberships: memberships})
+		events = append(events, ScopedEvent{Event: evidence.Event, Memberships: memberships})
 	}
 
 	distinct, overlapping := countDistinctMembership(events)

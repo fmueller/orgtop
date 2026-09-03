@@ -45,6 +45,10 @@ type refreshedMsg struct {
 	// whose expansion left no selection to poll, and one whose selection holds
 	// no repository, both publish without a source request.
 	polled bool
+	// evidence reports the enrichment phase of a successful poll: the retained
+	// events with their settled evidence and the conditions the coordination
+	// reported.
+	evidence evidenceResult
 }
 
 // failure returns the cause that degrades the attempt, or nil for a successful
@@ -107,6 +111,12 @@ func (m Model) refresh() tea.Cmd {
 			return message
 		}
 		message.result, message.err = m.source.Refresh(m.ctx, selection.Scopes)
+		if message.err == nil {
+			// Evidence settles inside the same command, so membership and
+			// aggregation are prepared before publication and neither runs in
+			// the update or render path (RG-004).
+			message.evidence = m.enrich(m.ctx, selection.Scopes, message.result.Repositories)
+		}
 		return message
 	}
 }
@@ -137,7 +147,7 @@ func (m Model) applyRefresh(message refreshedMsg) (tea.Model, tea.Cmd) {
 	if failure := message.failure(); failure != nil {
 		m.state = degraded(m.state, failure)
 	} else if message.polled {
-		m.state = published(m.state, m.selection, message.result, m.now(), message.expanded())
+		m.state = published(m.state, m.selection, message, m.now(), message.expanded())
 	}
 	return m, m.tick(m.delay(message))
 }
@@ -153,15 +163,22 @@ func (m Model) delay(message refreshedMsg) time.Duration {
 	return max(message.result.Delay, defaultDelay)
 }
 
-// published replaces the selection, its snapshot, and its disclosure atomically
-// and clears the failure state. An empty but complete success still records a
+// published replaces the selection, both snapshots, the prepared membership, and
+// the disclosure of the attempt atomically and clears the failure state. The
+// enrichment conditions are replaced too, so a condition the new refresh no
+// longer reports clears while the unrelated selection state it did not touch
+// survives (RG-004). An empty but complete success still records a
 // last-success instant (FR-008). The selection degradation of an earlier failed
 // expansion is cleared only by a refresh that expanded successfully itself; a
 // success polled from a retained selection keeps it (RG-010).
-func published(state State, selection Selection, result Result, at time.Time, expanded bool) State {
+func published(state State, selection Selection, message refreshedMsg, at time.Time, expanded bool) State {
+	evidence := message.evidence
 	state.Scopes = selection.Scopes
 	state.Selection = selection
-	state.Snapshot = domain.NewSnapshot(selection.Scopes, result.Repositories)
+	state.Snapshot = domain.NewSnapshot(selection.Scopes, message.result.Repositories)
+	state.Scoped = domain.NewRetainedSnapshot(selection.Scopes, evidence.retained, evidence.truncated)
+	state.CacheDegraded = evidence.degraded
+	state.EnrichmentRetryAt = evidence.retryAt
 	state.Freshness = FreshnessCurrent
 	state.LastSuccess = at
 	state.Cause = ""

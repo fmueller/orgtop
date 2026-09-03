@@ -83,7 +83,7 @@ func awaitCancellation(t *testing.T, source blockingSource) {
 }
 
 func TestLaunchWithoutASourceFailsBeforeTakingTheTerminal(t *testing.T) {
-	err := launchProgram(context.Background(), mustScope(t, "acme/backend"), nil, nil)
+	err := launchProgram(context.Background(), mustScope(t, "acme/backend"), nil, nil, nil)
 
 	if !errors.Is(err, tui.ErrNoSource) {
 		t.Fatalf("launchProgram without a source returned %v, want tui.ErrNoSource", err)
@@ -97,7 +97,7 @@ func TestQuitKeystrokeExitsCleanlyAndCancelsInFlightSourceWork(t *testing.T) {
 
 	exit := make(chan error, 1)
 	go func() {
-		exit <- launchProgram(context.Background(), mustScope(t, "acme/backend"), source, nil, headless(input)...)
+		exit <- launchProgram(context.Background(), mustScope(t, "acme/backend"), source, nil, nil, headless(input)...)
 	}()
 
 	awaitRefresh(t, source)
@@ -125,7 +125,7 @@ func TestProcessCancellationExitsCleanlyAndCancelsInFlightSourceWork(t *testing.
 	ctx, cancel := context.WithCancel(context.Background())
 	exit := make(chan error, 1)
 	go func() {
-		exit <- launchProgram(ctx, mustScope(t, "acme/backend"), source, nil, headless(input)...)
+		exit <- launchProgram(ctx, mustScope(t, "acme/backend"), source, nil, nil, headless(input)...)
 	}()
 
 	awaitRefresh(t, source)
@@ -168,7 +168,7 @@ func TestOrganizationOnlyLaunchExpandsBeforeItPollsAndCancelsThatWork(t *testing
 
 	exit := make(chan error, 1)
 	go func() {
-		exit <- launchProgram(context.Background(), domain.ScopeSet{}, source, expander, headless(input)...)
+		exit <- launchProgram(context.Background(), domain.ScopeSet{}, source, expander, nil, headless(input)...)
 	}()
 
 	select {
