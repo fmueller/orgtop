@@ -453,3 +453,96 @@ func TestPathMatcherCapacityIsEnforcedByTheScopeCapacity(t *testing.T) {
 		t.Fatalf("MaxPathMatchers = %d is below MaxScopes = %d, want a separate matcher capacity check", domain.MaxPathMatchers, domain.MaxScopes)
 	}
 }
+
+// TestScopeSetTokensNumberScopesInStableIdentityOrder guards RG-012's compact
+// presentation tokens: the ordinal is global rather than per kind, comes from
+// the stable Scope identity order, and never from the request order (A-075).
+func TestScopeSetTokensNumberScopesInStableIdentityOrder(t *testing.T) {
+	api := domain.NewRepositoryScope(mustParseRepository(t, "Acme/API"))
+	web := domain.NewRepositoryScope(mustParseRepository(t, "acme/web"))
+	docs := mustPathScope(t, "Acme/API", domain.LiteralToken("docs"), domain.SeparatorToken(), domain.RecursiveToken())
+	services := mustPathScope(t, "Acme/API", domain.LiteralToken("services"), domain.SeparatorToken(), domain.RecursiveToken())
+
+	set, err := domain.NewScopeSet([]domain.Scope{web, services, api, docs})
+	if err != nil {
+		t.Fatalf("NewScopeSet returned error: %v", err)
+	}
+
+	tokens := set.Tokens()
+	want := []struct {
+		scope domain.Scope
+		token string
+	}{{api, "R1"}, {docs, "P2"}, {services, "P3"}, {web, "R4"}}
+	for _, wanted := range want {
+		if got := tokens[wanted.scope.Identity()]; got != wanted.token {
+			t.Errorf("token of %q is %q, want %q", wanted.scope, got, wanted.token)
+		}
+	}
+	if len(tokens) != len(want) {
+		t.Errorf("Tokens returned %d entries, want %d", len(tokens), len(want))
+	}
+}
+
+// TestScopeSetTokensDoNotShareStateAcrossCalls guards that a caller reshaping
+// the result cannot reach the selection's own state.
+func TestScopeSetTokensDoNotShareStateAcrossCalls(t *testing.T) {
+	set := mustNewScopeSet(t, "acme/web")
+	identity := domain.NewRepositoryScope(mustParseRepository(t, "acme/web")).Identity()
+
+	tokens := set.Tokens()
+	delete(tokens, identity)
+	if got := set.Tokens()[identity]; got != "R1" {
+		t.Errorf("token after mutating an earlier result is %q, want %q", got, "R1")
+	}
+}
+
+// TestScopeSetTokensStayUniqueAtTheSelectionCapacity guards A-081: a selection
+// holding exactly MaxScopes Scopes still numbers every one of them uniquely,
+// and the Scope carrying the last global ordinal keeps its own kind prefix.
+func TestScopeSetTokensStayUniqueAtTheSelectionCapacity(t *testing.T) {
+	segments := []string{"a", "b", "c", "d"}
+	perRepository := 1 + len(segments)
+	repositories := domain.MaxScopes / perRepository
+
+	scopes := make([]domain.Scope, 0, domain.MaxScopes)
+	for index := range repositories {
+		name := "acme/repo-" + strconv.Itoa(index+1)
+		scopes = append(scopes, domain.NewRepositoryScope(mustParseRepository(t, name)))
+		for _, segment := range segments {
+			scopes = append(scopes, mustPathScope(t, name,
+				domain.LiteralToken(segment), domain.SeparatorToken(), domain.RecursiveToken()))
+		}
+	}
+	// Reversing the request order proves the ordinals come from the stable
+	// identity order rather than from how the selection was requested.
+	slices.Reverse(scopes)
+
+	set, err := domain.NewScopeSet(scopes)
+	if err != nil {
+		t.Fatalf("NewScopeSet at the selection capacity returned error: %v", err)
+	}
+	if set.Len() != domain.MaxScopes {
+		t.Fatalf("the fixture holds %d Scopes, want the capacity %d", set.Len(), domain.MaxScopes)
+	}
+
+	tokens := set.Tokens()
+	if len(tokens) != domain.MaxScopes {
+		t.Fatalf("Tokens returned %d entries, want %d", len(tokens), domain.MaxScopes)
+	}
+	distinct := make(map[string]struct{}, len(tokens))
+	for _, token := range tokens {
+		distinct[token] = struct{}{}
+	}
+	if len(distinct) != domain.MaxScopes {
+		t.Errorf("Tokens produced %d distinct tokens for %d Scopes", len(distinct), domain.MaxScopes)
+	}
+
+	ordered := set.Ordered()
+	first, last := ordered[0], ordered[len(ordered)-1]
+	if got := tokens[first.Identity()]; got != "R1" {
+		t.Errorf("the first Scope %q has token %q, want %q", first, got, "R1")
+	}
+	if got := tokens[last.Identity()]; got != "P"+strconv.Itoa(domain.MaxScopes) {
+		t.Errorf("the last Scope %q has token %q, want %q", last, got, "P"+strconv.Itoa(domain.MaxScopes))
+	}
+}

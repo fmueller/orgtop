@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-updated_at: "2026-09-03T21:34:57Z"
+updated_at: "2026-09-03T21:53:59Z"
 active_spec_version: v0.2.0
 active_spec_path: specs/v0.2.0.md
 current_task: ""
@@ -8,7 +8,7 @@ current_task_title: ""
 status_summary: idle
 blockers: []
 next_action: Select the next eligible task
-last_verification_result: pass for T-030-decouple-readme-structure-from-doc-tests at 2026-09-03T21:34:53Z
+last_verification_result: pass for T-057-render-mixed-scopes-in-overview at 2026-09-03T21:53:27Z
 relevant_artifacts: []
 continuation_notes:
     - This repository is using manual Taskrail-style workflow scaffolding until the product replaces more of the bootstrap steps.
@@ -34,7 +34,7 @@ continuation_notes:
 
 ## Last Verification
 
-- pass for T-030-decouple-readme-structure-from-doc-tests at 2026-09-03T21:34:53Z
+- pass for T-057-render-mixed-scopes-in-overview at 2026-09-03T21:53:27Z
 
 ## Next Action
 
@@ -52,6 +52,6 @@ continuation_notes:
 
 - todo: 22
 - in_progress: 0
-- completed: 62
+- completed: 63
 - blocked: 0
 - cancelled: 0

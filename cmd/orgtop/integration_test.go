@@ -405,7 +405,7 @@ func TestOneRepositoryFlowRendersOnlyTheSelectedRepository(t *testing.T) {
 	run.refresh()
 
 	overview := run.render(wideWidth, wideHeight)
-	assertContains(t, overview, "acme/backend", "2 events", "2 pushes")
+	assertContains(t, overview, "acme/backend", "2 activity", "2 pushes")
 	assertAbsent(t, overview, "acme/frontend", "ERROR", "STALE")
 
 	run.press("2")
@@ -435,8 +435,8 @@ func TestMultipleRepositoryFlowRendersEverySelectedRepository(t *testing.T) {
 	if len(rows) != 2 {
 		t.Fatalf("overview rendered %d rows, want one per selected repository:\n%v", len(rows), rows)
 	}
-	assertContains(t, rows[0], "acme/backend", "2 events", "2 pushes")
-	assertContains(t, rows[1], "acme/frontend", "1 event", "1 pull request")
+	assertContains(t, rows[0], "acme/backend", "2 activity", "2 pushes")
+	assertContains(t, rows[1], "acme/frontend", "1 activity", "1 pull request")
 
 	for _, repository := range []string{"acme/backend", "acme/frontend"} {
 		if count := endpoint.requestCount(repository); count != 1 {
@@ -560,7 +560,7 @@ func TestTheShellStaysInteractiveWhileARefreshIsPending(t *testing.T) {
 	case <-time.After(launchTimeout):
 		t.Fatal("the pending refresh never completed")
 	}
-	assertContains(t, run.model.View().Content, "acme/backend", "1 event")
+	assertContains(t, run.model.View().Content, "acme/backend", "1 activity")
 	assertAbsent(t, run.model.View().Content, "LOADING")
 }
 
@@ -573,7 +573,7 @@ func TestEmptySuccessRecordsARefreshRatherThanAnError(t *testing.T) {
 	run.refresh()
 
 	overview := run.render(wideWidth, wideHeight)
-	assertContains(t, overview, "acme/backend", "acme/frontend", "0 events", "updated ")
+	assertContains(t, overview, "acme/backend", "acme/frontend", "No activity", "updated ")
 	assertAbsent(t, overview, "ERROR", "STALE", "LOADING")
 
 	run.press("2")
@@ -598,7 +598,7 @@ func TestInitialFailureStaysInteractiveAndRecoversOnTheNextSuccess(t *testing.T)
 
 	run.refresh()
 	recovered := run.model.View().Content
-	assertContains(t, recovered, "acme/backend", "3 events", "updated ")
+	assertContains(t, recovered, "acme/backend", "3 activity", "updated ")
 	assertAbsent(t, recovered, "ERROR", "STALE")
 }
 
@@ -615,17 +615,17 @@ func TestAPartialFailureKeepsTheSnapshotStaleAndRecovers(t *testing.T) {
 	run.refresh()
 
 	current := run.render(wideWidth, wideHeight)
-	assertContains(t, current, "acme/frontend", "1 event")
+	assertContains(t, current, "acme/frontend", "1 activity")
 	assertAbsent(t, current, "STALE")
 
 	run.refresh()
 	stale := run.model.View().Content
-	assertContains(t, stale, "STALE", "acme/backend", "2 events", "acme/frontend", "1 event", "updated ")
-	assertAbsent(t, stale, "4 events")
+	assertContains(t, stale, "STALE", "acme/backend", "2 activity", "acme/frontend", "1 activity", "updated ")
+	assertAbsent(t, stale, "4 activity")
 
 	run.refresh()
 	recovered := run.model.View().Content
-	assertContains(t, recovered, "acme/frontend", "4 events")
+	assertContains(t, recovered, "acme/frontend", "4 activity")
 	assertAbsent(t, recovered, "STALE", "ERROR")
 }
 
@@ -1007,7 +1007,7 @@ func TestOrganizationFlowExpandsBeforeItPollsAndDisclosesTheSelection(t *testing
 	run.refresh()
 
 	overview := run.render(wideWidth, wideHeight)
-	assertContains(t, overview, "acme/backend", "2 events", "selection: 1 repos · 1 scopes · 0 exact · 1 expanded")
+	assertContains(t, overview, "acme/backend", "2 activity", "selection: 1 repos · 1 scopes · 0 exact · 1 expanded")
 	// The excluded repositories are never polled and never rendered, and a
 	// bounded expansion is not presented as the whole organization.
 	assertAbsent(t, overview, "acme/legacy", "acme/mirror", "ERROR", "STALE", sentinelToken)

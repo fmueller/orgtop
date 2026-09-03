@@ -52,12 +52,46 @@ func testActivity(t *testing.T, repository string, events ...domain.Event) domai
 	return domain.RepositoryActivity{Repository: parsed, Events: events}
 }
 
+// scopedActivities pairs every event of the activities with the zero evidence
+// outcome, which is what a repository-only selection settles at: repository
+// membership is known from repository identity and consults no evidence.
+func scopedActivities(activities []domain.RepositoryActivity) []domain.ScopedActivity {
+	scoped := make([]domain.ScopedActivity, 0, len(activities))
+	for _, activity := range activities {
+		events := make([]domain.EventEvidence, 0, len(activity.Events))
+		for _, event := range activity.Events {
+			events = append(events, domain.EventEvidence{Event: event})
+		}
+		scoped = append(scoped, domain.ScopedActivity{Events: events})
+	}
+	return scoped
+}
+
+// retainedEvidence returns the settled evidence a repository-only refresh
+// publishes for the activities, mirroring the lifecycle's own enrichment phase.
+func retainedEvidence(scopes domain.ScopeSet, activities []domain.RepositoryActivity) evidenceResult {
+	events, truncated := domain.Retain(scopes, activities)
+	retained := make([]domain.EventEvidence, 0, len(events))
+	for _, event := range events {
+		retained = append(retained, domain.EventEvidence{Event: event})
+	}
+	return evidenceResult{retained: retained, truncated: truncated}
+}
+
+// publishSnapshots stores both snapshots one successful refresh publishes.
+func publishSnapshots(model Model, scopes domain.ScopeSet, activities []domain.RepositoryActivity) Model {
+	model.state.Snapshot = domain.NewSnapshot(scopes, activities)
+	model.state.Scoped = domain.NewScopedSnapshot(scopes, scopedActivities(activities))
+	model.state.Freshness = FreshnessCurrent
+	return model
+}
+
 // populatedModel returns a current model whose snapshot gives acme/backend two
 // pushes and one pull request, acme/frontend one push, and acme/docs nothing.
 func populatedModel(t *testing.T) Model {
 	t.Helper()
 	scope := testScope(t, "acme/backend", "acme/frontend", "acme/docs")
-	snapshot := domain.NewSnapshot(scope, []domain.RepositoryActivity{
+	activities := []domain.RepositoryActivity{
 		testActivity(t, "acme/backend",
 			testEvent(t, "1", "acme/backend", domain.CategoryPush, domain.EntityCommit),
 			testEvent(t, "2", "acme/backend", domain.CategoryPush, domain.EntityCommit),
@@ -67,12 +101,9 @@ func populatedModel(t *testing.T) Model {
 			testEvent(t, "4", "acme/frontend", domain.CategoryPush, domain.EntityCommit),
 		),
 		testActivity(t, "acme/docs"),
-	})
+	}
 
-	model := newModel(t, "acme/backend", "acme/frontend", "acme/docs")
-	model.state.Snapshot = snapshot
-	model.state.Freshness = FreshnessCurrent
-	return model
+	return publishSnapshots(newModel(t, "acme/backend", "acme/frontend", "acme/docs"), scope, activities)
 }
 
 // renderAt sizes the model to the terminal and returns what it renders.
@@ -121,18 +152,23 @@ func TestOverviewRendersOneOrderedRowPerRepository(t *testing.T) {
 			t.Errorf("row %d is %q, want the identity %q", index, rows[index], want)
 		}
 	}
-	for index, wantCounts := range [][]string{{"3", "1", "2"}, {"1", "0", "1"}, {"0", "0", "0"}} {
+	for index, wantCounts := range [][]string{{"3", "1", "2"}, {"1", "0", "1"}} {
 		numbers := countsOf(rows[index])
 		if strings.Join(numbers, ",") != strings.Join(wantCounts, ",") {
-			t.Errorf("row %d has counts %v, want total, pull-request activity, pushes %v: %q", index, numbers, wantCounts, rows[index])
+			t.Errorf("row %d has counts %v, want activity, pull-request activity, pushes %v: %q", index, numbers, wantCounts, rows[index])
 		}
+	}
+	// A Scope that complete evidence found quiet states so rather than
+	// spelling three zeroes, and stays visible either way (RG-004).
+	if !strings.Contains(rows[2], noActivity) {
+		t.Errorf("the quiet row %q does not state %q", rows[2], noActivity)
 	}
 }
 
 func TestOverviewLabelsEveryCountedDimension(t *testing.T) {
 	content := strings.ToLower(renderAt(t, populatedModel(t), wideWidth, wideHeight))
 
-	for _, want := range []string{"event", "pull request", "push"} {
+	for _, want := range []string{"activity", "pull request", "push"} {
 		if !strings.Contains(content, want) {
 			t.Errorf("wide overview does not label %q:\n%s", want, content)
 		}
@@ -141,12 +177,10 @@ func TestOverviewLabelsEveryCountedDimension(t *testing.T) {
 
 func TestOverviewSuccessWithoutEventsStatesNoRecentActivity(t *testing.T) {
 	scope := testScope(t, "acme/backend", "acme/frontend")
-	model := newModel(t, "acme/backend", "acme/frontend")
-	model.state.Snapshot = domain.NewSnapshot(scope, []domain.RepositoryActivity{
+	model := publishSnapshots(newModel(t, "acme/backend", "acme/frontend"), scope, []domain.RepositoryActivity{
 		testActivity(t, "acme/backend"),
 		testActivity(t, "acme/frontend"),
 	})
-	model.state.Freshness = FreshnessCurrent
 
 	content := renderAt(t, model, wideWidth, wideHeight)
 	if !strings.Contains(strings.ToLower(content), "no recent activity") {
@@ -215,17 +249,20 @@ func TestOverviewRetainsIdentityAndCountsAtNarrowSizes(t *testing.T) {
 	}
 	// The sparsest layout still names all three counted dimensions, so a narrow
 	// row stays readable instead of collapsing into a bare run of numbers.
-	for _, want := range []string{"3 ev", "1 pr", "2 push"} {
+	for _, want := range []string{"3 act", "1 pr", "2 push"} {
 		if !strings.Contains(rows[0], want) {
 			t.Errorf("narrow row for acme/backend drops the labeled count %q: %q", want, rows[0])
 		}
 	}
-	for index, row := range rows {
-		for _, label := range []string{"ev", "pr", "push"} {
+	for index, row := range rows[:2] {
+		for _, label := range []string{"act", "pr", "push"} {
 			if !strings.Contains(row, label) {
 				t.Errorf("narrow row %d does not label %q: %q", index, label, row)
 			}
 		}
+	}
+	if !strings.Contains(rows[2], noActivity) {
+		t.Errorf("the narrow quiet row %q does not state %q", rows[2], noActivity)
 	}
 	if !strings.Contains(content, transportLabel) || !strings.Contains(content, "q quit") {
 		t.Errorf("narrow overview loses the shared chrome:\n%s", content)
@@ -352,10 +389,7 @@ func numberedRepositories(t *testing.T, names []string) []domain.RepositoryActiv
 func scrollOverviewModel(t *testing.T, count int) Model {
 	t.Helper()
 	names := repositoryNames(count)
-	model := newModel(t, names...)
-	model.state.Snapshot = domain.NewSnapshot(testScope(t, names...), numberedRepositories(t, names))
-	model.state.Freshness = FreshnessCurrent
-	return model
+	return publishSnapshots(newModel(t, names...), testScope(t, names...), numberedRepositories(t, names))
 }
 
 // overviewRowAt returns the one-based numbered repository the body line names.
@@ -423,13 +457,18 @@ func TestOverviewClampsTheWindowAfterRefreshShrinkage(t *testing.T) {
 	for _, name := range names {
 		empty = append(empty, testActivity(t, name))
 	}
-	model.state.Snapshot = domain.NewSnapshot(testScope(t, names...), empty)
-	model.state.Freshness = FreshnessCurrent
+	scope := testScope(t, names...)
+	model = publishSnapshots(model, scope, empty)
 
 	model, _ = apply(t, model, tea.WindowSizeMsg{Width: wideWidth, Height: scrollTerminalHeight})
 	model = scrolled(t, model, "pgdown", "pgdown", "pgdown", "pgdown")
 
-	model, _ = apply(t, model, refreshedMsg{polled: true, result: Result{Repositories: numberedRepositories(t, names)}})
+	activities := numberedRepositories(t, names)
+	model, _ = apply(t, model, refreshedMsg{
+		polled:   true,
+		result:   Result{Repositories: activities},
+		evidence: retainedEvidence(scope, activities),
+	})
 
 	rows := bodyLines(t, model.View().Content)
 	if len(rows) != scrollBodyHeight {

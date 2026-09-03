@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -112,6 +113,14 @@ func (s Scope) String() string {
 	return s.repository.String()
 }
 
+// tokenPrefix is the Scope kind's presentation letter.
+func (s Scope) tokenPrefix() string {
+	if s.kind == ScopePath {
+		return "P"
+	}
+	return "R"
+}
+
 // CompareScopes orders Scopes by the stable Scope identity order: lowercase
 // repository identity in byte order, the repository Scope before path Scopes of
 // the same repository, then canonical matcher-token encoding in byte order.
@@ -194,6 +203,21 @@ func (s ScopeSet) Ordered() []Scope {
 	ordered := slices.Clone(s.scopes)
 	slices.SortStableFunc(ordered, CompareScopes)
 	return ordered
+}
+
+// Tokens returns the RG-012 compact presentation token of every selected Scope,
+// keyed by canonical Scope identity. The one-based ordinal is global rather than
+// per kind and comes from the stable Scope identity order, so a repository Scope
+// and its `**` path Scope never share a token and requested order never moves
+// one. Publishing a changed selection recomputes every token together, because
+// the ordinals belong to the complete Scope set rather than to a Scope.
+func (s ScopeSet) Tokens() map[ScopeIdentity]string {
+	ordered := s.Ordered()
+	tokens := make(map[ScopeIdentity]string, len(ordered))
+	for index, scope := range ordered {
+		tokens[scope.Identity()] = scope.tokenPrefix() + strconv.Itoa(index+1)
+	}
+	return tokens
 }
 
 // Repositories returns the distinct selected repositories in request order,

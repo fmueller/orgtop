@@ -36,7 +36,7 @@ func (o overview) scrolled(keystroke string, state State, width, height int) ove
 	return o
 }
 
-// overviewLines returns the explicit state lines, the aggregate rows, or both.
+// overviewLines returns the explicit state lines, the Scope rows, or both.
 func overviewLines(state State, width int) []string {
 	switch state.Freshness {
 	case FreshnessLoading:
@@ -45,22 +45,23 @@ func overviewLines(state State, width int) []string {
 		return []string{"Repository activity is unavailable"}
 	}
 
-	aggregates := state.Snapshot.Aggregates()
+	aggregates := state.Scoped.Aggregates()
 	if len(aggregates) == 0 {
 		return []string{noRecentActivity}
 	}
-	rows := overviewRows(aggregates, width)
-	if hasEvents(aggregates) {
+	rows := overviewRows(aggregates, state.Scopes.Tokens(), width)
+	if hasObservations(aggregates) {
 		return rows
 	}
 	return append([]string{noRecentActivity}, rows...)
 }
 
-// hasEvents reports whether the snapshot retained any event at all. Nothing is
-// summed across repositories: only the per-repository counts are shown (FR-009).
-func hasEvents(aggregates []domain.Aggregate) bool {
-	return slices.ContainsFunc(aggregates, func(aggregate domain.Aggregate) bool {
-		return aggregate.Total > 0
+// hasObservations reports whether the snapshot confirmed activity or left any
+// evidence undecided. Nothing is summed across Scopes: overlapping membership
+// would double count, so only the per-Scope counts are shown (FR-009, RG-004).
+func hasObservations(aggregates []domain.ScopeAggregate) bool {
+	return slices.ContainsFunc(aggregates, func(aggregate domain.ScopeAggregate) bool {
+		return aggregate.Activity > 0 || aggregate.Unknown > 0
 	})
 }
 
@@ -78,64 +79,113 @@ func (c countLabel) of(count int) string {
 	return fmt.Sprintf("%d %s", count, c.plural)
 }
 
-// rowLayout labels the direct counts of one row: total events, pull-request
-// activity, and pushes. No other measure is derived from them (FR-009).
+// The empty states of one Scope row. RG-004 keeps them apart: a Scope with no
+// confirmed member but undecided evidence has not been shown to be quiet, so it
+// never renders as the Scope that complete evidence found empty.
+const (
+	noActivity          = "No activity"
+	noConfirmedActivity = "No confirmed activity"
+)
+
+// rowLayout labels the direct counts of one Scope row: confirmed activity, the
+// qualified current-PR subset of it, undecided evidence, and the pull-request
+// and push categories the confirmed members fall into. No other measure is
+// derived from them (FR-009, RG-004).
 type rowLayout struct {
-	events       countLabel
+	activity     countLabel
+	currentPR    countLabel
+	unknown      countLabel
 	pullRequests countLabel
 	pushes       countLabel
 }
 
-// counts renders the labeled counts of one aggregate in their fixed order.
-func (r rowLayout) counts(aggregate domain.Aggregate) string {
-	return strings.Join([]string{
-		r.events.of(aggregate.Total),
+// counts renders the labeled counts of one Scope in their fixed order. The
+// activity clause leads, carrying the qualified current-PR subset and the
+// unknown coverage the activity total is a lower bound against; the category
+// subcounts, which only confirmed members contribute to, follow it.
+func (r rowLayout) counts(aggregate domain.ScopeAggregate) string {
+	if aggregate.Activity == 0 {
+		if aggregate.Unknown == 0 {
+			return noActivity
+		}
+		return noConfirmedActivity + separator + r.unknown.of(aggregate.Unknown)
+	}
+
+	fields := []string{r.activity.of(aggregate.Activity)}
+	if aggregate.CurrentPR > 0 {
+		fields = append(fields, r.currentPR.of(aggregate.CurrentPR))
+	}
+	if aggregate.Unknown > 0 {
+		fields = append(fields, r.unknown.of(aggregate.Unknown))
+	}
+	fields = append(fields,
 		r.pullRequests.of(aggregate.PullRequestActivity),
 		r.pushes.of(aggregate.Pushes),
-	}, separator)
+	)
+	return strings.Join(fields, separator)
 }
 
-// overviewLayouts orders the row layouts from richest to sparsest.
+// overviewLayouts orders the row layouts from richest to sparsest. Both spell
+// the empty states identically, because those are the contract's own words
+// rather than a count a narrow terminal may abbreviate.
 var overviewLayouts = []rowLayout{
 	{
-		events:       countLabel{singular: "event", plural: "events"},
+		activity:     countLabel{singular: "activity", plural: "activity"},
+		currentPR:    countLabel{singular: "current PR", plural: "current PR"},
+		unknown:      countLabel{singular: "unknown", plural: "unknown"},
 		pullRequests: countLabel{singular: "pull request", plural: "pull requests"},
 		pushes:       countLabel{singular: "push", plural: "pushes"},
 	},
 	{
-		events:       countLabel{singular: "ev", plural: "ev"},
+		activity:     countLabel{singular: "act", plural: "act"},
+		currentPR:    countLabel{singular: "cur PR", plural: "cur PR"},
+		unknown:      countLabel{singular: "unk", plural: "unk"},
 		pullRequests: countLabel{singular: "pr", plural: "pr"},
 		pushes:       countLabel{singular: "push", plural: "push"},
 	},
 }
 
 // overviewRows renders the widest row layout that fits the width. Every
-// selected repository keeps a row, including one with no returned events.
-func overviewRows(aggregates []domain.Aggregate, width int) []string {
+// selected Scope keeps a row, including a zero-activity and an all-unknown one.
+// A Scope label names the same Scope in every layout, so the labels are rendered
+// once and only the counts are laid out again.
+func overviewRows(aggregates []domain.ScopeAggregate, tokens map[domain.ScopeIdentity]string, width int) []string {
+	labels := make([]string, 0, len(aggregates))
+	for _, aggregate := range aggregates {
+		labels = append(labels, scopeLabel(aggregate.Scope, tokens))
+	}
+
 	sparsest := len(overviewLayouts) - 1
 	for _, layout := range overviewLayouts[:sparsest] {
-		rows := layoutRows(aggregates, layout)
+		rows := layoutRows(aggregates, labels, layout)
 		if fits(widestWidth(rows), width) {
 			return rows
 		}
 	}
-	return layoutRows(aggregates, overviewLayouts[sparsest])
+	return layoutRows(aggregates, labels, overviewLayouts[sparsest])
 }
 
-// layoutRows renders one aggregate per line in the snapshot's precomputed
-// order, aligning the counts behind the widest repository identity.
-func layoutRows(aggregates []domain.Aggregate, layout rowLayout) []string {
-	identities := make([]string, 0, len(aggregates))
-	for _, aggregate := range aggregates {
-		identities = append(identities, aggregate.Repository.String())
-	}
-	identityWidth := widestWidth(identities)
-
+// layoutRows renders one Scope per line in the snapshot's prepared order,
+// aligning the counts behind the widest Scope label.
+func layoutRows(aggregates []domain.ScopeAggregate, labels []string, layout rowLayout) []string {
+	labelWidth := widestWidth(labels)
 	rows := make([]string, 0, len(aggregates))
 	for index, aggregate := range aggregates {
-		rows = append(rows, padRight(identities[index], identityWidth)+rowGap+layout.counts(aggregate))
+		rows = append(rows, padRight(labels[index], labelWidth)+rowGap+layout.counts(aggregate))
 	}
 	return rows
+}
+
+// scopeLabel renders the full RG-012 label of one Scope: its compact
+// presentation token and the requested repository, and for a path Scope the
+// requested pattern behind it. A path Scope is therefore always distinguishable
+// from a repository one and is never spelled as a synthetic repository.
+func scopeLabel(scope domain.Scope, tokens map[domain.ScopeIdentity]string) string {
+	token, prepared := tokens[scope.Identity()]
+	if !prepared {
+		return scope.String()
+	}
+	return token + " " + scope.String()
 }
 
 // padLeft pads the text with leading spaces up to the rendered width.
