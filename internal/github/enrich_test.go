@@ -67,7 +67,7 @@ func newTestEnricher(t *testing.T, server *httptest.Server) (github.Enricher, *r
 
 func mustCommitEvidence(t *testing.T, head string) domain.EvidenceDescriptor {
 	t.Helper()
-	descriptor, err := domain.NewCommitEvidence(mustParseRepository(t, enrichOwner), head)
+	descriptor, err := domain.NewCommitEvidence(mustParseRepository(t, enrichOwner), parentSHA, head)
 	if err != nil {
 		t.Fatalf("building commit evidence failed: %v", err)
 	}

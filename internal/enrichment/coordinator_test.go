@@ -157,9 +157,9 @@ func compareEvent(t *testing.T, id, base, head string) domain.Event {
 	return domain.Event{ID: id, Repository: repository(t), Evidence: descriptor}
 }
 
-func commitEvent(t *testing.T, id, head string) domain.Event {
+func commitEvent(t *testing.T, id, before, head string) domain.Event {
 	t.Helper()
-	descriptor, err := domain.NewCommitEvidence(repository(t), head)
+	descriptor, err := domain.NewCommitEvidence(repository(t), before, head)
 	if err != nil {
 		t.Fatalf("building commit evidence failed: %v", err)
 	}
@@ -292,13 +292,13 @@ func TestFreshCacheHitAvoidsTheRequest(t *testing.T) {
 
 func TestAcquiredCompleteEvidenceIsStoredOnce(t *testing.T) {
 	adapter := &fakeAdapter{changed: map[string]domain.EvidenceOutcome{}}
-	commit := commitEvent(t, "a", headA)
+	commit := commitEvent(t, "a", parentA, headA)
 	adapter.changed[commit.Evidence.Key()] =
 		domain.CompleteOutcome(domain.ProvenanceEventTime, []domain.ChangedPath{changedPath(t, "go.mod")}).
 			WithSoleParent(parentA)
 	store := newFakeCache()
 
-	result, err := coordinator(adapter, store).Evidence(t.Context(), []domain.Event{commit, commitEvent(t, "b", headA)})
+	result, err := coordinator(adapter, store).Evidence(t.Context(), []domain.Event{commit, commitEvent(t, "b", parentA, headA)})
 	if err != nil {
 		t.Fatalf("coordinating a cache miss failed: %v", err)
 	}
@@ -340,8 +340,8 @@ func TestConcurrentEnrichmentStaysWithinTheBound(t *testing.T) {
 	events := []domain.Event{
 		compareEvent(t, "a", baseA, headA),
 		compareEvent(t, "b", baseA, headB),
-		commitEvent(t, "c", headA),
-		commitEvent(t, "d", headB),
+		commitEvent(t, "c", parentA, headA),
+		commitEvent(t, "d", parentA, headB),
 	}
 	go func() {
 		for range events {
@@ -789,13 +789,13 @@ func TestDegradationCauseCarriesNoTerminalControlSequence(t *testing.T) {
 
 func TestCoalescedCommitEvidenceKeepsItsVerifiedParent(t *testing.T) {
 	adapter := &fakeAdapter{metadata: map[string]domain.EvidenceDescriptor{}, changed: map[string]domain.EvidenceOutcome{}}
-	commit := commitEvent(t, "a", headA)
+	commit := commitEvent(t, "a", parentA, headA)
 	adapter.changed[commit.Evidence.Key()] =
 		domain.CompleteOutcome(domain.ProvenanceEventTime, []domain.ChangedPath{changedPath(t, "go.mod")}).
 			WithSoleParent(parentA)
 
 	result, err := coordinator(adapter, newFakeCache()).Evidence(t.Context(),
-		[]domain.Event{commit, commitEvent(t, "b", headA)})
+		[]domain.Event{commit, commitEvent(t, "b", parentA, headA)})
 	if err != nil {
 		t.Fatalf("coordinating coalesced commit evidence failed: %v", err)
 	}
@@ -807,9 +807,64 @@ func TestCoalescedCommitEvidenceKeepsItsVerifiedParent(t *testing.T) {
 	}
 }
 
+func TestCoalescedCommitEvidenceIsQualifiedForEachEvent(t *testing.T) {
+	adapter := &fakeAdapter{changed: map[string]domain.EvidenceOutcome{}}
+	applicable := commitEvent(t, "a", parentA, headA)
+	mismatched := commitEvent(t, "b", baseA, headA)
+	adapter.changed[applicable.Evidence.Key()] =
+		domain.CompleteOutcome(domain.ProvenanceEventTime, []domain.ChangedPath{changedPath(t, "go.mod")}).
+			WithSoleParent(parentA)
+
+	result, err := coordinator(adapter, newFakeCache()).Evidence(t.Context(), []domain.Event{applicable, mismatched})
+	if err != nil {
+		t.Fatalf("coordinating qualified commit evidence failed: %v", err)
+	}
+	if result.Ledger.Requests != 1 {
+		t.Errorf("requests = %d, want 1 for the shared commit identity", result.Ledger.Requests)
+	}
+	if !result.Outcomes[0].IsComplete() {
+		t.Errorf("matching event outcome = %v, want complete", result.Outcomes[0].Kind())
+	}
+	if result.Outcomes[1].Kind() != domain.OutcomeIncomplete {
+		t.Errorf("mismatched event outcome = %v, want incomplete", result.Outcomes[1].Kind())
+	}
+}
+
+func TestCachedCommitEvidenceIsQualifiedForEachEvent(t *testing.T) {
+	adapter := &fakeAdapter{}
+	store := newFakeCache()
+	applicable := commitEvent(t, "a", parentA, headA)
+	mismatched := commitEvent(t, "b", baseA, headA)
+	key, ok := cache.KeyFor(applicable.Evidence)
+	if !ok {
+		t.Fatal("commit evidence has no cache key")
+	}
+	store.entries[headA] = cache.Entry{
+		Key:            key,
+		VerifiedParent: parentA,
+		Paths:          []domain.ChangedPath{changedPath(t, "go.mod")},
+		AcquiredAt:     fixedNow,
+		LastUsedAt:     fixedNow,
+	}
+
+	result, err := coordinator(adapter, store).Evidence(t.Context(), []domain.Event{applicable, mismatched})
+	if err != nil {
+		t.Fatalf("coordinating cached qualified commit evidence failed: %v", err)
+	}
+	if result.Ledger.Requests != 0 || result.Ledger.CacheHits != 1 {
+		t.Errorf("ledger = %+v, want one cache hit and no request", result.Ledger)
+	}
+	if !result.Outcomes[0].IsComplete() {
+		t.Errorf("matching cached event outcome = %v, want complete", result.Outcomes[0].Kind())
+	}
+	if result.Outcomes[1].Kind() != domain.OutcomeIncomplete {
+		t.Errorf("mismatched cached event outcome = %v, want incomplete", result.Outcomes[1].Kind())
+	}
+}
+
 func TestRestampedProvenanceKeepsTheVerifiedParent(t *testing.T) {
 	adapter := &fakeAdapter{changed: map[string]domain.EvidenceOutcome{}}
-	commit := commitEvent(t, "a", headA)
+	commit := commitEvent(t, "a", parentA, headA)
 	// An identity settled under one provenance is re-stamped for the
 	// requesting descriptor; the proof the adapter verified must survive that.
 	adapter.changed[commit.Evidence.Key()] =

@@ -51,11 +51,11 @@ func TestEvidenceDescriptorWorkKeys(t *testing.T) {
 	repository := mustParseRepository(t, "Acme/Web")
 	other := mustParseRepository(t, "acme/web")
 
-	commit, err := domain.NewCommitEvidence(repository, shaHead)
+	commit, err := domain.NewCommitEvidence(repository, shaBase, shaHead)
 	if err != nil {
 		t.Fatalf("NewCommitEvidence failed: %v", err)
 	}
-	sameCommit, err := domain.NewCommitEvidence(other, shaHead)
+	sameCommit, err := domain.NewCommitEvidence(other, shaBase, shaHead)
 	if err != nil {
 		t.Fatalf("NewCommitEvidence failed: %v", err)
 	}
@@ -73,6 +73,9 @@ func TestEvidenceDescriptorWorkKeys(t *testing.T) {
 	}
 	if commit.Key() != sameCommit.Key() {
 		t.Errorf("commit keys differ across repository spellings: %q vs %q", commit.Key(), sameCommit.Key())
+	}
+	if commit.Before() != "0123456789abcdef0123456789abcdef01234567" {
+		t.Errorf("commit before = %q", commit.Before())
 	}
 	if want := "compare(acme/web,0123456789abcdef0123456789abcdef01234567," + shaHead + ")"; compare.Key() != want {
 		t.Errorf("compare key = %q, want %q", compare.Key(), want)
@@ -99,8 +102,11 @@ func TestEvidenceDescriptorWorkKeys(t *testing.T) {
 func TestEvidenceDescriptorConstruction(t *testing.T) {
 	repository := mustParseRepository(t, "acme/web")
 
-	if _, err := domain.NewCommitEvidence(repository, shaZero); err == nil {
+	if _, err := domain.NewCommitEvidence(repository, shaBase, shaZero); err == nil {
 		t.Error("NewCommitEvidence accepted the all-zero sha")
+	}
+	if _, err := domain.NewCommitEvidence(repository, "nope", shaHead); err == nil {
+		t.Error("NewCommitEvidence accepted a malformed before sha")
 	}
 	if _, err := domain.NewCompareEvidence(repository, shaHead, shaHead, domain.ProvenanceEventTime); err == nil {
 		t.Error("NewCompareEvidence accepted an equal base and head")
@@ -111,7 +117,7 @@ func TestEvidenceDescriptorConstruction(t *testing.T) {
 	if _, err := domain.NewPullRequestEvidence(repository, 0); err == nil {
 		t.Error("NewPullRequestEvidence accepted a non-positive number")
 	}
-	if _, err := domain.NewCommitEvidence(domain.Repository{}, shaHead); err == nil {
+	if _, err := domain.NewCommitEvidence(domain.Repository{}, shaBase, shaHead); err == nil {
 		t.Error("NewCommitEvidence accepted an unvalidated repository")
 	}
 

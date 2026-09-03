@@ -54,7 +54,7 @@ func pushEvidence(repository domain.Repository, detail *detailPayload) domain.Ev
 		return domain.NewUnchangedEvidence()
 	}
 	if detail.Size != nil && *detail.Size == 1 {
-		return descriptorOrUnsupported(domain.NewCommitEvidence(repository, head))
+		return descriptorOrUnsupported(domain.NewCommitEvidence(repository, before, head))
 	}
 	return descriptorOrUnsupported(domain.NewCompareEvidence(repository, before, head, domain.ProvenanceEventTime))
 }

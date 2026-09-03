@@ -28,11 +28,12 @@ func (a *stubAdapter) CurrentPullRequest(_ context.Context, descriptor domain.Ev
 // commitEvent builds one push event whose evidence needs a commit lookup.
 func commitEvent(t *testing.T, id, head string) domain.Event {
 	t.Helper()
+	before := "1111111111111111111111111111111111111111"
 	repository, err := domain.ParseRepository("acme/backend")
 	if err != nil {
 		t.Fatalf("ParseRepository returned error: %v", err)
 	}
-	descriptor, err := domain.NewCommitEvidence(repository, head)
+	descriptor, err := domain.NewCommitEvidence(repository, before, head)
 	if err != nil {
 		t.Fatalf("NewCommitEvidence(%q) returned error: %v", head, err)
 	}

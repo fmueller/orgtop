@@ -95,7 +95,7 @@ func TestKeyForPersistsOnlyImmutableChangedFileEvidence(t *testing.T) {
 	t.Parallel()
 
 	repository := testRepository(t, "owner", "repo")
-	commit, err := domain.NewCommitEvidence(repository, headSHA)
+	commit, err := domain.NewCommitEvidence(repository, baseSHA, headSHA)
 	if err != nil {
 		t.Fatalf("NewCommitEvidence() error = %v", err)
 	}

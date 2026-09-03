@@ -101,6 +101,7 @@ type EvidenceDescriptor struct {
 	operation  EvidenceOperation
 	provenance EvidenceProvenance
 	repository Repository
+	before     string
 	base       string
 	head       string
 	number     int
@@ -143,22 +144,23 @@ func NewUnchangedEvidence() EvidenceDescriptor {
 	return NewSettledEvidence(CompleteOutcome(ProvenanceEventTime, nil))
 }
 
-// NewCommitEvidence describes the changed files of one exact commit. The head
-// SHA must be a valid object; the caller checks its own before SHA against the
-// verified sole parent the outcome reports.
-func NewCommitEvidence(repository Repository, head string) (EvidenceDescriptor, error) {
+// NewCommitEvidence describes the changed files of one exact commit for an
+// event whose before object must match the commit's verified sole parent.
+func NewCommitEvidence(repository Repository, before, head string) (EvidenceDescriptor, error) {
 	if err := requireRepository(repository); err != nil {
 		return EvidenceDescriptor{}, err
 	}
-	normalized, ok := NormalizeObjectSHA(head)
-	if !ok {
-		return EvidenceDescriptor{}, fmt.Errorf("%w: commit evidence needs a valid head object", ErrInvalidEvidence)
+	normalizedBefore, beforeOK := NormalizeObjectSHA(before)
+	normalizedHead, headOK := NormalizeObjectSHA(head)
+	if !beforeOK || !headOK {
+		return EvidenceDescriptor{}, fmt.Errorf("%w: commit evidence needs valid before and head objects", ErrInvalidEvidence)
 	}
 	return EvidenceDescriptor{
 		operation:  EvidenceCommit,
 		provenance: ProvenanceEventTime,
 		repository: repository,
-		head:       normalized,
+		before:     normalizedBefore,
+		head:       normalizedHead,
 	}, nil
 }
 
@@ -218,6 +220,9 @@ func (d EvidenceDescriptor) Provenance() EvidenceProvenance { return d.provenanc
 
 // Repository reports the repository the evidence belongs to.
 func (d EvidenceDescriptor) Repository() Repository { return d.repository }
+
+// Before reports the normalized before object of commit evidence.
+func (d EvidenceDescriptor) Before() string { return d.before }
 
 // Base reports the normalized base object of compare evidence.
 func (d EvidenceDescriptor) Base() string { return d.base }

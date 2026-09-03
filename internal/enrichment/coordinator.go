@@ -309,10 +309,13 @@ func (r *run) resolve(key string) string {
 	return key
 }
 
-// forDescriptor applies one coalesced identity outcome to a requesting
-// descriptor. Provenance belongs to the descriptor, so one immutable compare
-// serves either event-time or current-PR use without a second request.
+// forDescriptor applies commit-parent qualification and provenance to one
+// requesting descriptor. One coalesced identity can therefore safely serve
+// several events without another request.
 func forDescriptor(outcome domain.EvidenceOutcome, descriptor domain.EvidenceDescriptor) domain.EvidenceOutcome {
+	if descriptor.Operation() == domain.EvidenceCommit {
+		outcome = outcome.ForSoleParent(descriptor.Before())
+	}
 	if !outcome.IsComplete() || outcome.Provenance() == descriptor.Provenance() {
 		return outcome
 	}

@@ -47,6 +47,12 @@ workflow refuses to publish otherwise.
   Scopes rather than whole-repository Scopes. Repository-only invocations keep
   their v0.1 meaning.
 
+### Fixed
+
+- Coalesced one-commit push enrichment now checks each event's own `before` SHA,
+  including cached evidence, so events sharing a head never borrow another
+  event's changed-file proof.
+
 ## [0.1.0] - 2026-08-25
 
 ### Added

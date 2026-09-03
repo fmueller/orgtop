@@ -1,12 +1,12 @@
 ---
 id: T-079-qualify-coalesced-commit-evidence-against-each
 title: Qualify coalesced commit evidence against each event's before object
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#changed-file-enrichment
 dependencies:
     - T-052-implement-bounded-enrichment-coordination
-updated_at: "2026-09-02T21:54:15Z"
+updated_at: "2026-09-03T14:33:53Z"
 ---
 
 # T-079-qualify-coalesced-commit-evidence-against-each Qualify coalesced commit evidence against each event's before object
@@ -55,3 +55,5 @@ available; the per-event qualification is what is missing.
   and `internal/domain/outcome.go:149`.
 - Changing `domain.NewCommitEvidence` or `domain.Event` is a domain surface
   change and was deliberately kept out of T-052's narrow scope.
+- 2026-09-03T14:33:36Z: verification pass
+- 2026-09-03T14:33:53Z: Verified by task check, focused race tests, fresh/cache coalescing tests, simplifier pass, and independent review with no findings.
