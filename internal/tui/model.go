@@ -37,6 +37,17 @@ type Model struct {
 	cancel context.CancelFunc
 	// source performs one atomic refresh of the Scope.
 	source Source
+	// expander performs one bounded organization expansion. It stays nil for an
+	// invocation without an organization selector, which never expands.
+	expander Expander
+	// selection is the fixed selection every poll of one refresh reads. It is
+	// valid only once hasSelection reports a successful expansion, or from
+	// construction for an invocation without a selector.
+	selection Selection
+	// hasSelection reports whether a fixed selection exists to poll.
+	hasSelection bool
+	// nextExpansion is the instant the next expansion attempt becomes due.
+	nextExpansion time.Time
 	// now supplies the instant a success is recorded at.
 	now func() time.Time
 	// tick schedules the next attempt after a delay.
@@ -62,6 +73,19 @@ func WithClock(now func() time.Time) Option {
 	}
 }
 
+// WithExpander binds the organization expansion the lifecycle runs before the
+// polls of a due refresh. Without one the model never expands and polls the
+// exact selection it was built with, which is the invocation without an
+// organization selector. A nil expander keeps that default.
+func WithExpander(expander Expander) Option {
+	return func(model *Model) {
+		if expander != nil {
+			model.expander = expander
+			model.selection, model.hasSelection = Selection{}, false
+		}
+	}
+}
+
 // New returns the root model for the selected scope in its initial loading
 // state, with its first refresh already owned by Init. ctx bounds every refresh
 // the model starts. Options replace optional seams; supplying none yields the
@@ -77,13 +101,15 @@ func New(ctx context.Context, scopes domain.ScopeSet, source Source, options ...
 	}
 	refreshCtx, cancel := context.WithCancel(ctx)
 	model := Model{
-		state:   State{Scopes: scopes, Freshness: FreshnessLoading},
-		ctx:     refreshCtx,
-		cancel:  cancel,
-		source:  source,
-		now:     time.Now,
-		tick:    tickAfter,
-		pending: true,
+		state:        State{Scopes: scopes, Freshness: FreshnessLoading},
+		ctx:          refreshCtx,
+		cancel:       cancel,
+		source:       source,
+		selection:    exactSelection(scopes),
+		hasSelection: true,
+		now:          time.Now,
+		tick:         tickAfter,
+		pending:      true,
 	}
 	for _, option := range options {
 		option(&model)

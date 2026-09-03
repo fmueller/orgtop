@@ -9,6 +9,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/fmueller/orgtop/internal/auth"
+	"github.com/fmueller/orgtop/internal/cli"
 	"github.com/fmueller/orgtop/internal/domain"
 	"github.com/fmueller/orgtop/internal/tui"
 )
@@ -81,7 +83,7 @@ func awaitCancellation(t *testing.T, source blockingSource) {
 }
 
 func TestLaunchWithoutASourceFailsBeforeTakingTheTerminal(t *testing.T) {
-	err := launchProgram(context.Background(), mustScope(t, "acme/backend"), nil)
+	err := launchProgram(context.Background(), mustScope(t, "acme/backend"), nil, nil)
 
 	if !errors.Is(err, tui.ErrNoSource) {
 		t.Fatalf("launchProgram without a source returned %v, want tui.ErrNoSource", err)
@@ -95,7 +97,7 @@ func TestQuitKeystrokeExitsCleanlyAndCancelsInFlightSourceWork(t *testing.T) {
 
 	exit := make(chan error, 1)
 	go func() {
-		exit <- launchProgram(context.Background(), mustScope(t, "acme/backend"), source, headless(input)...)
+		exit <- launchProgram(context.Background(), mustScope(t, "acme/backend"), source, nil, headless(input)...)
 	}()
 
 	awaitRefresh(t, source)
@@ -123,7 +125,7 @@ func TestProcessCancellationExitsCleanlyAndCancelsInFlightSourceWork(t *testing.
 	ctx, cancel := context.WithCancel(context.Background())
 	exit := make(chan error, 1)
 	go func() {
-		exit <- launchProgram(ctx, mustScope(t, "acme/backend"), source, headless(input)...)
+		exit <- launchProgram(ctx, mustScope(t, "acme/backend"), source, nil, headless(input)...)
 	}()
 
 	awaitRefresh(t, source)
@@ -138,4 +140,83 @@ func TestProcessCancellationExitsCleanlyAndCancelsInFlightSourceWork(t *testing.
 		t.Fatal("the canceled process context did not end the program")
 	}
 	awaitCancellation(t, source)
+}
+
+// blockingExpander keeps one expansion in flight until its context is canceled,
+// which is what shutdown has to do for expansion work too (NFR-001).
+type blockingExpander struct {
+	started  chan struct{}
+	canceled chan error
+}
+
+func newBlockingExpander() blockingExpander {
+	return blockingExpander{started: make(chan struct{}, 1), canceled: make(chan error, 1)}
+}
+
+func (b blockingExpander) Expand(ctx context.Context) (tui.Expansion, error) {
+	b.started <- struct{}{}
+	<-ctx.Done()
+	b.canceled <- ctx.Err()
+	return tui.Expansion{}, ctx.Err()
+}
+
+func TestOrganizationOnlyLaunchExpandsBeforeItPollsAndCancelsThatWork(t *testing.T) {
+	source := newBlockingSource()
+	expander := newBlockingExpander()
+	input, keystrokes := io.Pipe()
+	defer func() { _ = input.Close() }()
+
+	exit := make(chan error, 1)
+	go func() {
+		exit <- launchProgram(context.Background(), domain.ScopeSet{}, source, expander, headless(input)...)
+	}()
+
+	select {
+	case <-expander.started:
+	case <-time.After(launchTimeout):
+		t.Fatal("the organization-only launch never started an expansion")
+	}
+	select {
+	case <-source.started:
+		t.Fatal("the launch polled before its expansion completed")
+	case <-time.After(50 * time.Millisecond):
+	}
+
+	if _, err := keystrokes.Write([]byte("q")); err != nil {
+		t.Fatalf("writing the quit keystroke failed: %v", err)
+	}
+	select {
+	case err := <-exit:
+		if err != nil {
+			t.Errorf("launchProgram returned %v, want a clean exit", err)
+		}
+	case <-time.After(launchTimeout):
+		t.Fatal("the quit keystroke did not end the program")
+	}
+	select {
+	case err := <-expander.canceled:
+		if err == nil {
+			t.Error("the in-flight expansion reported no cancellation cause")
+		}
+	case <-time.After(launchTimeout):
+		t.Fatal("shutdown left the in-flight expansion running")
+	}
+}
+
+func TestLaunchBindsAnExpanderOnlyForAnOrganizationSelection(t *testing.T) {
+	selectors, err := cli.ParseArgs("orgtop", []string{"--org", "acme"}, io.Discard)
+	if err != nil {
+		t.Fatalf("parsing an organization selection failed: %v", err)
+	}
+	if got := expanderFor(auth.Credential{}, selectors); got == nil {
+		t.Error("an organization selection got no expander, want the launch to expand before polling")
+	}
+
+	exact, err := cli.ParseArgs("orgtop", []string{"--repo", "acme/backend"}, io.Discard)
+	if err != nil {
+		t.Fatalf("parsing an exact selection failed: %v", err)
+	}
+	if got := expanderFor(auth.Credential{}, exact); got != nil {
+		t.Errorf("an exact selection got expander %v, want none so it polls the selection it was given", got)
+	}
 }

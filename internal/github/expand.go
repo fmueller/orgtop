@@ -120,6 +120,9 @@ type ExpansionError struct {
 	Organization string
 	// RetryDelay is the delay before the next attempt is eligible.
 	RetryDelay time.Duration
+	// RateLimited reports a failure the rate limit caused. It prohibits further
+	// GitHub dispatch until the reported retry delay elapses (RG-003, RG-010).
+	RateLimited bool
 	// Requests is the number of listing requests the failed attempt spent. A
 	// dispatch spends budget before the request and cancellation refunds none.
 	Requests int
@@ -231,8 +234,12 @@ func (s Source) list(ctx context.Context, listings []*listing) (int, error) {
 				return spent, &ExpansionError{
 					Organization: entry.organization,
 					RetryDelay:   retry,
-					Requests:     spent,
-					cause:        err,
+					// The rate limit is the one failure class that prohibits
+					// further dispatch, and it is exactly the class the status
+					// mapping reports as ErrRateLimited.
+					RateLimited: errors.Is(err, ErrRateLimited),
+					Requests:    spent,
+					cause:       err,
 				}
 			}
 		}

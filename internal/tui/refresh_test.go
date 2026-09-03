@@ -30,11 +30,15 @@ type fakeSource struct {
 	calls int
 	// contexts records the context of every started refresh.
 	contexts []context.Context
+	// scopes records the selection every started refresh was given, so a test
+	// can assert which fixed selection a poll ran against.
+	scopes []domain.ScopeSet
 }
 
-func (s *fakeSource) Refresh(ctx context.Context, _ domain.ScopeSet) (Result, error) {
+func (s *fakeSource) Refresh(ctx context.Context, scopes domain.ScopeSet) (Result, error) {
 	s.calls++
 	s.contexts = append(s.contexts, ctx)
+	s.scopes = append(s.scopes, scopes)
 	if len(s.outcomes) == 0 {
 		return Result{}, nil
 	}

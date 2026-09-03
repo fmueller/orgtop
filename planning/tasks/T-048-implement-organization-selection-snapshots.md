@@ -1,12 +1,12 @@
 ---
 id: T-048-implement-organization-selection-snapshots
 title: Implement organization selection snapshots
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#organization-selection
 dependencies:
     - T-047-implement-bounded-organization-expansion
-updated_at: "2026-08-29T09:22:04Z"
+updated_at: "2026-09-03T10:40:49Z"
 ---
 
 # T-048-implement-organization-selection-snapshots Implement organization selection snapshots
@@ -33,3 +33,4 @@ Integrate bounded re-expansion and immutable per-refresh selection snapshots int
 ## Implementation Notes
 
 - Keep expansion separate from event polling and bind both operations to context cancellation.
+- 2026-09-03T10:40:45Z: verification pass

@@ -76,4 +76,13 @@ type State struct {
 	LastSuccess time.Time
 	// Cause is the sanitized failure cause shown with ERROR or STALE.
 	Cause string
+	// Selection is the published selection snapshot the Scopes above come from,
+	// with the prepared truncation and provenance disclosure of its expansion.
+	Selection Selection
+	// SelectionFreshness marks whether that selection is the one the latest due
+	// expansion produced. It is independent of the source freshness above.
+	SelectionFreshness SelectionFreshness
+	// SelectionCause is the sanitized cause of the failed re-expansion that made
+	// the selection stale.
+	SelectionCause string
 }

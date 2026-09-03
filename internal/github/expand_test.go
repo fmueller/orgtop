@@ -734,18 +734,20 @@ func TestExpansionRespectsTheRemainingScopeCapacityAlone(t *testing.T) {
 
 func TestExpansionFailureClassesStayDistinctAndSanitized(t *testing.T) {
 	tests := map[string]struct {
-		page       listingPage
-		want       error
-		wantRetry  time.Duration
-		wantStatus string
+		page            listingPage
+		want            error
+		wantRetry       time.Duration
+		wantRateLimited bool
+		wantStatus      string
 	}{
 		"unknown organization": {page: listingPage{status: http.StatusNotFound, body: `{}`}, want: github.ErrOrganizationNotFound, wantRetry: defaultInterval},
 		"denied credential":    {page: listingPage{status: http.StatusUnauthorized, body: `{}`}, want: github.ErrAuthentication, wantRetry: defaultInterval},
 		"denied access":        {page: listingPage{status: http.StatusForbidden, body: `{}`}, want: github.ErrOrganizationAccessDenied, wantRetry: defaultInterval},
 		"rate limited": {
-			page:      listingPage{status: http.StatusForbidden, body: `{}`, header: map[string]string{"X-RateLimit-Remaining": "0", "Retry-After": "120"}},
-			want:      github.ErrRateLimited,
-			wantRetry: 120 * time.Second,
+			page:            listingPage{status: http.StatusForbidden, body: `{}`, header: map[string]string{"X-RateLimit-Remaining": "0", "Retry-After": "120"}},
+			want:            github.ErrRateLimited,
+			wantRetry:       120 * time.Second,
+			wantRateLimited: true,
 		},
 		"server failure": {page: listingPage{status: http.StatusBadGateway, body: `{}`}, want: github.ErrUnexpectedResponse, wantRetry: defaultInterval},
 		"malformed body": {page: listingPage{body: `{"repositories":[]}`}, want: github.ErrInvalidListing, wantRetry: defaultInterval},
@@ -764,6 +766,9 @@ func TestExpansionFailureClassesStayDistinctAndSanitized(t *testing.T) {
 			}
 			if failure.RetryDelay != test.wantRetry {
 				t.Errorf("failure retry delay is %s, want %s", failure.RetryDelay, test.wantRetry)
+			}
+			if failure.RateLimited != test.wantRateLimited {
+				t.Errorf("failure reports rate limited %t, want %t", failure.RateLimited, test.wantRateLimited)
 			}
 			assertSanitized(t, failure.Error())
 		})

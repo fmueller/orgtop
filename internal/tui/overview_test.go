@@ -429,7 +429,7 @@ func TestOverviewClampsTheWindowAfterRefreshShrinkage(t *testing.T) {
 	model, _ = apply(t, model, tea.WindowSizeMsg{Width: wideWidth, Height: scrollTerminalHeight})
 	model = scrolled(t, model, "pgdown", "pgdown", "pgdown", "pgdown")
 
-	model, _ = apply(t, model, refreshedMsg{result: Result{Repositories: numberedRepositories(t, names)}})
+	model, _ = apply(t, model, refreshedMsg{polled: true, result: Result{Repositories: numberedRepositories(t, names)}})
 
 	rows := bodyLines(t, model.View().Content)
 	if len(rows) != scrollBodyHeight {

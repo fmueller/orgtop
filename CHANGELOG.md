@@ -17,6 +17,14 @@ workflow refuses to publish otherwise.
   selection, a qualified `OWNER/REPOSITORY:PATTERN` stands on its own, and both
   forms may be repeated and mixed. Equivalent Scopes are deduplicated and keep
   their first requested spelling.
+- `--org ORGANIZATION`, and its `--repo 'ORGANIZATION/*'` alias, select every
+  eligible repository of an organization. A launch expands its selectors before
+  it polls anything, re-expands every 15 minutes, and polls one immutable
+  selection per refresh. `--include-archived` and `--include-forks` widen that
+  eligibility. A failed re-expansion keeps the last successful selection and
+  marks it stale rather than narrowing or emptying it; an initial expansion
+  failure polls no subset, and a successful expansion with no eligible
+  repository is a current empty selection.
 - `--no-cache` runs a launch without any enrichment-cache operation, and
   `--reset-cache` is a standalone administrative action that exits without
   resolving a credential, making a request, or starting the terminal UI.

@@ -15,18 +15,30 @@ import (
 
 // launch runs the terminal UI against the public GitHub API.
 func launch(ctx context.Context, config cli.Config, credential auth.Credential) error {
-	return launchProgram(ctx, config.Scopes, newSourceAdapter(credential))
+	return launchProgram(ctx, config.Scopes, newSourceAdapter(credential), expanderFor(credential, config))
 }
 
-// launchProgram runs the Bubble Tea shell for the selection until it exits. The program
+// expanderFor returns the organization expansion the launch polls behind, or
+// nil for an invocation that named no selector and therefore polls exactly the
+// selection it was given (RG-010).
+func expanderFor(credential auth.Credential, config cli.Config) tui.Expander {
+	if len(config.Organizations) == 0 {
+		return nil
+	}
+	return newExpansionAdapter(credential, config)
+}
+
+// launchProgram runs the Bubble Tea shell for the selection until it exits. A
+// non-nil expander makes the selection the result of a bounded organization
+// expansion the shell runs before it polls anything. The program
 // and every refresh it starts share one context, so a canceled process context
 // ends both, and returning cancels whatever source work is still in flight no
 // matter which path ended the program (NFR-001).
-func launchProgram(ctx context.Context, scopes domain.ScopeSet, source tui.Source, options ...tea.ProgramOption) error {
+func launchProgram(ctx context.Context, scopes domain.ScopeSet, source tui.Source, expander tui.Expander, options ...tea.ProgramOption) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	model, err := tui.New(ctx, scopes, source)
+	model, err := tui.New(ctx, scopes, source, tui.WithExpander(expander))
 	if err != nil {
 		return fmt.Errorf("building the terminal ui: %w", err)
 	}

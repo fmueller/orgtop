@@ -277,7 +277,7 @@ func TestStreamClampsTheWindowAfterRefreshShrinkage(t *testing.T) {
 	model = scrolled(t, model, "pgdown", "pgdown", "pgdown")
 
 	shrunk := numberedEvents(t, 3)
-	model, _ = apply(t, model, refreshedMsg{result: Result{
+	model, _ = apply(t, model, refreshedMsg{polled: true, result: Result{
 		Repositories: []domain.RepositoryActivity{
 			testActivity(t, "acme/backend", shrunk...),
 			testActivity(t, "acme/frontend"),

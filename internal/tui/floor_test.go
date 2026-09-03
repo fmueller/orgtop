@@ -132,3 +132,24 @@ func evalDuration(expr ast.Expr) (time.Duration, error) {
 	}
 	return 0, fmt.Errorf("the %T form is no product of integer literals and time units; extend evalDuration or restate the constant", expr)
 }
+
+// specExpansionRetry is the minimum delay RG-010 fixes before a failed
+// organization expansion may be retried.
+const specExpansionRetry = 60 * time.Second
+
+// TestTheExpansionRetryBoundIsTheSpecifiedOne anchors the lifecycle constant to
+// the delay RG-010 fixes. It shares its value with the FR-004 polling floor but
+// not its meaning, so the two are asserted apart.
+func TestTheExpansionRetryBoundIsTheSpecifiedOne(t *testing.T) {
+	if expansionRetry != specExpansionRetry {
+		t.Errorf("expansionRetry = %s, want the RG-010 retry bound %s", expansionRetry, specExpansionRetry)
+	}
+}
+
+// TestTheExpansionIntervalIsTheSpecifiedOne anchors the re-expansion interval to
+// the one RG-010 fixes between successful attempts.
+func TestTheExpansionIntervalIsTheSpecifiedOne(t *testing.T) {
+	if want := 15 * time.Minute; expansionInterval != want {
+		t.Errorf("expansionInterval = %s, want the RG-010 re-expansion interval %s", expansionInterval, want)
+	}
+}

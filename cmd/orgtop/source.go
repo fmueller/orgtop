@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/fmueller/orgtop/internal/auth"
+	"github.com/fmueller/orgtop/internal/cli"
 	"github.com/fmueller/orgtop/internal/domain"
 	"github.com/fmueller/orgtop/internal/github"
 	"github.com/fmueller/orgtop/internal/tui"
@@ -42,4 +43,82 @@ func retryDelay(err error) time.Duration {
 		return failure.RetryDelay
 	}
 	return 0
+}
+
+// expansionAdapter adapts the GitHub organization expansion to the shell's
+// selection seam. The validated selectors and eligibility flags are fixed for
+// the process, so the request is built once at launch and every attempt lists
+// the same organizations (RG-010).
+type expansionAdapter struct {
+	source  github.Source
+	request github.ExpansionRequest
+}
+
+// newExpansionAdapter binds the adapter to the public GitHub API for the
+// invocation's organization selectors.
+func newExpansionAdapter(credential auth.Credential, config cli.Config) expansionAdapter {
+	organizations := make([]string, 0, len(config.Organizations))
+	for _, selector := range config.Organizations {
+		organizations = append(organizations, selector.Name())
+	}
+	return expansionAdapter{
+		source: github.NewSource(credential),
+		request: github.ExpansionRequest{
+			Organizations:   organizations,
+			Exact:           config.Scopes,
+			IncludeArchived: config.IncludeArchived,
+			IncludeForks:    config.IncludeForks,
+		},
+	}
+}
+
+// Expand maps one bounded GitHub expansion onto the lifecycle's Expansion. A
+// failure carries the retry bound and whether the rate limit caused it, so the
+// lifecycle schedules and stops dispatch from source metadata instead of
+// re-deriving GitHub's rules.
+func (a expansionAdapter) Expand(ctx context.Context) (tui.Expansion, error) {
+	expansion, err := a.source.Expand(ctx, a.request)
+	if err != nil {
+		var failure *github.ExpansionError
+		if errors.As(err, &failure) {
+			return tui.Expansion{RetryDelay: failure.RetryDelay, RateLimited: failure.RateLimited}, err
+		}
+		return tui.Expansion{}, err
+	}
+	return tui.Expansion{Selection: selection(expansion)}, nil
+}
+
+// selection maps the adapter's prepared disclosure onto the application state
+// the shell renders. The two types are separate because internal/tui must not
+// import internal/github (NFR-004).
+func selection(expansion github.Expansion) tui.Selection {
+	prepared := expansion.Selection
+	selectors := make([]tui.SelectorSelection, 0, len(prepared.Selectors))
+	for _, selector := range prepared.Selectors {
+		selectors = append(selectors, tui.SelectorSelection{
+			Organization: selector.Organization,
+			Listed:       selector.Listed,
+			Disabled:     selector.Disabled,
+			Archived:     selector.Archived,
+			Fork:         selector.Fork,
+			Eligible:     selector.Eligible,
+			Retained:     selector.Retained,
+			Omitted:      selector.Omitted,
+			HasMore:      selector.HasMore,
+		})
+	}
+	provenance := make([]tui.ScopeProvenance, 0, len(prepared.Provenance))
+	for _, entry := range prepared.Provenance {
+		provenance = append(provenance, tui.ScopeProvenance{Scope: entry.Scope, Exact: entry.Exact, Selector: entry.Selector})
+	}
+	return tui.Selection{
+		Scopes:               expansion.Scopes,
+		ExactScopes:          prepared.ExactScopes,
+		ExpandedScopes:       prepared.ExpandedScopes,
+		TotalScopes:          prepared.TotalScopes,
+		DistinctRepositories: prepared.DistinctRepositories,
+		Selectors:            selectors,
+		Provenance:           provenance,
+		PaginationRemains:    prepared.PaginationRemains,
+	}
 }
