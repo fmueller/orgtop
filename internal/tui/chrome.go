@@ -50,9 +50,16 @@ func headerCandidates(state State, mode Mode) [][]field {
 		core = append(core, field{text: marker, style: markerStyle(state.Freshness)})
 	}
 
+	if marker := state.SelectionFreshness.Marker(); marker != "" {
+		core = append(core, field{text: marker, style: staleStyle})
+	}
+
 	var cause []field
 	if state.Cause != "" {
-		cause = []field{{text: state.Cause, style: causeStyle}}
+		cause = append(cause, field{text: state.Cause, style: causeStyle})
+	}
+	if state.SelectionCause != "" {
+		cause = append(cause, field{text: state.SelectionCause, style: causeStyle})
 	}
 	var listed, counted []field
 	if state.Scopes.Len() > 0 {
@@ -73,7 +80,7 @@ func headerCandidates(state State, mode Mode) [][]field {
 		context = updated
 	}
 
-	return [][]field{
+	layouts := [][]field{
 		slices.Concat(title, core, cause, listed, updated),
 		slices.Concat(title, core, cause, counted, updated),
 		slices.Concat(title, core, cause, context),
@@ -81,6 +88,78 @@ func headerCandidates(state State, mode Mode) [][]field {
 		slices.Concat(core, cause),
 		slices.Concat(core, context),
 		core,
+	}
+	return withSelection(layouts, selectionForms(state.Selection))
+}
+
+// withSelection appends the RG-010 selection detail to every layout. The detail
+// is the lowest-priority segment, so each layout first yields the detail from
+// its full form down to nothing before the next layout drops a field the
+// selection detail must never displace.
+func withSelection(layouts [][]field, forms []string) [][]field {
+	if len(forms) == 0 {
+		return layouts
+	}
+
+	candidates := make([][]field, 0, len(layouts)*(len(forms)+1))
+	for _, layout := range layouts {
+		for _, form := range forms {
+			candidates = append(candidates, append(slices.Clone(layout), field{text: form, style: contextStyle}))
+		}
+		candidates = append(candidates, layout)
+	}
+	return candidates
+}
+
+// selectionForms returns the RG-010 selection detail from its full summary down
+// to its minimum, or nothing for an invocation without an organization
+// selector. A bounded result is never presented as the complete organization:
+// the omission count and the remaining-page condition survive into the forms
+// that can still hold them.
+func selectionForms(selection Selection) []string {
+	if len(selection.Selectors) == 0 {
+		return nil
+	}
+
+	omitted := 0
+	for _, selector := range selection.Selectors {
+		omitted += selector.Omitted
+	}
+	more := selection.PaginationRemains
+
+	full := fmt.Sprintf("selection: %d repos · %d scopes · %d exact · %d expanded",
+		selection.DistinctRepositories, selection.TotalScopes, selection.ExactScopes, selection.ExpandedScopes)
+	compact := fmt.Sprintf("sel %d repos · %d scopes", selection.DistinctRepositories, selection.TotalScopes)
+	if omitted > 0 {
+		full += fmt.Sprintf("%s%d eligible omitted", separator, omitted)
+		compact += fmt.Sprintf("%s%d omitted", separator, omitted)
+	}
+	if more {
+		full += separator + "more eligible may be omitted"
+		compact += separator + "more?"
+	}
+
+	forms := []string{full, compact}
+	if minimum := selectionMinimum(omitted, more); minimum != "" {
+		forms = append(forms, minimum)
+	}
+	return forms
+}
+
+// selectionMinimum returns the smallest form of the selection detail: the exact
+// eligible-omission count, marked with the unknown remainder when more eligible
+// repositories may exist. A selection that omitted nothing and left no page
+// unconsumed has nothing left to disclose at this size.
+func selectionMinimum(omitted int, more bool) string {
+	switch {
+	case omitted > 0 && more:
+		return fmt.Sprintf("SEL %d+?", omitted)
+	case omitted > 0:
+		return fmt.Sprintf("SEL %d", omitted)
+	case more:
+		return "SEL ?"
+	default:
+		return ""
 	}
 }
 

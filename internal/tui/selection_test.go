@@ -472,3 +472,29 @@ func TestFailedExpansionSchedulesTheNextAttemptAtItsOwnRetryBound(t *testing.T) 
 		})
 	}
 }
+
+func TestCancellationDuringExpansionDispatchesNoPoll(t *testing.T) {
+	source := &fakeSource{outcomes: []outcome{{result: activity(t, "acme/backend")}}}
+	expander := &fakeExpander{attempts: []attempt{
+		{expansion: expandedSelection(t, "acme", "acme/backend")},
+		{err: context.Canceled},
+	}}
+	model := expanding(t, source, expander, fixedInstant, &recorder{})
+
+	model, _ = run(t, model, model.Init())
+	if source.calls != 1 {
+		t.Fatalf("the first refresh ran %d polls, want 1", source.calls)
+	}
+
+	model = model.at(fixedInstant.Add(16 * time.Minute))
+	model.cancel()
+	_, cmd := apply(t, model, refreshDueMsg{})
+	run(t, model, cmd)
+
+	if expander.calls != 2 {
+		t.Errorf("the cancelled refresh ran %d expansions, want the attempt it had already started", expander.calls)
+	}
+	if source.calls != 1 {
+		t.Errorf("the cancelled refresh ran %d polls in total, want no poll against a cancelled context", source.calls)
+	}
+}

@@ -57,18 +57,22 @@ type expansionAdapter struct {
 // newExpansionAdapter binds the adapter to the public GitHub API for the
 // invocation's organization selectors.
 func newExpansionAdapter(credential auth.Credential, config cli.Config) expansionAdapter {
+	return expansionAdapter{source: github.NewSource(credential), request: expansionRequest(config)}
+}
+
+// expansionRequest is the fixed listing request of the invocation: its selectors
+// in their first-occurrence order, the exact selection that has capacity
+// precedence, and the process-global eligibility flags.
+func expansionRequest(config cli.Config) github.ExpansionRequest {
 	organizations := make([]string, 0, len(config.Organizations))
 	for _, selector := range config.Organizations {
 		organizations = append(organizations, selector.Name())
 	}
-	return expansionAdapter{
-		source: github.NewSource(credential),
-		request: github.ExpansionRequest{
-			Organizations:   organizations,
-			Exact:           config.Scopes,
-			IncludeArchived: config.IncludeArchived,
-			IncludeForks:    config.IncludeForks,
-		},
+	return github.ExpansionRequest{
+		Organizations:   organizations,
+		Exact:           config.Scopes,
+		IncludeArchived: config.IncludeArchived,
+		IncludeForks:    config.IncludeForks,
 	}
 }
 

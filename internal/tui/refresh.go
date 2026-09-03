@@ -88,6 +88,12 @@ func (m Model) refresh() tea.Cmd {
 				// publish no partial or empty selection.
 				return message
 			}
+			if m.ctx.Err() != nil {
+				// An expansion the shutdown cancelled publishes nothing, so
+				// the refresh dispatches no poll it would only have to
+				// discard.
+				return message
+			}
 		}
 
 		// A model without a selection always has its expansion due, so every

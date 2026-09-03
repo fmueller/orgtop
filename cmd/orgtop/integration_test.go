@@ -147,9 +147,14 @@ func (e *eventsEndpoint) awaitRequest(t *testing.T, what string) {
 
 // requestCount reports how many requests a repository path answered.
 func (e *eventsEndpoint) requestCount(repository string) int {
+	return e.servedCount(eventsPath(repository))
+}
+
+// servedCount reports how many requests a path answered.
+func (e *eventsEndpoint) servedCount(path string) int {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	return e.served[eventsPath(repository)]
+	return e.served[path]
 }
 
 // eventsPath is the bounded events path the source requests for a repository.
@@ -271,7 +276,16 @@ func newFlow(t *testing.T, endpoint *eventsEndpoint, args ...string) *flow {
 	}
 
 	adapter := serveEndpoint(t, endpoint)
-	model, err := tui.New(t.Context(), config.Scopes, adapter, tui.WithClock(func() time.Time { return wiredInstant }))
+	options := []tui.Option{tui.WithClock(func() time.Time { return wiredInstant })}
+	if len(config.Organizations) > 0 {
+		// The binary expands organization selectors through the same source, so
+		// a wired flow binds the expansion the same way launch does.
+		options = append(options, tui.WithExpander(expansionAdapter{
+			source:  adapter.source,
+			request: expansionRequest(config),
+		}))
+	}
+	model, err := tui.New(t.Context(), config.Scopes, adapter, options...)
 	if err != nil {
 		t.Fatalf("building the shell for %v failed: %v", args, err)
 	}
@@ -957,5 +971,96 @@ func TestStreamKeepsEveryLegibilityAffordanceAtTheNarrowestSize(t *testing.T) {
 		if !strings.HasSuffix(strings.TrimRight(row, " "), shortenedMark) {
 			t.Errorf("row %d was shortened without the mark %q:\n%s", index, shortenedMark, row)
 		}
+	}
+}
+
+// organizationPath is the listing path expansion requests for a selector.
+func organizationPath(organization string) string { return "/orgs/" + organization + "/repos" }
+
+// listingRecord renders one organization listing record with its eligibility
+// facts.
+func listingRecord(repository string, archived, fork bool) map[string]any {
+	owner, name, _ := strings.Cut(repository, "/")
+	return map[string]any{
+		"full_name": repository,
+		"name":      name,
+		"owner":     map[string]any{"login": owner, "type": "Organization"},
+		"archived":  archived,
+		"disabled":  false,
+		"fork":      fork,
+	}
+}
+
+// listingPage renders one organization listing page.
+func listingPage(records ...map[string]any) string { return encode(records) }
+
+func TestOrganizationFlowExpandsBeforeItPollsAndDisclosesTheSelection(t *testing.T) {
+	endpoint := newEndpoint(map[string][]cannedResponse{
+		organizationPath("acme"): {ok(listingPage(
+			listingRecord("acme/backend", false, false),
+			listingRecord("acme/legacy", true, false),
+			listingRecord("acme/mirror", false, true),
+		))},
+		eventsPath("acme/backend"): {ok(eventsPage("acme/backend", 2))},
+	})
+	run := newFlow(t, endpoint, "--org", "acme")
+	run.refresh()
+
+	overview := run.render(wideWidth, wideHeight)
+	assertContains(t, overview, "acme/backend", "2 events", "selection: 1 repos · 1 scopes · 0 exact · 1 expanded")
+	// The excluded repositories are never polled and never rendered, and a
+	// bounded expansion is not presented as the whole organization.
+	assertAbsent(t, overview, "acme/legacy", "acme/mirror", "ERROR", "STALE", sentinelToken)
+
+	if got := endpoint.requestCount("acme/legacy"); got != 0 {
+		t.Errorf("the excluded repository answered %d requests, want none", got)
+	}
+	if got := endpoint.servedCount(organizationPath("acme")); got != 1 {
+		t.Errorf("the expansion spent %d listing requests, want 1", got)
+	}
+	if !endpoint.sawCredential() {
+		t.Error("the wired expansion reached the endpoint without the resolved credential")
+	}
+
+	// A refresh before the next expansion is due reuses the fixed selection and
+	// spends no listing request.
+	run.refresh()
+	if got := endpoint.servedCount(organizationPath("acme")); got != 1 {
+		t.Errorf("the second refresh spent %d listing requests in total, want the fixed selection reused", got)
+	}
+	if got := endpoint.requestCount("acme/backend"); got != 2 {
+		t.Errorf("the second refresh polled the selection %d times in total, want 2", got)
+	}
+}
+
+func TestOrganizationFlowWithNoEligibleRepositoryPollsNothing(t *testing.T) {
+	endpoint := newEndpoint(map[string][]cannedResponse{
+		organizationPath("acme"): {ok(listingPage(listingRecord("acme/legacy", true, false)))},
+	})
+	run := newFlow(t, endpoint, "--org", "acme")
+	run.refresh()
+
+	overview := run.render(wideWidth, wideHeight)
+	assertAbsent(t, overview, "ERROR", "STALE", "LOADING", sentinelToken)
+	assertContains(t, overview, "selection: 0 repos · 0 scopes · 0 exact · 0 expanded")
+	if got := endpoint.requestCount("acme/legacy"); got != 0 {
+		t.Errorf("an empty selection polled %d times, want no request at all", got)
+	}
+}
+
+func TestOrganizationFlowFailureIsAnErrorThatPollsNoSubset(t *testing.T) {
+	endpoint := newEndpoint(map[string][]cannedResponse{
+		organizationPath("acme"):   {serverError()},
+		eventsPath("other/exact"):  {ok(eventsPage("other/exact", 1))},
+		eventsPath("acme/backend"): {ok(eventsPage("acme/backend", 1))},
+	})
+	run := newFlow(t, endpoint, "--org", "acme", "--repo", "other/exact")
+	run.refresh()
+
+	overview := run.render(wideWidth, wideHeight)
+	assertContains(t, overview, "ERROR")
+	assertAbsent(t, overview, sentinelToken, "SELECTION STALE")
+	if got := endpoint.requestCount("other/exact"); got != 0 {
+		t.Errorf("a failed initial expansion polled the exact subset %d times, want none", got)
 	}
 }

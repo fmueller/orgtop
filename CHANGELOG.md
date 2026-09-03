@@ -25,6 +25,11 @@ workflow refuses to publish otherwise.
   marks it stale rather than narrowing or emptying it; an initial expansion
   failure polls no subset, and a successful expansion with no eligible
   repository is a current empty selection.
+- The shared header discloses an organization selection as
+  `selection: R repos · S scopes · X exact · G expanded`, appends the eligible
+  omission count and a remaining-page warning when a bounded expansion could
+  not admit everything, and marks a selection that a failed re-expansion left
+  behind as `SELECTION STALE` beside the primary state.
 - `--no-cache` runs a launch without any enrichment-cache operation, and
   `--reset-cache` is a standalone administrative action that exits without
   resolving a credential, making a request, or starting the terminal UI.
