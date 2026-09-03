@@ -1,13 +1,13 @@
 ---
 id: T-054-implement-scoped-snapshots-and-direct-aggregation
 title: Implement scoped snapshots and direct aggregation
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#explicit-scope-membership
 dependencies:
     - T-053-implement-explicit-scope-membership-outcomes
     - T-048-implement-organization-selection-snapshots
-updated_at: "2026-08-29T09:22:04Z"
+updated_at: "2026-09-03T11:39:52Z"
 ---
 
 # T-054-implement-scoped-snapshots-and-direct-aggregation Implement scoped snapshots and direct aggregation
@@ -33,3 +33,4 @@ Build immutable application snapshots containing normalized events, per-Scope ou
 ## Implementation Notes
 
 - Calculate before rendering and keep view models read-only.
+- 2026-09-03T11:39:42Z: verification pass
