@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"strings"
+	"unicode"
 
 	"github.com/fmueller/orgtop/internal/auth"
 	"github.com/fmueller/orgtop/internal/domain"
@@ -16,11 +18,14 @@ import (
 // (NFR-004); this is the only place they meet.
 type enrichmentAdapter struct {
 	coordinator enrichment.Coordinator
+	// degraded reports the sanitized cause of a launch that coordinates with
+	// no reusable cache at all. Every refresh of that launch reacquires its
+	// evidence from GitHub and reports the cause beside it (RG-005).
+	degraded string
 }
 
-// newEnrichmentAdapter binds the coordination to the public GitHub API. No
-// enrichment cache is wired yet, so every refresh acquires the evidence it
-// needs from GitHub under the same RG-009 bounds.
+// newEnrichmentAdapter binds the coordination to the public GitHub API. The
+// launch's cache binding is attached separately by enricherFor.
 func newEnrichmentAdapter(credential auth.Credential) enrichmentAdapter {
 	return enrichmentAdapter{coordinator: enrichment.Coordinator{Adapter: github.NewEnricher(credential)}}
 }
@@ -34,9 +39,32 @@ func (a enrichmentAdapter) Evidence(ctx context.Context, events []domain.Event) 
 	if err != nil {
 		return tui.Evidence{}, err
 	}
+	// A cache the launch could not open degrades every refresh the same way a
+	// failed store operation degrades one, so the first known cause wins.
+	degraded := result.Ledger.CacheDegraded
+	if degraded == "" {
+		degraded = a.degraded
+	}
 	return tui.Evidence{
 		Outcomes:      result.Outcomes,
-		CacheDegraded: result.Ledger.CacheDegraded,
+		CacheDegraded: degraded,
 		RetryAt:       result.Ledger.RetryAt,
 	}, nil
+}
+
+// cacheDegradation collapses a cache open cause to one header-safe line, the
+// same policy the coordinator's ledger applies to its own causes: cache errors
+// carry no credential value, and dropping the non-printable runes keeps a
+// relayed path from reaching the terminal as an escape sequence.
+func cacheDegradation(err error) string {
+	return strings.Join(strings.Fields(strings.Map(printable, err.Error())), " ")
+}
+
+// printable drops the runes a terminal must never receive verbatim, keeping
+// the blanks the caller collapses.
+func printable(character rune) rune {
+	if unicode.IsPrint(character) || unicode.IsSpace(character) {
+		return character
+	}
+	return -1
 }

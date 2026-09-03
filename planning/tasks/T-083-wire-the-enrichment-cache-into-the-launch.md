@@ -1,12 +1,12 @@
 ---
 id: T-083-wire-the-enrichment-cache-into-the-launch
 title: Wire the enrichment cache into the launch
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#changed-file-enrichment
 dependencies:
     - T-056-integrate-enrichment-into-atomic-refresh
-updated_at: "2026-09-03T12:57:17Z"
+updated_at: "2026-09-03T15:39:26Z"
 ---
 
 # T-083-wire-the-enrichment-cache-into-the-launch Wire the enrichment cache into the launch
@@ -47,3 +47,4 @@ Follow-up derived from T-056-integrate-enrichment-into-atomic-refresh's verifica
 
 - Keep the store lifecycle in the launch sequence; `internal/tui` must not learn
   about `internal/cache`.
+- 2026-09-03T15:39:18Z: verification pass

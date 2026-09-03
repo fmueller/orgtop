@@ -95,7 +95,7 @@ func (e Entry) expired(now time.Time) bool {
 // above the retained ceiling admits no hit or mutation at all; otherwise the
 // operation must fit its fixed reservation inside the temporary envelope.
 func (s *Store) admit(reservation int64) error {
-	used, err := s.PhysicalBytes()
+	used, err := s.physicalBytes()
 	if err != nil {
 		return err
 	}
@@ -282,6 +282,11 @@ func (s *Store) pendingTouches() int { return len(s.touched) }
 // freshness horizon. A failure is reported as cache degradation and never
 // invalidates a hit that was already proven.
 func (s *Store) Touch(ctx context.Context) error {
+	done, err := s.begin()
+	if err != nil {
+		return err
+	}
+	defer done()
 	if err := s.usable(); err != nil {
 		return err
 	}
@@ -334,6 +339,11 @@ func (s *Store) Touch(ctx context.Context) error {
 // MaintenanceDue reports whether expiry, either hard logical limit, or the
 // retained physical trigger requests the single bounded cleanup batch.
 func (s *Store) MaintenanceDue(ctx context.Context) (bool, error) {
+	done, err := s.begin()
+	if err != nil {
+		return false, err
+	}
+	defer done()
 	if err := s.usable(); err != nil {
 		return false, err
 	}
@@ -347,7 +357,7 @@ func (s *Store) MaintenanceDue(ctx context.Context) (bool, error) {
 	if counts.evidence >= s.limits.evidenceRecords || counts.paths >= s.limits.childRecords {
 		return true, nil
 	}
-	used, err := s.PhysicalBytes()
+	used, err := s.physicalBytes()
 	if err != nil {
 		return false, err
 	}
@@ -374,6 +384,11 @@ func (s *Store) expiryCutoff() int64 {
 // and stored-path byte budgets, so it never becomes an unbounded foreground
 // pause; a later refresh continues the same deterministic order.
 func (s *Store) Maintain(ctx context.Context) (Maintenance, error) {
+	done, err := s.begin()
+	if err != nil {
+		return Maintenance{}, err
+	}
+	defer done()
 	if err := s.usable(); err != nil {
 		return Maintenance{}, err
 	}
@@ -390,7 +405,7 @@ func (s *Store) Maintain(ctx context.Context) (Maintenance, error) {
 	if err != nil {
 		return Maintenance{}, err
 	}
-	usedBefore, err := s.PhysicalBytes()
+	usedBefore, err := s.physicalBytes()
 	if err != nil {
 		return Maintenance{}, err
 	}
@@ -421,7 +436,7 @@ func (s *Store) Maintain(ctx context.Context) (Maintenance, error) {
 	if err != nil {
 		return Maintenance{}, err
 	}
-	usedAfter, err := s.PhysicalBytes()
+	usedAfter, err := s.physicalBytes()
 	if err != nil {
 		return Maintenance{}, err
 	}
@@ -615,7 +630,7 @@ func (s *Store) compact(ctx context.Context) (bool, error) {
 	if busy == 0 && log == 0 {
 		return false, nil
 	}
-	used, err := s.PhysicalBytes()
+	used, err := s.physicalBytes()
 	if err != nil {
 		return false, err
 	}

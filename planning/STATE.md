@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-updated_at: "2026-09-03T14:33:53Z"
+updated_at: "2026-09-03T15:39:26Z"
 active_spec_version: v0.2.0
 active_spec_path: specs/v0.2.0.md
 current_task: ""
@@ -8,7 +8,7 @@ current_task_title: ""
 status_summary: idle
 blockers: []
 next_action: Select the next eligible task
-last_verification_result: pass for T-079-qualify-coalesced-commit-evidence-against-each at 2026-09-03T14:33:36Z
+last_verification_result: pass for T-083-wire-the-enrichment-cache-into-the-launch at 2026-09-03T15:39:18Z
 relevant_artifacts: []
 continuation_notes:
     - This repository is using manual Taskrail-style workflow scaffolding until the product replaces more of the bootstrap steps.
@@ -34,7 +34,7 @@ continuation_notes:
 
 ## Last Verification
 
-- pass for T-079-qualify-coalesced-commit-evidence-against-each at 2026-09-03T14:33:36Z
+- pass for T-083-wire-the-enrichment-cache-into-the-launch at 2026-09-03T15:39:18Z
 
 ## Next Action
 
@@ -50,8 +50,8 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 24
+- todo: 23
 - in_progress: 0
-- completed: 60
+- completed: 61
 - blocked: 0
 - cancelled: 0

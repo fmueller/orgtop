@@ -8,6 +8,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/fmueller/orgtop/internal/auth"
+	"github.com/fmueller/orgtop/internal/cache"
 	"github.com/fmueller/orgtop/internal/cli"
 	"github.com/fmueller/orgtop/internal/domain"
 	"github.com/fmueller/orgtop/internal/tui"
@@ -15,7 +16,43 @@ import (
 
 // launch runs the terminal UI against the public GitHub API.
 func launch(ctx context.Context, config cli.Config, credential auth.Credential) error {
-	return launchProgram(ctx, config.Scopes, newSourceAdapter(credential), expanderFor(credential, config), newEnrichmentAdapter(credential))
+	enricher, releaseCache := enricherFor(credential, config, openEnrichmentCache)
+	defer releaseCache()
+	return launchProgram(ctx, config.Scopes, newSourceAdapter(credential), expanderFor(credential, config), enricher)
+}
+
+// openEnrichmentCache opens the store at the fixed RG-005 default location.
+func openEnrichmentCache() (*cache.Store, error) {
+	location, err := cache.DefaultLocation()
+	if err != nil {
+		return nil, err
+	}
+	return cache.Open(location)
+}
+
+// enricherFor binds the changed-file evidence coordination the launch settles
+// evidence through. A launch without --no-cache opens the cache and binds it to
+// the coordinator, and the returned release closes the store when the program
+// ends. --no-cache performs no cache operation at all. A cache that cannot be
+// opened is degradation, not a failed launch: the coordination reacquires every
+// evidence from GitHub and the sanitized cause reaches the prepared CACHE
+// DEGRADED state rather than the process exit path (RG-005). open is the
+// process seam so the launch wiring is testable without the user's real cache
+// directory.
+func enricherFor(credential auth.Credential, config cli.Config, open func() (*cache.Store, error)) (enrichmentAdapter, func()) {
+	adapter := newEnrichmentAdapter(credential)
+	if config.NoCache {
+		return adapter, func() {}
+	}
+	store, err := open()
+	if err != nil {
+		adapter.degraded = cacheDegradation(err)
+		return adapter, func() {}
+	}
+	adapter.coordinator.Cache = store
+	// A close failure at program end is not a launch failure either: the store
+	// is disposable and its error has no remediation left to offer (RG-005).
+	return adapter, func() { _ = store.Close() }
 }
 
 // expanderFor returns the organization expansion the launch polls behind, or

@@ -36,7 +36,11 @@ workflow refuses to publish otherwise.
   a request, or starting the terminal UI. The removal renames the database
   before deleting its write-ahead sidecars, so no launch ever opens a fresh
   database beside stale write-ahead state, and it preserves a database OrgTop
-  does not own rather than deleting it.
+  does not own rather than deleting it. Every other launch opens the
+  enrichment cache at its default location and reuses fresh complete
+  changed-file evidence instead of re-requesting it; a cache that cannot be
+  opened keeps the launch running and reports it as degraded rather than
+  failing the start.
 - A launch recovers from a structurally corrupt enrichment cache once per
   process by discarding it and creating an empty one, and never serves the rows
   that happened to survive the damage.

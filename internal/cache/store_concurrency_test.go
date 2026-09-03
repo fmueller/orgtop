@@ -177,6 +177,53 @@ func TestStoreRecoversAnUncleanShutdown(t *testing.T) {
 	}
 }
 
+// TestCloseWaitsForOperationsStillInFlight proves the shutdown close is safe
+// beside a refresh goroutine still using the store: a launch closes its store
+// when the program ends while a refresh command goroutine may still be settling
+// its last cache operation, so Close waits for the operations in flight and
+// every later operation observes the closed store rather than racing its
+// released handles. Run with -race, the unsynchronized close is a data race.
+func TestCloseWaitsForOperationsStillInFlight(t *testing.T) {
+	t.Parallel()
+
+	store, err := Open(LocationIn(t.TempDir()))
+	if err != nil {
+		t.Fatalf("Open() error = %v", err)
+	}
+	entry := compareEntry(t, "src/main.go")
+	if err := store.Save(context.Background(), entry); err != nil {
+		t.Fatalf("Save() error = %v", err)
+	}
+
+	stop := make(chan struct{})
+	finished := make(chan struct{})
+	go func() {
+		defer close(finished)
+		for {
+			select {
+			case <-stop:
+				return
+			default:
+			}
+			_, _, _ = store.Lookup(context.Background(), entry.Key)
+		}
+	}()
+
+	if err := store.Close(); err != nil {
+		t.Fatalf("Close() error = %v", err)
+	}
+	close(stop)
+	select {
+	case <-finished:
+	case <-time.After(holdDuration):
+		t.Fatal("Close left a lookup goroutine stuck beside the closed store")
+	}
+
+	if _, ok, err := store.Lookup(context.Background(), entry.Key); ok || !errors.Is(err, ErrUnavailable) {
+		t.Errorf("Lookup(after Close) ok = %v error = %v, want the closed store", ok, err)
+	}
+}
+
 // waitForFile polls for the holder process's readiness marker a bounded number
 // of times, so the proof never reads the host clock to decide when to give up.
 func waitForFile(t *testing.T, path string) {

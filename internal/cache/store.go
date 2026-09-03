@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"slices"
+	"sync"
 	"time"
 
 	"github.com/fmueller/orgtop/internal/domain"
@@ -57,6 +58,14 @@ type Store struct {
 	db       *sql.DB
 	now      func() time.Time
 	limits   bounds
+	// mu excludes Close from the operations still using the handles. A launch
+	// closes its store when the program ends while a refresh goroutine may
+	// still be settling its last cache operation, so the close waits for the
+	// operations in flight and every later operation observes the closed
+	// store rather than racing its released handles.
+	mu sync.RWMutex
+	// closed records that Close spent this store's handles.
+	closed bool
 	// invalid holds the exact keys of rows that failed their invariants on
 	// read. Reads open no invalidation transaction, so the next bounded
 	// cleanup batch deletes exactly these records first.
@@ -208,9 +217,28 @@ func (s *Store) withBounds(limits bounds) *Store {
 }
 
 // Close releases the database handle and every lock region. No database handle
-// remains open after shared lifecycle access is released.
+// remains open after shared lifecycle access is released. It waits for the
+// operations still in flight, so a launch can close while a refresh goroutine is
+// still settling its last cache operation.
 func (s *Store) Close() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.closed {
+		return nil
+	}
+	s.closed = true
 	return s.closeHandles()
+}
+
+// begin admits one operation for its duration and reports how it ends. The
+// returned function releases the admission; a closed store admits none.
+func (s *Store) begin() (func(), error) {
+	s.mu.RLock()
+	if s.closed {
+		s.mu.RUnlock()
+		return nil, fmt.Errorf("%w: the store is closed", ErrUnavailable)
+	}
+	return s.mu.RUnlock, nil
 }
 
 // Location reports the fixed location this store uses.
@@ -520,6 +548,15 @@ func (s *Store) clock() time.Time {
 // lock, and any OrgTop-owned bootstrap or tombstone file. The metric is the sum
 // of apparent file lengths, not allocated filesystem blocks.
 func (s *Store) PhysicalBytes() (int64, error) {
+	done, err := s.begin()
+	if err != nil {
+		return 0, err
+	}
+	defer done()
+	return s.physicalBytes()
+}
+
+func (s *Store) physicalBytes() (int64, error) {
 	if s.root == nil {
 		return 0, fmt.Errorf("%w: the store is closed", ErrUnavailable)
 	}
@@ -563,6 +600,11 @@ func (s *Store) ownedSize(name string) (int64, error) {
 // refresh: the returned error reports the degradation cause and never turns
 // incomplete state into complete evidence.
 func (s *Store) Lookup(ctx context.Context, key Key) (Entry, bool, error) {
+	done, err := s.begin()
+	if err != nil {
+		return Entry{}, false, err
+	}
+	defer done()
 	if err := s.usable(); err != nil {
 		return Entry{}, false, err
 	}
@@ -697,6 +739,11 @@ func readPaths(ctx context.Context, transaction *sql.Tx, id int64, pathCount int
 // the previous complete record or the replacement, never working rows, and a
 // rolled-back write never invalidates the API evidence of the current refresh.
 func (s *Store) Save(ctx context.Context, entry Entry) error {
+	done, err := s.begin()
+	if err != nil {
+		return err
+	}
+	defer done()
 	if err := s.usable(); err != nil {
 		return err
 	}
