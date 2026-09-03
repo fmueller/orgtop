@@ -1,12 +1,12 @@
 ---
 id: T-030-decouple-readme-structure-from-doc-tests
 title: Decouple README structure from the toolchain documentation tests
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.2.0.md#fr-012-documentation
 dependencies:
     - T-042-consolidate-v0-2-0-implementation-readiness
-updated_at: "2026-08-25T20:28:18Z"
+updated_at: "2026-09-03T21:34:57Z"
 ---
 
 # T-030-decouple-readme-structure-from-doc-tests Decouple README structure from the toolchain documentation tests
@@ -125,3 +125,4 @@ what they promise.
 - The task exists because a v0.1.0-era gate outlived its release. Whatever
   replaces the deny list should be reviewed when the active spec changes, and
   the replacement should make that review obvious rather than implicit.
+- 2026-09-03T21:34:53Z: verification pass

@@ -120,6 +120,7 @@ freshness marker beside `POLLING`:
 | `ERROR` | No refresh has ever succeeded; the cause is shown. |
 | `STALE` | A later refresh failed; the last successful snapshot stays visible with its last-success time and the cause. |
 
+<!-- docs:stream-columns -->
 ### Stream columns
 
 Stream lists events newest first under a heading row that stays on screen while
