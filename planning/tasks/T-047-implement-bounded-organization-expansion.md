@@ -1,12 +1,12 @@
 ---
 id: T-047-implement-bounded-organization-expansion
 title: Implement bounded organization expansion
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#organization-selection
 dependencies:
     - T-073-implement-organization-selector-cli-parsing
-updated_at: "2026-08-29T09:22:04Z"
+updated_at: "2026-09-03T10:09:16Z"
 ---
 
 # T-047-implement-bounded-organization-expansion Implement bounded organization expansion
@@ -33,3 +33,4 @@ Implement the closed organization listing operation and expand selectors into de
 
 - An organization selector is not a domain Scope.
 - Do not add organization aggregate rows.
+- 2026-09-03T10:09:11Z: verification pass

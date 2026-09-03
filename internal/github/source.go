@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/fmueller/orgtop/internal/auth"
@@ -21,10 +22,15 @@ const (
 	defaultBaseURL  = "https://api.github.com"
 	acceptMediaType = "application/vnd.github+json"
 	apiVersion      = "2026-03-10"
-	perPage         = "100"
+	pageSize        = 100
 	userAgent       = "orgtop/0.1.0"
 	requestTimeout  = 30 * time.Second
 )
+
+// perPage is the documented page size as the request query spells it. It is
+// derived from pageSize so the requested size and every bound stated in records
+// can never drift apart.
+var perPage = strconv.Itoa(pageSize)
 
 // bodyDrainLimit bounds how much of a response body the caller stopped reading,
 // whether untouched or partially read, is consumed so the idle keep-alive
@@ -188,8 +194,14 @@ func setDocumentedHeaders(request *http.Request, credential auth.Credential) {
 
 // do sends the documented bounded events request for one repository.
 func (s Source) do(ctx context.Context, repository domain.Repository) (*http.Response, error) {
-	endpoint := fmt.Sprintf("%s/repos/%s/%s/events?per_page=%s",
-		s.baseURL(), url.PathEscape(repository.Owner()), url.PathEscape(repository.Name()), perPage)
+	return s.send(ctx, fmt.Sprintf("%s/repos/%s/%s/events?per_page=%s",
+		s.baseURL(), url.PathEscape(repository.Owner()), url.PathEscape(repository.Name()), perPage))
+}
+
+// send dispatches one documented GET request to an absolute API endpoint, so
+// every source operation carries the same headers and the same sanitized
+// transport failure.
+func (s Source) send(ctx context.Context, endpoint string) (*http.Response, error) {
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
 		return nil, fmt.Errorf("%w: the request could not be built", ErrTransport)
