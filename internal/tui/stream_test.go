@@ -77,10 +77,13 @@ func streamModel(t *testing.T, events []domain.Event) Model {
 
 	model := newModel(t, "acme/backend", "acme/frontend")
 	model.mode = ModeStream
-	model.state.Snapshot = domain.NewSnapshot(scope, []domain.RepositoryActivity{
+	model.state.Scopes = scope
+	activities := []domain.RepositoryActivity{
 		testActivity(t, "acme/backend", backend...),
 		testActivity(t, "acme/frontend", frontend...),
-	})
+	}
+	model.state.Snapshot = domain.NewSnapshot(scope, activities)
+	model.state.Scoped = domain.NewScopedSnapshot(scope, scopedActivities(activities))
 	model.state.Freshness = FreshnessCurrent
 	model.state.LastSuccess = streamBase
 	return model
@@ -277,12 +280,15 @@ func TestStreamClampsTheWindowAfterRefreshShrinkage(t *testing.T) {
 	model = scrolled(t, model, "pgdown", "pgdown", "pgdown")
 
 	shrunk := numberedEvents(t, 3)
-	model, _ = apply(t, model, refreshedMsg{polled: true, result: Result{
-		Repositories: []domain.RepositoryActivity{
-			testActivity(t, "acme/backend", shrunk...),
-			testActivity(t, "acme/frontend"),
-		},
-	}})
+	activities := []domain.RepositoryActivity{
+		testActivity(t, "acme/backend", shrunk...),
+		testActivity(t, "acme/frontend"),
+	}
+	model, _ = apply(t, model, refreshedMsg{
+		polled:   true,
+		result:   Result{Repositories: activities},
+		evidence: retainedEvidence(model.state.Scopes, activities),
+	})
 
 	rows := eventRows(t, model.View().Content)
 	if len(rows) != len(shrunk) {

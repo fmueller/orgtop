@@ -132,15 +132,20 @@ names, so both spellings are listed:
 | `age` | `age` | How long before the last successful refresh the event happened |
 | `repository` | `repo` | The repository the event belongs to |
 | `category` | `type` | The event category as text: `push`, `pull request`, `review`, `comment`, or `other`, shortened to `pr`, `rev`, `com`, and `oth` |
+| `scopes` | `scopes` | Which selected Scopes the event belongs to, by their `R1`/`P2` tokens: `in` lists the confirmed members, `unresolved` lists the path Scopes whose membership stayed undecided, `~` marks a member proven from an open pull request's current files |
 | `actor · description` | `detail` | Who acted, and a concise description of what the event did |
 
 Times are ages, not clock times. A row reading `3d` is the event's
 age at the last successful refresh the header reports, so it stays put while a
 later failed refresh leaves the header `STALE`.
 
+An event no selected Scope confirmed and no path Scope left undecided keeps no
+row. A narrow terminal shortens the Scope column to the counts it cannot spell
+in full, so no membership disappears without being counted.
+
 Above the headings Stream states how much activity it is showing: the number of
-events in the current snapshot and, when the 500-event bound discarded older
-activity, that the list stops at that limit. Content too wide for the terminal
+events it lists and, when the 500-event bound discarded older activity, that
+the list stops at that limit. Content too wide for the terminal
 ends in `…`, marking that row as shortened rather than complete.
 
 ### Controls

@@ -187,14 +187,16 @@ func (s ScopedSnapshot) Events() []Event {
 	return events
 }
 
-// StreamEvents returns the retained events Stream includes under RG-004: an
-// event a Scope confirmed, or one left unknown by a path Scope and therefore
-// investigatory context. An event only not-member everywhere is omitted.
-func (s ScopedSnapshot) StreamEvents() []Event {
-	events := make([]Event, 0, len(s.events))
+// StreamEvents returns the retained events Stream includes under RG-004, with
+// the per-Scope outcomes Stream renders as row context: an event a Scope
+// confirmed, or one left unknown by a path Scope and therefore investigatory
+// context. An event only not-member everywhere is omitted.
+func (s ScopedSnapshot) StreamEvents() []ScopedEvent {
+	events := make([]ScopedEvent, 0, len(s.events))
 	for _, scoped := range s.events {
 		if included(scoped.Memberships) {
-			events = append(events, scoped.Event)
+			scoped.Memberships = slices.Clone(scoped.Memberships)
+			events = append(events, scoped)
 		}
 	}
 	return events

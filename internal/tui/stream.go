@@ -15,6 +15,10 @@ import (
 // the sparsest spelling; the shared body truncates whatever still overflows.
 const minDetailWidth = 20
 
+// streamGaps is the number of column gaps one full row holds: between the age,
+// repository, category, and Scope context columns, and before the detail.
+const streamGaps = 4
+
 // streamChrome is the number of content-area lines Stream reserves for its own
 // chrome: the coverage disclosure and the column headings. FR-007 lets a view
 // reserve further fixed lines of its own beyond the shared header and footer;
@@ -68,13 +72,13 @@ func (s stream) scrolled(keystroke string, state State, width, height int) strea
 // event row, dropping the coverage disclosure before the column headings that
 // name what the remaining row means (FR-010, A-010).
 func streamContent(state State, width, height int) (chrome []string, lines []string, rowHeight int) {
-	events := state.Snapshot.Events()
-	if line := streamStateLine(state.Freshness, events); line != "" {
+	events := state.Scoped.StreamEvents()
+	if line := streamStateLine(state.Freshness, len(events)); line != "" {
 		return nil, []string{line}, height
 	}
 
-	laid := layoutFittingWidth(events, state.LastSuccess, width)
-	chrome = []string{streamCoverage(len(events), state.Snapshot.Truncated()), laid.heading.String()}
+	laid := layoutFittingWidth(events, state.Scopes.Tokens(), state.LastSuccess, width)
+	chrome = []string{streamCoverage(len(events), state.Scoped.Truncated()), laid.heading.String()}
 	// A non-positive height is unbounded and holds all of it; a bounded one
 	// gives up chrome lines, the disclosure first, to keep one event row.
 	for height > 0 && len(chrome) >= height {
@@ -97,14 +101,14 @@ func streamCoverage(count int, truncated bool) string {
 
 // streamStateLine returns the single explicit line Stream renders in place of
 // its rows, or the empty string when the snapshot has events to lay out.
-func streamStateLine(freshness Freshness, events []domain.Event) string {
+func streamStateLine(freshness Freshness, events int) string {
 	switch freshness {
 	case FreshnessLoading:
 		return "Loading recent events…"
 	case FreshnessError:
 		return "Recent events are unavailable"
 	}
-	if len(events) == 0 {
+	if events == 0 {
 		return noRecentActivity
 	}
 	return ""
@@ -130,6 +134,7 @@ type streamHeadings struct {
 	age      string
 	identity string
 	category string
+	scope    string
 	detail   string
 }
 
@@ -154,11 +159,11 @@ func (l streamLayout) name(category domain.Category) string {
 var streamLayouts = []streamLayout{
 	{
 		push: "push", pullRequest: "pull request", review: "review", comment: "comment", other: "other",
-		headings: streamHeadings{age: "age", identity: "repository", category: "category", detail: "actor" + separator + "description"},
+		headings: streamHeadings{age: "age", identity: "repository", category: "category", scope: "scopes", detail: "actor" + separator + "description"},
 	},
 	{
 		push: "push", pullRequest: "pr", review: "rev", comment: "com", other: "oth",
-		headings: streamHeadings{age: "age", identity: "repo", category: "type", detail: "detail"},
+		headings: streamHeadings{age: "age", identity: "repo", category: "type", scope: "scopes", detail: "detail"},
 	},
 }
 
@@ -205,15 +210,15 @@ func (l laidOutStream) required() int {
 
 // layoutFittingWidth returns the widest row layout that fits the width. Every
 // snapshot event keeps a row; the shared body truncates what still overflows.
-func layoutFittingWidth(events []domain.Event, lastSuccess time.Time, width int) laidOutStream {
+func layoutFittingWidth(events []domain.ScopedEvent, tokens map[domain.ScopeIdentity]string, lastSuccess time.Time, width int) laidOutStream {
 	sparsest := len(streamLayouts) - 1
 	for _, layout := range streamLayouts[:sparsest] {
-		laid := layoutStream(events, lastSuccess, layout)
+		laid := layoutStream(events, tokens, lastSuccess, layout, width)
 		if fits(laid.required(), width) {
 			return laid
 		}
 	}
-	return layoutStream(events, lastSuccess, streamLayouts[sparsest])
+	return layoutStream(events, tokens, lastSuccess, streamLayouts[sparsest], width)
 }
 
 // renderStreamRows renders the laid-out rows as body lines.
@@ -230,33 +235,70 @@ func renderStreamRows(rows []streamRow) []string {
 // name. The headings share those widths, so they stay above the values they
 // name. Ages are right-aligned in their own column so the snapshot's
 // reverse-chronological order reads straight down it (FR-010).
-func layoutStream(events []domain.Event, lastSuccess time.Time, layout streamLayout) laidOutStream {
+func layoutStream(events []domain.ScopedEvent, tokens map[domain.ScopeIdentity]string, lastSuccess time.Time, layout streamLayout, width int) laidOutStream {
 	// The headings lead every column, so they are measured and laid out as the
 	// first row and split back off once the widths are shared.
 	ages := []string{layout.headings.age}
 	identities := []string{layout.headings.identity}
 	categories := []string{layout.headings.category}
 	details := []string{layout.headings.detail}
-	for _, event := range events {
-		ages = append(ages, eventAge(event.OccurredAt, lastSuccess))
-		identities = append(identities, event.Repository.String())
-		categories = append(categories, layout.name(event.Category))
-		details = append(details, streamDetail(event))
+	// The heading names the Scope column rather than holding a context of its
+	// own, so only the event rows are prepared here and the column adds it.
+	contexts := make([]scopeContext, 0, len(events))
+	for _, scoped := range events {
+		ages = append(ages, eventAge(scoped.Event.OccurredAt, lastSuccess))
+		identities = append(identities, scoped.Event.Repository.String())
+		categories = append(categories, layout.name(scoped.Event.Category))
+		details = append(details, streamDetail(scoped.Event))
+		contexts = append(contexts, newScopeContext(scoped.Memberships, tokens))
 	}
 	ageWidth, identityWidth, categoryWidth := widestWidth(ages), widestWidth(identities), widestWidth(categories)
+	scopes := scopeColumn(contexts, layout.headings.scope, scopeBudget(width, ageWidth+identityWidth+categoryWidth))
+	scopeWidth := widestWidth(scopes)
 
 	laid := make([]streamRow, 0, len(ages))
 	for index := range ages {
-		laid = append(laid, streamRow{
-			columns: strings.Join([]string{
-				padLeft(ages[index], ageWidth),
-				padRight(identities[index], identityWidth),
-				padRight(categories[index], categoryWidth),
-			}, rowGap),
-			detail: details[index],
-		})
+		columns := []string{
+			padLeft(ages[index], ageWidth),
+			padRight(identities[index], identityWidth),
+			padRight(categories[index], categoryWidth),
+		}
+		if scopes != nil {
+			columns = append(columns, padRight(scopes[index], scopeWidth))
+		}
+		laid = append(laid, streamRow{columns: strings.Join(columns, rowGap), detail: details[index]})
 	}
 	return laidOutStream{heading: laid[0], rows: laid[1:]}
+}
+
+// scopeBudget is how many cells the Scope context column may use: what the
+// width has left once the aligned columns and the gaps between all five of them
+// have taken theirs. The free-form actor and description are the row's
+// secondary detail and yield to Scope context rather than reserving cells ahead
+// of it, so a constrained row loses description before it loses membership
+// (FR-011). A non-positive width is unbounded and renders the complete context.
+func scopeBudget(width, columns int) int {
+	if width <= 0 {
+		return unbounded
+	}
+	return max(0, width-columns-streamGaps*lipgloss.Width(rowGap))
+}
+
+// scopeColumn renders the column heading and each row's Scope context within
+// the budget, led by the heading like every other column so the rows stay
+// aligned against it. A budget no row's context fits in yields no column at all,
+// so a width that cannot carry Scope context spends nothing on an empty one; the
+// prepared membership is unchanged and reappears when the width allows.
+func scopeColumn(contexts []scopeContext, heading string, budget int) []string {
+	rendered := make([]string, 0, len(contexts)+1)
+	rendered = append(rendered, shorten(heading, budget))
+	for _, context := range contexts {
+		rendered = append(rendered, context.render(budget))
+	}
+	if widestWidth(rendered[1:]) == 0 {
+		return nil
+	}
+	return rendered
 }
 
 // streamDetail joins the optional actor and description of one event, so an

@@ -1,12 +1,12 @@
 ---
 id: T-058-render-scope-context-in-stream
 title: Render Scope context in Stream
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.2.0.md#scope-aware-overview-and-stream
 dependencies:
     - T-056-integrate-enrichment-into-atomic-refresh
-updated_at: "2026-08-29T09:22:04Z"
+updated_at: "2026-09-03T22:25:46Z"
 ---
 
 # T-058-render-scope-context-in-stream Render Scope context in Stream
@@ -32,3 +32,4 @@ Extend Stream with deterministic, bounded Scope context while preserving reverse
 ## Implementation Notes
 
 - Render prepared membership context only; do not perform matching in Stream.
+- 2026-09-03T22:25:41Z: verification pass

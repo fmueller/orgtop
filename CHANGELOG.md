@@ -50,6 +50,12 @@ workflow refuses to publish otherwise.
 - Bare `--path` patterns turn their `--repo` selections into filtered path
   Scopes rather than whole-repository Scopes. Repository-only invocations keep
   their v0.1 meaning.
+- Stream rows name the Scopes an event belongs to: `in` lists the confirmed
+  members by their `R1`/`P2` tokens, `unresolved` lists the path Scopes whose
+  membership stayed undecided, and `~` marks a member proven from an open pull
+  request's current files. An event no Scope confirmed and none left undecided
+  no longer takes a row, and a narrow terminal counts the Scopes it cannot
+  spell rather than dropping them.
 
 ### Fixed
 

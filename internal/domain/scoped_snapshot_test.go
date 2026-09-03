@@ -216,8 +216,23 @@ func TestScopedSnapshotStreamOmitsEventsThatAreOnlyNotMember(t *testing.T) {
 		pushEvidence(t, "3", 3, "owner/repo", domain.RateLimitedOutcome(time.Date(2026, time.August, 22, 11, 0, 0, 0, time.UTC))),
 	)})
 
-	assertIDs(t, snapshot.StreamEvents(), []string{"3", "1"})
+	included := snapshot.StreamEvents()
+	assertIDs(t, eventsOf(included), []string{"3", "1"})
 	assertIDs(t, snapshot.Events(), []string{"3", "2", "1"})
+	for index, event := range included {
+		if len(event.Memberships) != 1 {
+			t.Errorf("included event %d carries %d memberships, want the prepared per-Scope outcome", index, len(event.Memberships))
+		}
+	}
+}
+
+// eventsOf returns the normalized events of the prepared scoped rows.
+func eventsOf(scoped []domain.ScopedEvent) []domain.Event {
+	events := make([]domain.Event, 0, len(scoped))
+	for _, event := range scoped {
+		events = append(events, event.Event)
+	}
+	return events
 }
 
 // TestScopedSnapshotDropsCanceledEvidence guards RG-004: canceled work is never
