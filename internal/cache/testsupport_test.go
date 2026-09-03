@@ -58,6 +58,9 @@ func execDatabase(t *testing.T, location Location, statements ...string) {
 			t.Fatalf("exec %q error = %v", statement, err)
 		}
 	}
+	if err := db.Close(); err != nil {
+		t.Fatalf("Close() error = %v", err)
+	}
 }
 
 // statSize reports one file's apparent length.
