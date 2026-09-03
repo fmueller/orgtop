@@ -32,7 +32,7 @@ func ParseRepository(value string) (Repository, error) {
 	if !found || strings.Contains(name, "/") {
 		return Repository{}, fmt.Errorf("%w %q: expected exactly one owner/repository separator", ErrInvalidRepository, value)
 	}
-	if err := validateOwner(owner); err != nil {
+	if err := ValidateOwner(owner); err != nil {
 		return Repository{}, fmt.Errorf("%w %q: %w", ErrInvalidRepository, value, err)
 	}
 	if err := validateName(name); err != nil {
@@ -53,7 +53,10 @@ func (r Repository) String() string { return r.owner + "/" + r.name }
 // Key returns the lowercase matching key used for case-insensitive comparison.
 func (r Repository) Key() string { return strings.ToLower(r.String()) }
 
-func validateOwner(owner string) error {
+// ValidateOwner reports whether owner satisfies the lexical GitHub owner
+// grammar. CLI selection inputs that name an owner without naming a repository
+// share this grammar rather than restating it.
+func ValidateOwner(owner string) error {
 	if owner == "" {
 		return errors.New("owner is empty")
 	}

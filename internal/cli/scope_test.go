@@ -347,12 +347,12 @@ func TestParseArgsReportsTheFirstMalformedArgument(t *testing.T) {
 	}{
 		{
 			name: "a malformed path precedes a malformed repository",
-			args: []string{"--repo", "acme/api", "--path", "src//api", "--repo", "acme/*"},
+			args: []string{"--repo", "acme/api", "--path", "src//api", "--repo", "acme/ap*"},
 			want: "invalid path pattern",
 		},
 		{
 			name: "a malformed repository precedes a malformed path",
-			args: []string{"--repo", "acme/*", "--path", "src//api"},
+			args: []string{"--repo", "acme/ap*", "--path", "src//api"},
 			want: "invalid repository identifier",
 		},
 	}

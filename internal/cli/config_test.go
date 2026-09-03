@@ -86,7 +86,9 @@ func TestParseArgsRejectsInvalidRepositoryValues(t *testing.T) {
 		{name: "empty owner", value: "/backend", reason: "owner is empty"},
 		{name: "empty repository", value: "acme/", reason: "repository is empty"},
 		{name: "extra separator", value: "acme/team/backend", reason: "expected exactly one owner/repository separator"},
-		{name: "glob repository", value: "acme/*", reason: `repository contains an unsupported character "*"`},
+		// A whole-component "acme/*" is RG-010's organization-selector alias
+		// rather than a repository, so the invalid vector is a partial wildcard.
+		{name: "partial glob repository", value: "acme/ap*", reason: `repository contains an unsupported character "*"`},
 		{name: "glob owner", value: "*/backend", reason: `owner contains an unsupported character "*"`},
 		{name: "exclusion pattern", value: "!acme/backend", reason: `owner contains an unsupported character "!"`},
 		{name: "url form", value: "https://github.com/acme/backend", reason: "expected exactly one owner/repository separator"},
@@ -111,11 +113,11 @@ func TestParseArgsRejectsInvalidRepositoryValues(t *testing.T) {
 
 func TestParseArgsRejectsFirstInvalidValueOfSeveral(t *testing.T) {
 	var output bytes.Buffer
-	_, err := cli.ParseArgs("orgtop", []string{"--repo", "acme/backend", "--repo", "acme/*"}, &output)
+	_, err := cli.ParseArgs("orgtop", []string{"--repo", "acme/backend", "--repo", "acme/ap*"}, &output)
 	if !errors.Is(err, domain.ErrInvalidRepository) {
 		t.Fatalf("ParseArgs error = %v, want %v", err, domain.ErrInvalidRepository)
 	}
-	if got := err.Error(); !strings.Contains(got, "acme/*") {
+	if got := err.Error(); !strings.Contains(got, "acme/ap*") {
 		t.Errorf("error %q does not name the rejected value", got)
 	}
 }
@@ -171,7 +173,7 @@ func TestParseArgsReportsItsOwnRejectionsExactlyOnce(t *testing.T) {
 		args []string
 	}{
 		{name: "no repository", args: nil},
-		{name: "invalid repository", args: []string{"--repo", "acme/*"}},
+		{name: "invalid repository", args: []string{"--repo", "acme/ap*"}},
 		{name: "positional argument", args: []string{"--repo", "acme/backend", "extra"}},
 		{name: "unknown flag", args: []string{"--repos", "acme/backend"}},
 	}

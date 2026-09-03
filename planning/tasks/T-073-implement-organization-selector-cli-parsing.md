@@ -1,12 +1,12 @@
 ---
 id: T-073-implement-organization-selector-cli-parsing
 title: Implement organization-selector CLI parsing
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#organization-selection
 dependencies:
     - T-045-implement-unified-scope-cli-parsing
-updated_at: "2026-08-29T09:55:42Z"
+updated_at: "2026-09-03T07:54:59Z"
 ---
 
 # T-073-implement-organization-selector-cli-parsing Implement organization-selector CLI parsing
@@ -34,3 +34,4 @@ Implement the RG-010 organization-selector syntax as a CLI selection input that 
 
 - Continue using the standard library flag approach.
 - Do not perform network expansion during parsing.
+- 2026-09-03T07:54:54Z: verification pass

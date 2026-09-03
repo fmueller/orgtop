@@ -6,12 +6,14 @@ import (
 	"github.com/fmueller/orgtop/internal/domain"
 )
 
-// selectionKind names the two selection flags whose values expand into Scopes.
+// selectionKind names the selection flags whose values expand into Scopes or,
+// for an organization selector, into expansion input.
 type selectionKind int
 
 const (
 	repositorySelection selectionKind = iota
 	pathSelectionKind
+	organizationSelection
 )
 
 // selectionValue is one requested selection flag value in argument order, so
@@ -41,25 +43,21 @@ func (f selectionFlag) Set(value string) error {
 
 // requested is the validated, order-preserving expansion input: the distinct
 // repositories of exact --repo values, the distinct bare patterns that filter
-// them, and the qualified path Scopes that stand alone.
+// them, the qualified path Scopes that stand alone, and the distinct
+// organization selectors, which produce no Scope here (RG-010).
 type requested struct {
-	repositories []domain.Repository
-	bare         []domain.PathMatcher
-	qualified    []domain.Scope
+	repositories  []domain.Repository
+	bare          []domain.PathMatcher
+	qualified     []domain.Scope
+	organizations []OrganizationSelector
 }
 
-// expandSelections validates every selection value in argument order and expands
-// the closed RG-001 composition into a deduplicated ScopeSet.
-func expandSelections(values selections) (domain.ScopeSet, error) {
-	requested, err := validateSelections(values)
-	if err != nil {
-		return domain.ScopeSet{}, err
-	}
+// expandSelections applies the post-parse rejection classes in their closed
+// RG-001 order and expands the validated composition into a deduplicated
+// ScopeSet.
+func expandSelections(requested requested) (domain.ScopeSet, error) {
 	if len(requested.bare) > 0 && len(requested.repositories) == 0 {
 		return domain.ScopeSet{}, ErrBarePathWithoutRepository
-	}
-	if len(requested.repositories) == 0 && len(requested.qualified) == 0 {
-		return domain.ScopeSet{}, ErrMissingRepository
 	}
 	// Bounding the expansion inputs before the product keeps a capacity
 	// diagnostic deterministic and cheap: every count here is already a lower
@@ -67,9 +65,20 @@ func expandSelections(values selections) (domain.ScopeSet, error) {
 	if err := requested.checkCapacity(); err != nil {
 		return domain.ScopeSet{}, err
 	}
+	// Repository/Scope capacity outranks organization-selector capacity, so the
+	// selector bound is the last capacity class to report (RG-001).
+	if err := checkOrganizationCapacity(requested.organizations); err != nil {
+		return domain.ScopeSet{}, err
+	}
 	scopes, err := requested.expand()
 	if err != nil {
 		return domain.ScopeSet{}, err
+	}
+	// An organization-only invocation selects nothing yet: it passes validation
+	// and enters the asynchronous first-expansion state, so it carries an empty
+	// Scope set rather than a rejected one (RG-010).
+	if len(scopes) == 0 {
+		return domain.ScopeSet{}, nil
 	}
 	return domain.NewScopeSet(scopes)
 }
@@ -79,41 +88,99 @@ func expandSelections(values selections) (domain.ScopeSet, error) {
 // retaining the first requested spelling.
 func validateSelections(values selections) (requested, error) {
 	var out requested
-	repositoryKeys := make(map[string]struct{})
-	patterns := make(map[string]struct{})
-	qualified := make(map[domain.ScopeIdentity]struct{})
+	seen := seenKeys{
+		repositories:  make(map[string]struct{}),
+		patterns:      make(map[string]struct{}),
+		qualified:     make(map[domain.ScopeIdentity]struct{}),
+		organizations: make(map[string]struct{}),
+	}
 
 	for _, selection := range values {
-		if selection.kind == repositorySelection {
-			repository, err := domain.ParseRepository(selection.value)
-			if err != nil {
-				return requested{}, fmt.Errorf("--%s: %w", repoFlag, err)
-			}
-			if firstSeen(repositoryKeys, repository.Key()) {
-				out.repositories = append(out.repositories, repository)
-			}
-			continue
+		// The reported flag is the one that carried the value, so the alias
+		// names --repo even though it records an organization selector.
+		var (
+			flagName string
+			err      error
+		)
+		switch selection.kind {
+		case organizationSelection:
+			flagName = orgFlag
+			err = out.addOrganization(seen, selection.value, false)
+		case repositorySelection:
+			flagName = repoFlag
+			err = out.addRepository(seen, selection.value)
+		default:
+			flagName = pathFlag
+			err = out.addPath(seen, selection.value)
 		}
-
-		path, err := parsePathValue(selection.value)
 		if err != nil {
-			return requested{}, fmt.Errorf("--%s: %w", pathFlag, err)
-		}
-		if !path.qualified {
-			if firstSeen(patterns, path.matcher.Identity()) {
-				out.bare = append(out.bare, path.matcher)
-			}
-			continue
-		}
-		scope, err := domain.NewPathScope(path.repository, path.matcher)
-		if err != nil {
-			return requested{}, fmt.Errorf("--%s: %w", pathFlag, err)
-		}
-		if firstSeen(qualified, scope.Identity()) {
-			out.qualified = append(out.qualified, scope)
+			return requested{}, fmt.Errorf("--%s: %w", flagName, err)
 		}
 	}
 	return out, nil
+}
+
+// seenKeys carries the first-occurrence keys of every expansion input, so each
+// selection kind deduplicates against the run it belongs to.
+type seenKeys struct {
+	repositories  map[string]struct{}
+	patterns      map[string]struct{}
+	qualified     map[domain.ScopeIdentity]struct{}
+	organizations map[string]struct{}
+}
+
+// addRepository records one exact --repo value, or the organization selector
+// its wildcard alias names. The alias is recognized before exact validation, so
+// the wildcard repository component is grammar rather than a malformed name.
+func (r *requested) addRepository(seen seenKeys, value string) error {
+	if organization, alias := organizationAlias(value); alias {
+		return r.addOrganization(seen, organization, true)
+	}
+	repository, err := domain.ParseRepository(value)
+	if err != nil {
+		return err
+	}
+	if firstSeen(seen.repositories, repository.Key()) {
+		r.repositories = append(r.repositories, repository)
+	}
+	return nil
+}
+
+// addPath records one --path value: a bare pattern that filters every exact
+// repository, or a qualified path Scope that stands alone.
+func (r *requested) addPath(seen seenKeys, value string) error {
+	path, err := parsePathValue(value)
+	if err != nil {
+		return err
+	}
+	if !path.qualified {
+		if firstSeen(seen.patterns, path.matcher.Identity()) {
+			r.bare = append(r.bare, path.matcher)
+		}
+		return nil
+	}
+	scope, err := domain.NewPathScope(path.repository, path.matcher)
+	if err != nil {
+		return err
+	}
+	if firstSeen(seen.qualified, scope.Identity()) {
+		r.qualified = append(r.qualified, scope)
+	}
+	return nil
+}
+
+// addOrganization validates one organization selector and records it unless an
+// earlier occurrence of either spelling already claimed the organization. Both
+// spellings share one first-occurrence sequence in argument order (RG-010).
+func (r *requested) addOrganization(seen seenKeys, value string, alias bool) error {
+	selector, err := parseOrganization(value, alias)
+	if err != nil {
+		return err
+	}
+	if firstSeen(seen.organizations, selector.Key()) {
+		r.organizations = append(r.organizations, selector)
+	}
+	return nil
 }
 
 // firstSeen reports whether key is new to seen and records it when it is, so a
