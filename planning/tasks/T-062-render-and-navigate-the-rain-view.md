@@ -34,3 +34,12 @@ Add Rain as the third primary Bubble Tea view using prepared deterministic Rain 
 ## Implementation Notes
 
 - Rendering consumes prepared state and performs no placement, recency, matching, or aggregation calculations.
+- Draw category glyphs from the shared `categoryVocabulary` in
+  `internal/tui/category.go`; do not add a Rain-local glyph or spelling
+  (found while completing T-059).
+- RG-008 puts two Rain-only obligations behind this task's "no-color
+  usefulness": the complete glyph-to-text legend whenever dimensions permit,
+  and the `recency: N new · R recent · A aging` context, shortened to
+  `age N/R/A`, whenever the effective profile cannot render distinct intensity
+  attributes. A constrained Rain that hides the legend keeps its hidden-legend
+  indicator under RG-012.

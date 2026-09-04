@@ -55,3 +55,8 @@ Follow-up derived from T-058-render-scope-context-in-stream's verification or di
   T-065-implement-deterministic-responsive-overflow; sequence accordingly.
 - Reuse the prepared Scope tokens and `scopeContext` groups rather than
   re-deriving membership in the detail renderer.
+- The narrow Stream category column is about four cells wider than when this
+  task was written: T-059 replaced the `pr`/`rev`/`com`/`oth` abbreviations with
+  RG-008's shared `pull`/`review`/`comment`/`other` text, so budget the detail
+  column against the current width rather than the old one
+  (found while completing T-059).
