@@ -114,7 +114,7 @@ func TestInitRendersLoadingAndStartsRefreshThroughACommand(t *testing.T) {
 	source := &fakeSource{outcomes: []outcome{{result: activity(t, "acme/backend")}}}
 	model := lifecycle(t, source, fixedInstant, &recorder{}, "acme/backend")
 
-	cmd := model.Init()
+	cmd := initRefresh(t, model)
 	if cmd == nil {
 		t.Fatal("Init returned no command, want the first refresh")
 	}
@@ -134,7 +134,7 @@ func TestInitRendersLoadingAndStartsRefreshThroughACommand(t *testing.T) {
 func TestShellStaysResponsiveWhileARefreshIsPending(t *testing.T) {
 	source := &fakeSource{outcomes: []outcome{{result: activity(t, "acme/backend")}}}
 	model := lifecycle(t, source, fixedInstant, &recorder{}, "acme/backend")
-	model.Init()
+	initRefresh(t, model)
 
 	model, _ = apply(t, model, tea.WindowSizeMsg{Width: narrowWidth, Height: narrowHeight}, press("2"))
 	if model.mode != ModeStream {
@@ -159,7 +159,7 @@ func TestCompleteSuccessPublishesTheSnapshotAndRecordsFreshness(t *testing.T) {
 	source := &fakeSource{outcomes: []outcome{{result: activity(t, "acme/backend", "acme/frontend")}}}
 	model := lifecycle(t, source, at, &recorder{}, "acme/backend", "acme/frontend")
 
-	model, _ = run(t, model, model.Init())
+	model, _ = run(t, model, initRefresh(t, model))
 
 	if model.state.Freshness != FreshnessCurrent {
 		t.Errorf("freshness is %v after a complete success, want FreshnessCurrent", model.state.Freshness)
@@ -184,7 +184,7 @@ func TestEmptySuccessStillRecordsOneLastSuccess(t *testing.T) {
 	source := &fakeSource{outcomes: []outcome{{result: empty}}}
 	model := lifecycle(t, source, at, &recorder{}, "acme/backend")
 
-	model, _ = run(t, model, model.Init())
+	model, _ = run(t, model, initRefresh(t, model))
 
 	if model.state.Freshness != FreshnessCurrent {
 		t.Errorf("freshness is %v after an empty success, want FreshnessCurrent", model.state.Freshness)
@@ -204,7 +204,7 @@ func TestFirstFailureRendersTheErrorStateWithoutASnapshot(t *testing.T) {
 	source := &fakeSource{outcomes: []outcome{{err: errors.New("refreshing acme/backend: github rate limit reached")}}}
 	model := lifecycle(t, source, fixedInstant, &recorder{}, "acme/backend")
 
-	model, _ = run(t, model, model.Init())
+	model, _ = run(t, model, initRefresh(t, model))
 
 	if model.state.Freshness != FreshnessError {
 		t.Errorf("freshness is %v after the first failure, want FreshnessError", model.state.Freshness)
@@ -231,7 +231,7 @@ func TestLaterFailureKeepsTheSnapshotUnderStale(t *testing.T) {
 	}}
 	model := lifecycle(t, source, at, &recorder{}, "acme/backend")
 
-	model, cmd := run(t, model, model.Init())
+	model, cmd := run(t, model, initRefresh(t, model))
 	model, cmd = apply(t, model, cmd())
 	model, _ = run(t, model, cmd)
 
@@ -260,7 +260,7 @@ func TestCompleteSuccessAfterAFailureClearsTheErrorState(t *testing.T) {
 	}}
 	model := lifecycle(t, source, at, &recorder{}, "acme/backend")
 
-	model, cmd := run(t, model, model.Init())
+	model, cmd := run(t, model, initRefresh(t, model))
 	model, cmd = apply(t, model, cmd())
 	model, _ = run(t, model, cmd)
 
@@ -283,7 +283,7 @@ func TestFailedRefreshNeverPublishesPartialCandidates(t *testing.T) {
 	}}}
 	model := lifecycle(t, source, fixedInstant, &recorder{}, "acme/backend", "acme/frontend")
 
-	model, _ = run(t, model, model.Init())
+	model, _ = run(t, model, initRefresh(t, model))
 
 	if got := len(model.state.Snapshot.Events()); got != 0 {
 		t.Errorf("snapshot holds %d events after a failed refresh, want no partial candidates", got)
@@ -320,7 +320,7 @@ func TestNextAttemptUsesTheReportedSchedulingMetadata(t *testing.T) {
 			source := &fakeSource{outcomes: []outcome{testCase.outcome}}
 			model := lifecycle(t, source, fixedInstant, timer, "acme/backend")
 
-			run(t, model, model.Init())
+			run(t, model, initRefresh(t, model))
 			if len(timer.delays) != 1 {
 				t.Fatalf("scheduled %d timers after one completed refresh, want 1", len(timer.delays))
 			}
@@ -336,7 +336,7 @@ func TestTheNextTimerStartsOnlyAfterTheRefreshCompletes(t *testing.T) {
 	source := &fakeSource{outcomes: []outcome{{result: activity(t, "acme/backend")}}}
 	model := lifecycle(t, source, fixedInstant, timer, "acme/backend")
 
-	cmd := model.Init()
+	cmd := initRefresh(t, model)
 	model, _ = apply(t, model, tea.WindowSizeMsg{Width: 80, Height: 24}, press("2"))
 	if len(timer.delays) != 0 {
 		t.Fatalf("scheduled %d timers while the refresh was pending, want none", len(timer.delays))
@@ -352,7 +352,7 @@ func TestAtMostOneRefreshIsInFlight(t *testing.T) {
 	source := &fakeSource{outcomes: []outcome{{result: activity(t, "acme/backend")}}}
 	model := lifecycle(t, source, fixedInstant, &recorder{}, "acme/backend")
 
-	cmd := model.Init()
+	cmd := initRefresh(t, model)
 	model, due := apply(t, model, refreshDueMsg{})
 	if due != nil {
 		t.Fatalf("a due timer started a second refresh while one was in flight: %T", due())
@@ -372,7 +372,7 @@ func TestShutdownCancelsInFlightSourceWork(t *testing.T) {
 	source := &fakeSource{outcomes: []outcome{{result: activity(t, "acme/backend")}}}
 	model := lifecycle(t, source, fixedInstant, &recorder{}, "acme/backend")
 
-	cmd := model.Init()
+	cmd := initRefresh(t, model)
 	_, quit := apply(t, model, press("q"))
 	if quit == nil {
 		t.Fatal("quit produced no command")
@@ -397,7 +397,7 @@ func TestSchedulingMetadataStaysOutOfTheRenderedState(t *testing.T) {
 	}}}
 	model := lifecycle(t, source, fixedInstant, &recorder{}, "acme/backend")
 
-	model, _ = run(t, model, model.Init())
+	model, _ = run(t, model, initRefresh(t, model))
 
 	content := strings.ToLower(model.View().Content)
 	for _, unwanted := range []string{"15m", "900", "retry", "delay"} {
@@ -412,7 +412,7 @@ func TestAPendingRefreshAfterASuccessKeepsTheSnapshotCurrent(t *testing.T) {
 	source := &fakeSource{outcomes: []outcome{{result: activity(t, "acme/backend")}}}
 	model := lifecycle(t, source, at, &recorder{}, "acme/backend")
 
-	model, cmd := run(t, model, model.Init())
+	model, cmd := run(t, model, initRefresh(t, model))
 	model, _ = apply(t, model, cmd())
 
 	if model.state.Freshness != FreshnessCurrent {
@@ -438,7 +438,7 @@ func TestTheReportedCauseDropsTerminalControlSequences(t *testing.T) {
 	}}}
 	model := lifecycle(t, source, fixedInstant, &recorder{}, "acme/backend")
 
-	model, _ = run(t, model, model.Init())
+	model, _ = run(t, model, initRefresh(t, model))
 
 	for _, character := range model.state.Cause {
 		if !unicode.IsPrint(character) {
@@ -454,9 +454,22 @@ func TestTheReportedCauseIsCollapsedToOneHeaderLine(t *testing.T) {
 	source := &fakeSource{outcomes: []outcome{{err: errors.New("refreshing acme/backend:\n\tunexpected github response: status 500")}}}
 	model := lifecycle(t, source, fixedInstant, &recorder{}, "acme/backend")
 
-	model, _ = run(t, model, model.Init())
+	model, _ = run(t, model, initRefresh(t, model))
 
 	if want := "refreshing acme/backend: unexpected github response: status 500"; model.state.Cause != want {
 		t.Errorf("cause is %q, want %q", model.state.Cause, want)
 	}
+}
+
+// initRefresh returns the first refresh command Init batches beside the Rain
+// timer chain, so a lifecycle test drives the refresh chain alone. Building the
+// batch runs neither command, so the source stays untouched until the returned
+// command is executed.
+func initRefresh(t *testing.T, model Model) tea.Cmd {
+	t.Helper()
+	batch, batched := model.Init()().(tea.BatchMsg)
+	if !batched || len(batch) == 0 {
+		t.Fatal("Init produced no batch holding the first refresh")
+	}
+	return batch[0]
 }

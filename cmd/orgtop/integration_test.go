@@ -315,11 +315,19 @@ func (f *flow) apply(messages ...tea.Msg) {
 // an integration flow starts each later attempt the same way.
 func (f *flow) refresh() {
 	f.t.Helper()
-	cmd := f.model.Init()
-	if cmd == nil {
-		f.t.Fatal("the shell started no refresh")
+	f.apply(initRefresh(f.t, f.model)())
+}
+
+// initRefresh returns the first refresh command Init batches beside the single
+// Rain timer chain. Building the batch runs neither command, so an integration
+// flow drives the refresh chain without waiting on a Rain tick.
+func initRefresh(t *testing.T, model tui.Model) tea.Cmd {
+	t.Helper()
+	batch, batched := model.Init()().(tea.BatchMsg)
+	if !batched || len(batch) == 0 {
+		t.Fatal("the shell started no refresh")
 	}
-	f.apply(cmd())
+	return batch[0]
 }
 
 // size reports a terminal size to the shell.
@@ -540,7 +548,7 @@ func TestTheShellStaysInteractiveWhileARefreshIsPending(t *testing.T) {
 	run := newFlow(t, endpoint, "--repo", "acme/backend")
 
 	pending := make(chan tea.Msg, 1)
-	cmd := run.model.Init()
+	cmd := initRefresh(t, run.model)
 	go func() { pending <- cmd() }()
 
 	endpoint.awaitRequest(t, "the pending refresh")

@@ -1,14 +1,14 @@
 ---
 id: T-062-render-and-navigate-the-rain-view
 title: Render and navigate the Rain view
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.2.0.md#ambient-rain-view
 dependencies:
     - T-061-implement-deterministic-bounded-rain-state
     - T-057-render-mixed-scopes-in-overview
     - T-058-render-scope-context-in-stream
-updated_at: "2026-08-29T09:22:04Z"
+updated_at: "2026-09-04T22:42:05Z"
 ---
 
 # T-062-render-and-navigate-the-rain-view Render and navigate the Rain view
@@ -43,3 +43,4 @@ Add Rain as the third primary Bubble Tea view using prepared deterministic Rain 
   `age N/R/A`, whenever the effective profile cannot render distinct intensity
   attributes. A constrained Rain that hides the legend keeps its hidden-legend
   indicator under RG-012.
+- 2026-09-04T22:41:24Z: verification pass

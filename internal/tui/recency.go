@@ -92,6 +92,13 @@ var capabilityNames = map[colorCapability]string{
 // String returns the shared name of the profile.
 func (c colorCapability) String() string { return capabilityNames[c] }
 
+// rendersIntensity reports whether the effective profile can separate the
+// recency states by intensity alone. The no-color profile is the one a dumb
+// terminal and an explicit NO_COLOR both resolve to, so it is also the one a
+// view must not rely on for a distinction: Rain answers a false here with
+// RG-008's textual recency counts instead.
+func (c colorCapability) rendersIntensity() bool { return c != capabilityNoColor }
+
 // recencyEmphasis is RG-008's closed presentation of one state: the accent of
 // each color profile and the attributes that reinforce it. Bold and faint are
 // optional reinforcement, so their absence never removes text or glyph meaning,

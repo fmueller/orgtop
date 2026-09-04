@@ -164,23 +164,65 @@ func selectionMinimum(omitted int, more bool) string {
 }
 
 // renderFooter renders the widest control hint that fits the width. The quit
-// hint is retained at every size.
-func renderFooter(width int) string {
-	for _, candidate := range footerCandidates {
+// hint is retained at every size, and the active view decides which controls
+// are advertised, because Rain's own keys act in Rain alone.
+func renderFooter(mode Mode, width int) string {
+	candidates := footerCandidates(mode)
+	for _, candidate := range candidates {
 		if fits(lipgloss.Width(candidate), width) {
 			return footerStyle.Render(candidate)
 		}
 	}
-	return footerStyle.Render(truncate(footerCandidates[len(footerCandidates)-1], width))
+	return footerStyle.Render(truncate(candidates[len(candidates)-1], width))
 }
 
-// footerCandidates advertises only the controls the shell implements.
-var footerCandidates = []string{
-	strings.Join([]string{"1 overview", "2 stream", "tab switch", "up/down scroll", "pgup/pgdn page", "q quit"}, separator),
-	strings.Join([]string{"1/2/tab switch", "up/down scroll", "pgup/pgdn page", "q quit"}, separator),
-	strings.Join([]string{"1/2/tab switch", "up/down scroll", "q quit"}, separator),
-	strings.Join([]string{"1/2/tab switch", "q quit"}, separator),
-	"q quit",
+// footerCandidates advertises only the controls the active view implements.
+func footerCandidates(mode Mode) []string {
+	if mode == ModeRain {
+		return rainFooterCandidates
+	}
+	return scrollFooterCandidates
+}
+
+// The shared navigation hint every footer leads with, in its full and its
+// compact spelling.
+var (
+	fullNavigation    = []string{"1 overview", "2 stream", "3 rain", "tab switch"}
+	compactNavigation = []string{"1/2/3/tab switch"}
+)
+
+// scrollFooterCandidates advertises the scrolling views' controls.
+var scrollFooterCandidates = footerLadder(
+	[]string{"up/down scroll", "pgup/pgdn page"},
+	[]string{"up/down scroll"},
+)
+
+// rainFooterCandidates advertises Rain's own controls: it neither scrolls nor
+// pages by row, so it advertises its fixed Scope pages, its recency window, and
+// its pause instead.
+var rainFooterCandidates = footerLadder(
+	[]string{"[/] page", "-/+ window", "p pause"},
+	[]string{"[/] page", "p pause"},
+)
+
+// footerLadder builds one view's hints from richest to sparsest: the full
+// navigation with the view's own controls, then the compact navigation with
+// those controls and with the shorter set, then navigation alone, and finally
+// the quit hint every size retains.
+func footerLadder(controls, shorter []string) []string {
+	return []string{
+		hintLine(fullNavigation, controls),
+		hintLine(compactNavigation, controls),
+		hintLine(compactNavigation, shorter),
+		hintLine(compactNavigation, nil),
+		"q quit",
+	}
+}
+
+// hintLine joins one navigation spelling, the advertised controls, and the quit
+// hint that closes every footer.
+func hintLine(navigation, controls []string) string {
+	return strings.Join(slices.Concat(navigation, controls, []string{"q quit"}), separator)
 }
 
 // scopeList names every selected repository in request order.

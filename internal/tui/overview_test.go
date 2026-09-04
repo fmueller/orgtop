@@ -502,7 +502,7 @@ func TestOverviewKeepsItsPositionAcrossViewSwitches(t *testing.T) {
 	model = scrolled(t, model, "down", "down", "down")
 	want := topOverviewRow(t, model)
 
-	switched := scrolled(t, model, "2", "tab")
+	switched := scrolled(t, model, "2", "tab", "tab")
 	if switched.mode != ModeOverview {
 		t.Fatalf("mode after switching back is %v, want ModeOverview", switched.mode)
 	}

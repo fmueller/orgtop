@@ -145,9 +145,13 @@ func (m Model) applyRefresh(message refreshedMsg) (tea.Model, tea.Cmd) {
 
 	m = m.applyExpansion(message.expansion)
 	if failure := message.failure(); failure != nil {
+		// A failed refresh retains the previous Rain snapshot under RG-004
+		// stale semantics, exactly as it retains the other two views.
 		m.state = degraded(m.state, failure)
 	} else if message.polled {
-		m.state = published(m.state, m.selection, message, m.now(), message.expanded())
+		at := m.now()
+		m.state = published(m.state, m.selection, message, at, message.expanded())
+		m.rain = m.rain.reconciled(m.state.Scopes, m.state.Scoped, at)
 	}
 	return m, m.tick(m.delay(message))
 }

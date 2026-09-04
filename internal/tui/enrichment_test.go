@@ -122,7 +122,7 @@ func TestRefreshEvaluatesMembershipFromEnrichedEvidence(t *testing.T) {
 	source := &fakeSource{outcomes: []outcome{{result: result}}}
 	model := enrichedLifecycle(t, scopes, source, enricher, &recorder{})
 
-	updated, _ := run(t, model, model.Init())
+	updated, _ := run(t, model, initRefresh(t, model))
 	state := updated.state
 
 	if enricher.calls != 1 {
@@ -148,7 +148,7 @@ func TestRepositoryOnlyRefreshPerformsNoEnrichment(t *testing.T) {
 	source := &fakeSource{outcomes: []outcome{{result: activity(t, "acme/backend")}}}
 	model := enrichedLifecycle(t, repositoryScope, source, enricher, &recorder{})
 
-	updated, _ := run(t, model, model.Init())
+	updated, _ := run(t, model, initRefresh(t, model))
 	state := updated.state
 
 	if enricher.calls != 0 {
@@ -174,7 +174,7 @@ func TestPathScopeWithoutAnEnricherStaysUnknown(t *testing.T) {
 	model.now = func() time.Time { return fixedInstant }
 	model.tick = (&recorder{}).tick
 
-	updated, _ := run(t, model, model.Init())
+	updated, _ := run(t, model, initRefresh(t, model))
 	row := aggregateOf(t, updated.state, path)
 
 	if row.Unknown != 1 || row.NotMember != 0 || row.Activity != 0 {
@@ -192,7 +192,7 @@ func TestFailedEnrichmentKeepsTheSourceSnapshotCurrent(t *testing.T) {
 	source := &fakeSource{outcomes: []outcome{{result: activity(t, "acme/backend")}}}
 	model := enrichedLifecycle(t, scopes, source, enricher, &recorder{})
 
-	updated, _ := run(t, model, model.Init())
+	updated, _ := run(t, model, initRefresh(t, model))
 	state := updated.state
 
 	if state.Freshness != FreshnessCurrent {
@@ -220,7 +220,7 @@ func TestEnrichmentDegradationAndRateLimitReachPreparedState(t *testing.T) {
 	source := &fakeSource{outcomes: []outcome{{result: activity(t, "acme/backend")}}}
 	model := enrichedLifecycle(t, scopes, source, enricher, &recorder{})
 
-	updated, _ := run(t, model, model.Init())
+	updated, _ := run(t, model, initRefresh(t, model))
 	state := updated.state
 
 	if state.CacheDegraded != "the cache is read only" {
@@ -246,7 +246,7 @@ func TestLaterSuccessRecoversUnknownMembershipAndClearsDegradation(t *testing.T)
 	timer := &recorder{}
 	model := enrichedLifecycle(t, scopes, source, enricher, timer)
 
-	updated, cmd := run(t, model, model.Init())
+	updated, cmd := run(t, model, initRefresh(t, model))
 	if got := aggregateOf(t, updated.state, path).Unknown; got != 1 {
 		t.Fatalf("the first refresh published %d unknown, want 1", got)
 	}
@@ -277,7 +277,7 @@ func TestCanceledEvidencePublishesNoMembership(t *testing.T) {
 	source := &fakeSource{outcomes: []outcome{{result: result}}}
 	model := enrichedLifecycle(t, scopes, source, enricher, &recorder{})
 
-	updated, _ := run(t, model, model.Init())
+	updated, _ := run(t, model, initRefresh(t, model))
 	state := updated.state
 
 	if got := len(state.Scoped.Events()); got != 0 {
@@ -297,7 +297,7 @@ func TestHeaderNeverLabelsPollingAsLive(t *testing.T) {
 	source := &fakeSource{outcomes: []outcome{{result: result}}}
 	model := enrichedLifecycle(t, scopes, source, enricher, &recorder{})
 
-	updated, _ := run(t, model, model.Init())
+	updated, _ := run(t, model, initRefresh(t, model))
 	rendered := updated.render()
 
 	if strings.Contains(strings.ToUpper(rendered), "LIVE") {

@@ -21,10 +21,11 @@ import (
 var streamBase = time.Date(2026, time.August, 22, 12, 0, 5, 0, time.Local)
 
 // forbiddenStreamVocabulary lists the deferred capabilities Stream must not
-// advertise in v0.1.0: filtering, search, clustering, derived signals, Inspect,
-// and Rain.
+// advertise: filtering, search, clustering, derived signals, and Inspect. Rain
+// left this list when v0.2.0 shipped it as the third primary view, so the
+// shared footer advertises it exactly as it advertises the other two.
 var forbiddenStreamVocabulary = []string{
-	"filter", "search", "cluster", "signal", "inspect", "rain", "drilldown",
+	"filter", "search", "cluster", "signal", "inspect", "drilldown",
 }
 
 // streamEvent builds a normalized event with explicit display detail.

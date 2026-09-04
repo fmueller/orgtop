@@ -14,6 +14,9 @@ type rainCell struct {
 	occupied bool
 	// category is the shared normalized category the occupant is drawn from.
 	category domain.Category
+	// recency is the occupant's prepared discrete state, so rendering picks its
+	// shared emphasis without measuring an age of its own.
+	recency recency
 	// qualified reports the occupant's current-PR membership.
 	qualified bool
 	// clipped reports a qualified occupant whose `~` cannot render because the
@@ -41,6 +44,35 @@ type rainColumn struct {
 	clipped int
 	// hidden is how many admitted items the column has no usable cell for.
 	hidden int
+	// recencies are the discrete states of every admitted item of the column,
+	// which RG-008's no-color fallback reports as text.
+	recencies rainRecencies
+}
+
+// rainRecencies counts admitted items by their prepared discrete state. Expiry
+// removes an item, so no expired count exists to report.
+type rainRecencies struct {
+	fresh  int
+	recent int
+	aging  int
+}
+
+// counted adds one item's state to the totals.
+func (r rainRecencies) counted(state recency) rainRecencies {
+	switch state {
+	case recencyNew:
+		r.fresh++
+	case recencyRecent:
+		r.recent++
+	case recencyAging:
+		r.aging++
+	}
+	return r
+}
+
+// plus merges another column's totals into these.
+func (r rainRecencies) plus(other rainRecencies) rainRecencies {
+	return rainRecencies{fresh: r.fresh + other.fresh, recent: r.recent + other.recent, aging: r.aging + other.aging}
 }
 
 // rainField is the complete prepared page state rendering consumes. Rendering
@@ -65,6 +97,8 @@ type rainField struct {
 	collisions, clipped int
 	// counts are the capacity totals, which responsive hiding never changes.
 	counts rainCounts
+	// recencies are the page totals of the per-column discrete states.
+	recencies rainRecencies
 	// window is the selected recency window the page is prepared for.
 	window rainWindow
 	// paused reports whether movement, age, and expiry are frozen.
@@ -101,6 +135,7 @@ func (r rain) field() rainField {
 		field.collisions += column.collisions
 		field.clipped += column.clipped
 		field.hiddenItems += column.hidden
+		field.recencies = field.recencies.plus(column.recencies)
 		field.columns = append(field.columns, column)
 	}
 	for _, item := range r.items {
@@ -122,6 +157,9 @@ func (r rain) column(scope domain.Scope, interior int) rainColumn {
 		}
 	}
 	column := rainColumn{scope: scope, interior: interior, slots: slots}
+	for _, item := range items {
+		column.recencies = column.recencies.counted(recencyAt(item.age))
+	}
 	if r.height <= 0 || slots <= 0 {
 		column.hidden = len(items)
 		return column
@@ -153,6 +191,7 @@ func (r rain) column(scope domain.Scope, interior int) rainColumn {
 			*cell = rainCell{
 				occupied:  true,
 				category:  occupant.category,
+				recency:   recencyAt(occupant.age),
 				qualified: occupant.qualified,
 				clipped:   clips && occupant.qualified,
 			}

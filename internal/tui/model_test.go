@@ -122,7 +122,7 @@ func TestWithClockPinsTheInstantASuccessIsRecordedAt(t *testing.T) {
 		t.Fatalf("building the model failed: %v", err)
 	}
 
-	model, _ = run(t, model, model.Init())
+	model, _ = run(t, model, initRefresh(t, model))
 
 	if !model.state.LastSuccess.Equal(fixedInstant) {
 		t.Errorf("LastSuccess = %v, want the pinned instant %v", model.state.LastSuccess, fixedInstant)
@@ -157,7 +157,9 @@ func TestModeKeysAndTabSwitchViews(t *testing.T) {
 		{name: "stream key", keystrokes: []string{"2"}, wantMode: ModeStream, wantBody: "recent events"},
 		{name: "overview key", keystrokes: []string{"2", "1"}, wantMode: ModeOverview, wantBody: "repository activity"},
 		{name: "tab to stream", keystrokes: []string{"tab"}, wantMode: ModeStream, wantBody: "recent events"},
-		{name: "tab back to overview", keystrokes: []string{"tab", "tab"}, wantMode: ModeOverview, wantBody: "repository activity"},
+		{name: "tab to rain", keystrokes: []string{"tab", "tab"}, wantMode: ModeRain, wantBody: "loading recent activity"},
+		{name: "rain key", keystrokes: []string{"3"}, wantMode: ModeRain, wantBody: "loading recent activity"},
+		{name: "tab back to overview", keystrokes: []string{"tab", "tab", "tab"}, wantMode: ModeOverview, wantBody: "repository activity"},
 		{name: "repeated stream key stays", keystrokes: []string{"2", "2"}, wantMode: ModeStream, wantBody: "recent events"},
 		{name: "unrelated key keeps the mode", keystrokes: []string{"2", "x"}, wantMode: ModeStream, wantBody: "recent events"},
 	}

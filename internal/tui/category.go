@@ -52,6 +52,17 @@ var categoryVocabulary = map[domain.Category]categorySemantics{
 	domain.CategoryOther:       {rich: "other", compact: "other", utf8: "·", ascii: "?"},
 }
 
+// categoryOrder is the closed vocabulary in its published order, so a legend
+// and a diagnostic enumerate the categories identically on every run rather
+// than in the map's iteration order.
+var categoryOrder = []domain.Category{
+	domain.CategoryPush,
+	domain.CategoryPullRequest,
+	domain.CategoryReview,
+	domain.CategoryComment,
+	domain.CategoryOther,
+}
+
 // normalizeCategory maps a source category onto the closed vocabulary. An
 // absent, malformed, newly introduced, or otherwise unsupported value becomes
 // the catch-all one rather than reaching a renderer unmapped (RG-008).

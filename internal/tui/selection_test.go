@@ -127,7 +127,7 @@ func TestOrganizationOnlyStartupExpandsBeforeItPollsAnything(t *testing.T) {
 	expander := &fakeExpander{attempts: []attempt{{expansion: expandedSelection(t, "acme", "acme/backend", "acme/frontend")}}}
 	model := expanding(t, source, expander, fixedInstant, &recorder{})
 
-	cmd := model.Init()
+	cmd := initRefresh(t, model)
 	if model.state.Freshness != FreshnessLoading {
 		t.Errorf("freshness is %v before the first expansion, want FreshnessLoading", model.state.Freshness)
 	}
@@ -158,7 +158,7 @@ func TestSuccessfulEmptyExpansionIsACurrentEmptySelectionThatPollsNothing(t *tes
 	expander := &fakeExpander{attempts: []attempt{{expansion: emptyExpansion("acme")}}}
 	model := expanding(t, source, expander, fixedInstant, &recorder{})
 
-	model, _ = run(t, model, model.Init())
+	model, _ = run(t, model, initRefresh(t, model))
 
 	if source.calls != 0 {
 		t.Errorf("an empty selection ran %d polls, want none", source.calls)
@@ -185,7 +185,7 @@ func TestInitialExpansionFailureIsErrorAndPollsNoSubset(t *testing.T) {
 	expander := &fakeExpander{attempts: []attempt{{err: errors.New("expanding acme: organization not found or inaccessible")}}}
 	model := expanding(t, source, expander, fixedInstant, &recorder{}, "other/exact")
 
-	model, _ = run(t, model, model.Init())
+	model, _ = run(t, model, initRefresh(t, model))
 
 	if source.calls != 0 {
 		t.Errorf("a failed initial expansion ran %d polls, want none of the exact or expanded subset", source.calls)
@@ -209,7 +209,7 @@ func TestReexpansionBeforeItIsDueReusesTheFixedSelection(t *testing.T) {
 	expander := &fakeExpander{attempts: []attempt{{expansion: expandedSelection(t, "acme", "acme/backend")}}}
 	model := expanding(t, source, expander, fixedInstant, &recorder{})
 
-	model, _ = run(t, model, model.Init())
+	model, _ = run(t, model, initRefresh(t, model))
 	model = model.at(fixedInstant.Add(time.Minute))
 	_, cmd := apply(t, model, refreshDueMsg{})
 	run(t, model, cmd)
@@ -231,7 +231,7 @@ func TestFailedReexpansionPollsTheLastSuccessfulSelectionAndMarksItStale(t *test
 	}}
 	model := expanding(t, source, expander, fixedInstant, &recorder{})
 
-	model, _ = run(t, model, model.Init())
+	model, _ = run(t, model, initRefresh(t, model))
 	model = model.at(fixedInstant.Add(16 * time.Minute))
 	model, cmd := apply(t, model, refreshDueMsg{})
 	model, _ = run(t, model, cmd)
@@ -264,7 +264,7 @@ func TestRateLimitedReexpansionDispatchesNoPollAndNarrowsNothing(t *testing.T) {
 	timer := &recorder{}
 	model := expanding(t, source, expander, fixedInstant, timer)
 
-	model, _ = run(t, model, model.Init())
+	model, _ = run(t, model, initRefresh(t, model))
 	model = model.at(fixedInstant.Add(16 * time.Minute))
 	model, cmd := apply(t, model, refreshDueMsg{})
 	model, _ = run(t, model, cmd)
@@ -293,7 +293,7 @@ func TestSuccessfulReexpansionReplacesTheSelectionAndClearsItsCause(t *testing.T
 	}}
 	model := expanding(t, source, expander, fixedInstant, &recorder{})
 
-	model, _ = run(t, model, model.Init())
+	model, _ = run(t, model, initRefresh(t, model))
 	model = model.at(fixedInstant.Add(16 * time.Minute))
 	model, cmd := apply(t, model, refreshDueMsg{})
 	model, _ = run(t, model, cmd)
@@ -319,7 +319,7 @@ func TestExpansionSuccessWithFailedPollingKeepsTheNewSelectionHidden(t *testing.
 	expander := &fakeExpander{attempts: []attempt{{expansion: expandedSelection(t, "acme", "acme/backend")}}}
 	model := expanding(t, source, expander, fixedInstant, &recorder{})
 
-	model, _ = run(t, model, model.Init())
+	model, _ = run(t, model, initRefresh(t, model))
 
 	if model.state.Freshness != FreshnessError {
 		t.Errorf("freshness is %v after an initial poll failure, want FreshnessError", model.state.Freshness)
@@ -353,7 +353,7 @@ func TestEveryPollOfOneRefreshUsesTheSelectionThatRefreshExpanded(t *testing.T) 
 	}}
 	model := expanding(t, source, expander, fixedInstant, &recorder{})
 
-	model, _ = run(t, model, model.Init())
+	model, _ = run(t, model, initRefresh(t, model))
 
 	assertScopes(t, "the polled selection", source.scopes[0], "acme/backend")
 	assertScopes(t, "the published selection", model.state.Scopes, "acme/backend")
@@ -368,7 +368,7 @@ func TestCancellationBeforePublicationDiscardsTheExpandedSelection(t *testing.T)
 	expander := &fakeExpander{attempts: []attempt{{expansion: expandedSelection(t, "acme", "acme/backend")}}}
 	model := expanding(t, source, expander, fixedInstant, &recorder{})
 
-	cmd := model.Init()
+	cmd := initRefresh(t, model)
 	message := cmd()
 	model, _ = apply(t, model, tea.KeyPressMsg{Code: 'q', Text: "q"})
 	model, next := apply(t, model, message)
@@ -400,7 +400,7 @@ func TestPublishedSelectionRetainsTruncationDisclosureAndProvenance(t *testing.T
 	expander := &fakeExpander{attempts: []attempt{{expansion: expansion}}}
 	model := expanding(t, source, expander, fixedInstant, &recorder{})
 
-	model, _ = run(t, model, model.Init())
+	model, _ = run(t, model, initRefresh(t, model))
 
 	published := model.state.Selection
 	if !published.PaginationRemains {
@@ -424,12 +424,12 @@ func TestPublishedSelectionRetainsTruncationDisclosureAndProvenance(t *testing.T
 func TestExpandedAndExactScopesPublishIdenticalDownstreamState(t *testing.T) {
 	exactSource := &fakeSource{outcomes: []outcome{{result: activity(t, "acme/backend", "acme/frontend")}}}
 	exact := lifecycle(t, exactSource, fixedInstant, &recorder{}, "acme/backend", "acme/frontend")
-	exact, _ = run(t, exact, exact.Init())
+	exact, _ = run(t, exact, initRefresh(t, exact))
 
 	expandedSource := &fakeSource{outcomes: []outcome{{result: activity(t, "acme/backend", "acme/frontend")}}}
 	expander := &fakeExpander{attempts: []attempt{{expansion: expandedSelection(t, "acme", "acme/backend", "acme/frontend")}}}
 	expanded := expanding(t, expandedSource, expander, fixedInstant, &recorder{})
-	expanded, _ = run(t, expanded, expanded.Init())
+	expanded, _ = run(t, expanded, initRefresh(t, expanded))
 
 	if got, want := len(expanded.state.Snapshot.Events()), len(exact.state.Snapshot.Events()); got != want {
 		t.Errorf("the expanded selection published %d events, want the %d an exact selection publishes", got, want)
@@ -461,7 +461,7 @@ func TestFailedExpansionSchedulesTheNextAttemptAtItsOwnRetryBound(t *testing.T) 
 			expander := &fakeExpander{attempts: []attempt{{expansion: test.expansion, err: errors.New("expanding acme: github request failed")}}}
 			model := expanding(t, &fakeSource{}, expander, fixedInstant, timer)
 
-			model, _ = run(t, model, model.Init())
+			model, _ = run(t, model, initRefresh(t, model))
 
 			if got := timer.delays[len(timer.delays)-1]; got != test.want {
 				t.Errorf("the next attempt after a failed expansion is scheduled in %s, want the RG-010 bound %s", got, test.want)
@@ -481,7 +481,7 @@ func TestCancellationDuringExpansionDispatchesNoPoll(t *testing.T) {
 	}}
 	model := expanding(t, source, expander, fixedInstant, &recorder{})
 
-	model, _ = run(t, model, model.Init())
+	model, _ = run(t, model, initRefresh(t, model))
 	if source.calls != 1 {
 		t.Fatalf("the first refresh ran %d polls, want 1", source.calls)
 	}

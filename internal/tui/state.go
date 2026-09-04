@@ -1,6 +1,6 @@
 // Package tui owns OrgTop's Bubble Tea application shell: the root model, the
-// shared chrome, navigation between the Overview and Stream views, and the
-// state slots those views render. It consumes application and domain state and
+// shared chrome, navigation between the Overview, Stream, and Rain views, and
+// the state slots those views render. It consumes application and domain state and
 // performs no normalization, filtering, aggregation, or source I/O.
 package tui
 
@@ -17,22 +17,29 @@ type Mode int
 const (
 	ModeOverview Mode = iota
 	ModeStream
+	ModeRain
 )
 
-// Label returns the shared header label of the mode.
+// modeLabels are the shared header labels, in mode order. One ordered table
+// answers for the label, the direct selection keys, and the tab cycle, so a
+// further view cannot be reachable by one of them and not the others.
+var modeLabels = []string{"OVERVIEW", "STREAM", "RAIN"}
+
+// Label returns the shared header label of the mode. An out-of-range mode
+// degrades to the first view rather than panicking a render.
 func (m Mode) Label() string {
-	if m == ModeStream {
-		return "STREAM"
+	if m < 0 || int(m) >= len(modeLabels) {
+		return modeLabels[ModeOverview]
 	}
-	return "OVERVIEW"
+	return modeLabels[m]
 }
 
-// toggled returns the other mode, which is what tab selects.
+// toggled returns the next mode in the fixed cycle, which is what tab selects.
 func (m Mode) toggled() Mode {
-	if m == ModeStream {
+	if m < 0 || int(m) >= len(modeLabels) {
 		return ModeOverview
 	}
-	return ModeStream
+	return Mode((int(m) + 1) % len(modeLabels))
 }
 
 // Freshness is the header marker shown beside, never instead of, the constant

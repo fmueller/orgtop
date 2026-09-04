@@ -20,8 +20,8 @@ const chromeLines = 2
 var ErrNoSource = errors.New("no refresh source provided")
 
 // Model is OrgTop's root Bubble Tea model. It owns the active mode, the
-// terminal dimensions, the shared state both views read, each view's own state
-// slot, and the refresh lifecycle. Rendering only formats that state.
+// terminal dimensions, the shared state every view reads, each view's own state
+// slot, and the refresh and Rain lifecycles. Rendering only formats that state.
 type Model struct {
 	state    State
 	mode     Mode
@@ -30,6 +30,13 @@ type Model struct {
 	sized    bool
 	overview overview
 	stream   stream
+	rain     rain
+	// charset is the glyph repertoire the shared category vocabulary is drawn
+	// from, and capability how much colour the effective terminal profile
+	// renders. Both are injected prepared state rather than a probe of the live
+	// terminal, so an identical input always renders identically (RG-008).
+	charset    charset
+	capability colorCapability
 	// ctx bounds every refresh. Bubble Tea drives the model by message, so the
 	// cancelable root of the source work has to live with the model itself.
 	ctx context.Context
@@ -56,6 +63,8 @@ type Model struct {
 	now func() time.Time
 	// tick schedules the next attempt after a delay.
 	tick func(time.Duration) tea.Cmd
+	// rainTick schedules the next message of the one Rain timer chain.
+	rainTick func(uint64, time.Duration) tea.Cmd
 	// pending reports whether a refresh is in flight.
 	pending bool
 }
@@ -123,8 +132,10 @@ func New(ctx context.Context, scopes domain.ScopeSet, source Source, options ...
 		source:       source,
 		selection:    exactSelection(scopes),
 		hasSelection: true,
+		rain:         newRain(),
 		now:          time.Now,
 		tick:         tickAfter,
+		rainTick:     rainTickAfter,
 		pending:      true,
 	}
 	for _, option := range options {
@@ -134,20 +145,29 @@ func New(ctx context.Context, scopes domain.ScopeSet, source Source, options ...
 }
 
 // Init implements tea.Model. The first refresh runs as a command, so the
-// initial LOADING render is never delayed by source I/O (FR-007).
-func (m Model) Init() tea.Cmd { return m.refresh() }
+// initial LOADING render is never delayed by source I/O (FR-007). The single
+// Rain timer chain starts beside it and then continues while any view is
+// active, so Rain is never a view that only begins moving once it is selected
+// (RG-006). The refresh is the first batched command, so a caller driving the
+// refresh chain by hand can start it without also arming the Rain timer.
+func (m Model) Init() tea.Cmd {
+	return tea.Batch(m.refresh(), m.rainTick(m.rain.chain, rainStep))
+}
 
 // Update implements tea.Model.
 func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case tea.WindowSizeMsg:
 		m.width, m.height, m.sized = max(message.Width, 0), max(message.Height, 0), true
+		m = m.resizedRain()
 	case tea.KeyPressMsg:
 		return m.handleKey(message)
 	case refreshDueMsg:
 		return m.startRefresh()
 	case refreshedMsg:
 		return m.applyRefresh(message)
+	case rainTickMsg:
+		return m.applyRainTick(message)
 	}
 	return m, nil
 }
@@ -163,12 +183,60 @@ func (m Model) handleKey(message tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.mode = ModeOverview
 	case "2":
 		m.mode = ModeStream
+	case "3":
+		m.mode = ModeRain
 	case "tab":
 		m.mode = m.mode.toggled()
 	case "up", "down", "pgup", "pgdown":
 		m = m.scroll(keystroke)
+	default:
+		m = m.handleRainKey(keystroke)
 	}
 	return m, nil
+}
+
+// handleRainKey applies the controls RG-006 gives Rain alone: `p` freezes and
+// resumes the field, `-` and `+` step the recency window, and `[` and `]` move
+// one fixed Scope page. Another view ignores them, so a keystroke never acts on
+// a field the operator is not looking at.
+func (m Model) handleRainKey(keystroke string) Model {
+	if m.mode != ModeRain {
+		return m
+	}
+	switch keystroke {
+	case "p":
+		m.rain = m.rain.toggledPause()
+	case "-":
+		m.rain = m.rain.windowed(-1, m.state.Scopes, m.state.Scoped)
+	case "+":
+		m.rain = m.rain.windowed(1, m.state.Scopes, m.state.Scoped)
+	case "[":
+		m.rain = m.rain.paged(-1)
+	case "]":
+		m.rain = m.rain.paged(1)
+	}
+	return m
+}
+
+// resizedRain applies the new terminal size to the Rain field, measured over
+// the content area the shared chrome leaves and staying unbounded while the
+// terminal size is still unknown. Resize recomputes columns and reselects the
+// fixed page holding the retained anchor; it never changes age, admission,
+// pause state, queue order, or omission totals (RG-006).
+//
+// A reported size shorter than the shared chrome is a real bound of zero
+// content rows, not the unbounded size of a terminal that has not reported
+// yet, so the subtraction is floored rather than allowed to reach the negative
+// sentinel. Otherwise the field would keep the rows the previous size granted
+// and the disjoint hidden-item accounting would believe in rows the terminal
+// cannot show.
+func (m Model) resizedRain() Model {
+	width, height := m.budget()
+	if height >= 0 {
+		height = max(height-chromeLines, 0)
+	}
+	m.rain = m.rain.resized(width, m.rain.fieldHeight(m.charset, width, height))
+	return m
 }
 
 // scroll delegates a scrolling keystroke to the active view within the content
@@ -205,7 +273,7 @@ func (m Model) render() string {
 	if height == 1 {
 		return header
 	}
-	footer := renderFooter(width)
+	footer := renderFooter(m.mode, width)
 	if height == chromeLines {
 		return strings.Join([]string{header, footer}, "\n")
 	}
@@ -224,10 +292,14 @@ func (m Model) budget() (width, height int) {
 // body delegates rendering to the active view within the content area the
 // shared chrome leaves.
 func (m Model) body(width, height int) string {
-	if m.mode == ModeStream {
+	switch m.mode {
+	case ModeStream:
 		return m.stream.render(m.state, width, height)
+	case ModeRain:
+		return m.rain.render(m.state, m.charset, m.capability, width, height)
+	default:
+		return m.overview.render(m.state, width, height)
 	}
-	return m.overview.render(m.state, width, height)
 }
 
 // renderBody windows the view's lines at its clamped offset and fills the
