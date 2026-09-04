@@ -1,13 +1,13 @@
 ---
 id: T-061-implement-deterministic-bounded-rain-state
 title: Implement deterministic bounded Rain state
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.2.0.md#ambient-rain-view
 dependencies:
     - T-054-implement-scoped-snapshots-and-direct-aggregation
     - T-060-implement-shared-discrete-recency-semantics
-updated_at: "2026-08-29T09:22:04Z"
+updated_at: "2026-09-04T14:48:21Z"
 ---
 
 # T-061-implement-deterministic-bounded-rain-state Implement deterministic bounded Rain state
@@ -35,3 +35,4 @@ Implement Rain as a pure bounded state transition driven by scoped events, expli
 
 - Keep Rain state independent of Lip Gloss rendering and wall-clock reads.
 - Use Bubble Tea ticks only; no physics library.
+- 2026-09-04T14:48:10Z: verification pass
