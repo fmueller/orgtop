@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-updated_at: "2026-09-04T11:23:15Z"
+updated_at: "2026-09-04T11:37:49Z"
 active_spec_version: v0.2.0
 active_spec_path: specs/v0.2.0.md
 current_task: ""
@@ -8,7 +8,7 @@ current_task_title: ""
 status_summary: idle
 blockers: []
 next_action: Select the next eligible task
-last_verification_result: pass for T-059-implement-shared-event-category-semantics at 2026-09-04T10:26:02Z
+last_verification_result: pass for T-060-implement-shared-discrete-recency-semantics at 2026-09-04T11:37:46Z
 relevant_artifacts: []
 continuation_notes:
     - This repository is using manual Taskrail-style workflow scaffolding until the product replaces more of the bootstrap steps.
@@ -34,7 +34,7 @@ continuation_notes:
 
 ## Last Verification
 
-- pass for T-059-implement-shared-event-category-semantics at 2026-09-04T10:26:02Z
+- pass for T-060-implement-shared-discrete-recency-semantics at 2026-09-04T11:37:46Z
 
 ## Next Action
 
@@ -50,8 +50,8 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 24
+- todo: 23
 - in_progress: 0
-- completed: 65
+- completed: 66
 - blocked: 0
 - cancelled: 0
