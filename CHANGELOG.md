@@ -56,6 +56,11 @@ workflow refuses to publish otherwise.
   request's current files. An event no Scope confirmed and none left undecided
   no longer takes a row, and a narrow terminal counts the Scopes it cannot
   spell rather than dropping them.
+- Stream names an event category from the shared category vocabulary every
+  event view will render through. A narrow Stream now spells `pull`, `review`,
+  `comment`, and `other` instead of the abbreviations `pr`, `rev`, `com`, and
+  `oth`; the wide spellings are unchanged. A category a release does not know
+  normalizes to `other` rather than reaching a row unnamed.
 
 ### Fixed
 

@@ -131,7 +131,7 @@ names, so both spellings are listed:
 |---|---|---|
 | `age` | `age` | How long before the last successful refresh the event happened |
 | `repository` | `repo` | The repository the event belongs to |
-| `category` | `type` | The event category as text: `push`, `pull request`, `review`, `comment`, or `other`, shortened to `pr`, `rev`, `com`, and `oth` |
+| `category` | `type` | The event category as text: `push`, `pull request`, `review`, `comment`, or `other`; a narrow terminal shortens `pull request` to `pull` and keeps the rest |
 | `scopes` | `scopes` | Which selected Scopes the event belongs to, by their `R1`/`P2` tokens: `in` lists the confirmed members, `unresolved` lists the path Scopes whose membership stayed undecided, `~` marks a member proven from an open pull request's current files |
 | `actor · description` | `detail` | Who acted, and a concise description of what the event did |
 

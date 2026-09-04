@@ -114,16 +114,13 @@ func streamStateLine(freshness Freshness, events int) string {
 	return ""
 }
 
-// streamLayout labels one row layout: how each category is named, and how the
-// heading row names the columns. The category is always text, so a monochrome
-// terminal keeps the full encoding (FR-010). The age column has one spelling at
-// every width, because it is already the narrowest honest one.
+// streamLayout labels one row layout: which shared register names the category,
+// and how the heading row names the columns. The category is always text, so a
+// monochrome terminal keeps the full encoding (FR-010). The age column has one
+// spelling at every width, because it is already the narrowest honest one.
 type streamLayout struct {
-	push        string
-	pullRequest string
-	review      string
-	comment     string
-	other       string
+	// register selects the shared category text this layout has room for.
+	register categoryRegister
 	// headings names the columns in this layout's own register, so a sparser
 	// row keeps sparser headings above it.
 	headings streamHeadings
@@ -138,31 +135,21 @@ type streamHeadings struct {
 	detail   string
 }
 
-// name returns the layout's text encoding of the category. A category the
-// layout does not name is spelled as the catch-all one.
+// name returns the layout's text encoding of the category. The spelling comes
+// from the shared vocabulary, so a category the layout has never seen is spelled
+// as the shared catch-all one rather than as an invention of this view (RG-008).
 func (l streamLayout) name(category domain.Category) string {
-	switch category {
-	case domain.CategoryPush:
-		return l.push
-	case domain.CategoryPullRequest:
-		return l.pullRequest
-	case domain.CategoryReview:
-		return l.review
-	case domain.CategoryComment:
-		return l.comment
-	default:
-		return l.other
-	}
+	return categoryText(category, l.register)
 }
 
 // streamLayouts orders the row layouts from richest to sparsest.
 var streamLayouts = []streamLayout{
 	{
-		push: "push", pullRequest: "pull request", review: "review", comment: "comment", other: "other",
+		register: registerRich,
 		headings: streamHeadings{age: "age", identity: "repository", category: "category", scope: "scopes", detail: "actor" + separator + "description"},
 	},
 	{
-		push: "push", pullRequest: "pr", review: "rev", comment: "com", other: "oth",
+		register: registerCompact,
 		headings: streamHeadings{age: "age", identity: "repo", category: "type", scope: "scopes", detail: "detail"},
 	},
 }
