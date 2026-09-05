@@ -49,4 +49,17 @@ if ! printf 'refs/heads/main %s refs/heads/main %s\n' "$clean_head" "$clean_head
   fail "the stdin range rejected an empty push"
 fi
 
+# An agent identity in the author header makes the same claim the forbidden
+# trailers make, so the push gate refuses it as well.
+commit $'feat: add the third fact\n\nExplain the change.' three
+agent_parent="$(git rev-parse HEAD~1)"
+# --amend keeps the recorded author, so the identity is restated explicitly.
+git commit -q --amend --no-verify --no-edit --author='Amp <amp@ampcode.com>'
+if output="$(bash "$scanner" "$agent_parent..HEAD" 2>&1)"; then
+  fail "an agent author was accepted"
+fi
+if [[ "$output" != *"agent identity"* ]]; then
+  fail "the scanner did not name the author policy: $output"
+fi
+
 printf 'push message checks passed\n'

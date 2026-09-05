@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
-# Refuse to push commits whose messages carry automated attribution.
+# Refuse to push commits that carry agent attribution, in the message or in the
+# author header.
 #
 # The commit-msg hook is the first gate, but it is skipped by `--no-verify`, by
 # a rebase, and by an amend that reuses a message. This is the last gate before
 # history leaves the machine, so a trailer that slipped in locally is caught
 # while rewriting it is still cheap.
 #
-# Only the attribution policy is applied here, deliberately: the remaining
-# message rules describe how a message is written and would fail a push that
-# merely carries older history forward, which is not what this guard is for.
+# Only the attribution policy and the author identity are applied here,
+# deliberately: the remaining message rules describe how a message is written
+# and would fail a push that merely carries older history forward, which is not
+# what this guard is for.
 #
 # Ranges come from git's pre-push protocol on stdin when git supplies it, from
 # an explicit argument otherwise, and from the tracked upstream as the fallback.
@@ -62,9 +64,14 @@ for commit in $commits; do
     git log -1 --format='  %h %s' "$commit" >&2
     status=1
   fi
+  if ! bash "$script_dir/check-author.sh" "$(git log -1 --format='%an <%ae>' "$commit")" >/dev/null; then
+    echo "check-push-messages: $commit was authored by an agent identity" >&2
+    git log -1 --format='  %h %an <%ae>' "$commit" >&2
+    status=1
+  fi
 done
 
 if [ "$status" -ne 0 ]; then
-  echo "check-push-messages: rewrite those messages before pushing" >&2
+  echo "check-push-messages: rewrite those commits before pushing" >&2
 fi
 exit "$status"

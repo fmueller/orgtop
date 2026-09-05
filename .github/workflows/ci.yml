@@ -80,6 +80,9 @@ jobs:
       - name: Test the pre-push attribution guard
         run: task test:push-messages
 
+      - name: Test the agent-identity author guard
+        run: task test:author
+
       - name: Test the changelog release guards
         run: task test:changelog
 

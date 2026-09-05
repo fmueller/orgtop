@@ -18,7 +18,10 @@ AI-generated and AI-assisted pull requests are welcome. Two rules apply:
    `Claude-Session:`/`Amp-Thread:`, links to an agent session, or 🤖 trailers.
    The `commit-msg` hook rejects them and the `pre-push` hook rescans the
    outgoing commits, so a message that skipped the first gate is still caught
-   before it reaches the remote. The AI is a tool, not a co-author.
+   before it reaches the remote. Commit as yourself, too: a commit authored by
+   an agent identity such as `Amp <amp@ampcode.com>` is refused by the
+   `pre-commit` and `pre-push` hooks, because the author header makes the same
+   claim the trailers do. The AI is a tool, not a co-author.
 
 The same quality gate applies regardless of how the code was produced.
 

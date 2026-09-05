@@ -113,6 +113,9 @@ Guidance for coding agents working in the OrgTop repository.
 - Never add attribution trailers: no co-authorship line, no agent session or
   thread trailer, and no session link. `scripts/check-attribution.sh` is the one
   policy the `commit-msg` and `pre-push` hooks both apply.
+- Commit under the maintainer's git identity. `scripts/check-author.sh` refuses
+  an agent author in `pre-commit` and again in `pre-push`, so an agent runner
+  must set `user.name` and `user.email` before its first commit.
 - Include a descriptive body after the subject, wrap body lines at 72 characters,
   and suffix tracked-task subjects with the short key, for example `(T-001)`.
 - Keep tracked tasks focused and include objective verification evidence.
