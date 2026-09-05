@@ -25,7 +25,12 @@ func (m Model) applyRainTick(message rainTickMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	m.rain = m.rain.ticked(message.chain, message.at)
-	return m, m.rainTick(m.rain.chain, rainStep)
+	// The strip advances on the same explicit tick even while the field is
+	// paused or hidden, so an entry leaving the fixed 15-minute window
+	// disappears from the strip while the frozen field keeps its picture
+	// (RG-007).
+	m.interesting = m.interesting.ticked(message.at)
+	return m.resizedRain(), m.rainTick(m.rain.chain, rainStep)
 }
 
 // rainTickAfter is the production Rain timer seam: it schedules the next

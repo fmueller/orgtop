@@ -205,6 +205,38 @@ var rainFooterCandidates = footerLadder(
 	[]string{"[/] page", "p pause"},
 )
 
+// quitHint is the one control every footer retains at every size (FR-011).
+const quitHint = "q quit"
+
+// renderStripFooter renders the collapsed Rain footer: RG-007's strip
+// accounting in place of the optional hints, ahead of the mandatory quit hint.
+// The compact rung spends its separator on the counts, because that is what
+// lets the worst-case accounting and the quit hint share the seventeen cells
+// RG-007 names: the collapsed strip shows none, hides at most the 20 it stores,
+// and omits at most the 480 the retained 500 leave, so `I:0/20/480` and
+// `q quit` fit exactly. Below
+// that the explicit overflow indicator marks the entries the size is holding
+// back, which `2` reaches in Stream.
+func renderStripFooter(accounting stripAccounting, width int) string {
+	overflow := quitHint
+	if accounting.overflowing() {
+		overflow = stripOverflowHint
+	}
+	candidates := []string{
+		accounting.spell(stripCountForms[0]) + separator + quitHint,
+		accounting.spell(stripCountForms[1]) + separator + quitHint,
+		accounting.spell(stripCountForms[2]) + " " + quitHint,
+		overflow,
+		quitHint,
+	}
+	for _, candidate := range candidates {
+		if fits(lipgloss.Width(candidate), width) {
+			return footerStyle.Render(candidate)
+		}
+	}
+	return footerStyle.Render(truncate(quitHint, width))
+}
+
 // footerLadder builds one view's hints from richest to sparsest: the full
 // navigation with the view's own controls, then the compact navigation with
 // those controls and with the shorter set, then navigation alone, and finally
@@ -215,14 +247,14 @@ func footerLadder(controls, shorter []string) []string {
 		hintLine(compactNavigation, controls),
 		hintLine(compactNavigation, shorter),
 		hintLine(compactNavigation, nil),
-		"q quit",
+		quitHint,
 	}
 }
 
 // hintLine joins one navigation spelling, the advertised controls, and the quit
 // hint that closes every footer.
 func hintLine(navigation, controls []string) string {
-	return strings.Join(slices.Concat(navigation, controls, []string{"q quit"}), separator)
+	return strings.Join(slices.Concat(navigation, controls, []string{quitHint}), separator)
 }
 
 // scopeList names every selected repository in request order.

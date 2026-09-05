@@ -64,29 +64,63 @@ func (r rain) fieldHeight(set charset, width, height int) int {
 }
 
 // render returns the Rain body for the shared content area: the Scope column
-// headings, the bounded field, its context line, and the legend when the width
-// permits it. Rendering only consumes prepared state; it never hashes, admits,
-// collides, ages, or moves an item, and no glyph, accent, or motion claims
-// severity, importance, anomaly, or a source outcome (RG-006).
-func (r rain) render(state State, set charset, capability colorCapability, width, height int) string {
+// headings, the bounded field, its context line, the legend when the width
+// permits it, and the bounded Interesting Now strip beneath them. Rendering
+// only consumes prepared state; it never hashes, admits, collides, ages, or
+// moves an item, and no glyph, accent, or motion claims severity, importance,
+// anomaly, or a source outcome (RG-006).
+//
+// The rows Rain's own chrome does not take are the `B` rows RG-007's height
+// collapse divides between the activity field and the strip, so the field keeps
+// every row the strip did not take and the two never disagree about the body.
+func (r rain) render(state State, strip interesting, set charset, capability colorCapability, width, height int) string {
 	if height == 0 {
 		return ""
 	}
 	field := r.field()
 	legend := rainVisibleLegend(set, width, height)
+	stripRows, shown := strip.rows(r.stripBudget(set, width, height))
+	fieldHeight := r.fieldRows(set, width, height, stripRows)
 
 	lines := make([]string, 0, max(height, 1))
 	if height < 0 || height > rainContext+rainHeadings {
 		lines = append(lines, rainHeadingLine(field, state.Scopes.Tokens(), width))
 	}
-	lines = append(lines, rainFieldLines(field, state, set, capability, width, r.fieldHeight(set, width, height))...)
+	lines = append(lines, rainFieldLines(field, state, set, capability, width, fieldHeight)...)
 	if height < 0 || height > rainContext {
 		lines = append(lines, rainContextLine(field, capability, legend == "", width))
 	}
 	if legend != "" {
 		lines = append(lines, legend)
 	}
+	lines = append(lines, strip.render(state.Scopes.Tokens(), set, capability, width, stripRows, shown)...)
 	return strings.Join(lines, "\n")
+}
+
+// stripBudget returns RG-007's `B`: the body rows the Rain field and the strip
+// share once Rain's own chrome has taken its lines. An unbounded height holds
+// the whole prepared strip, so it reports the unbounded budget rather than the
+// stored field height.
+func (r rain) stripBudget(set charset, width, height int) int {
+	if height < 0 {
+		return unbounded
+	}
+	return r.fieldHeight(set, width, height)
+}
+
+// fieldRows returns the field rows left once the strip has taken the share
+// RG-007's height collapse granted it out of the same `B`. The strip is the
+// field's companion inside one body, so rows spent on the strip are not rows
+// the field may place an item on; counting them would hide items in rows the
+// terminal never shows. An unbounded body bounds neither, so the field keeps
+// its whole prepared height there. Both the resize that sizes the field and the
+// render that draws it read this one answer, so they never disagree about the
+// body.
+func (r rain) fieldRows(set charset, width, height, stripRows int) int {
+	if height < 0 {
+		return r.fieldHeight(set, width, height)
+	}
+	return max(r.fieldHeight(set, width, height)-stripRows, 0)
 }
 
 // rainHeadingLine names every visible Scope above its column, shortened to the

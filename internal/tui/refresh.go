@@ -152,6 +152,11 @@ func (m Model) applyRefresh(message refreshedMsg) (tea.Model, tea.Cmd) {
 		at := m.now()
 		m.state = published(m.state, m.selection, message, at, message.expanded())
 		m.rain = m.rain.reconciled(m.state.Scopes, m.state.Scoped, at)
+		// The strip reads the same atomic publication as the field and then
+		// resizes it, because the rows RG-007's collapse grants the strip are
+		// rows the field may no longer place an item on.
+		m.interesting = m.interesting.reconciled(m.state.Scopes, m.state.Scoped, at)
+		m = m.resizedRain()
 	}
 	return m, m.tick(m.delay(message))
 }

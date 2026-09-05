@@ -91,7 +91,7 @@ func TestRainRenderYieldsItsChromeInPriorityOrder(t *testing.T) {
 	}
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
-			body := state.render(published, charsetUTF8, capabilityTruecolor, 120, testCase.height)
+			body := state.render(published, newInteresting(), charsetUTF8, capabilityTruecolor, 120, testCase.height)
 			lines := strings.Split(body, "\n")
 			if len(lines) != testCase.lines {
 				t.Fatalf("height %d rendered %d lines, want %d:\n%s", testCase.height, len(lines), testCase.lines, body)

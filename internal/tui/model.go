@@ -31,6 +31,10 @@ type Model struct {
 	overview overview
 	stream   stream
 	rain     rain
+	// interesting is the bounded RG-007 strip Rain renders beneath its field.
+	// It is prepared beside the field rather than inside it, because it ages
+	// against its own monotonic reference and never freezes with Rain pause.
+	interesting interesting
 	// charset is the glyph repertoire the shared category vocabulary is drawn
 	// from, and capability how much colour the effective terminal profile
 	// renders. Both are injected prepared state rather than a probe of the live
@@ -133,6 +137,7 @@ func New(ctx context.Context, scopes domain.ScopeSet, source Source, options ...
 		selection:    exactSelection(scopes),
 		hasSelection: true,
 		rain:         newRain(),
+		interesting:  newInteresting(),
 		now:          time.Now,
 		tick:         tickAfter,
 		rainTick:     rainTickAfter,
@@ -235,7 +240,10 @@ func (m Model) resizedRain() Model {
 	if height >= 0 {
 		height = max(height-chromeLines, 0)
 	}
-	m.rain = m.rain.resized(width, m.rain.fieldHeight(m.charset, width, height))
+	// The field is sized over the rows RG-007's height collapse leaves it once
+	// the strip has taken its share of the same body.
+	rows, _ := m.interesting.rows(m.rain.stripBudget(m.charset, width, height))
+	m.rain = m.rain.resized(width, m.rain.fieldRows(m.charset, width, height, rows))
 	return m
 }
 
@@ -273,11 +281,26 @@ func (m Model) render() string {
 	if height == 1 {
 		return header
 	}
-	footer := renderFooter(m.mode, width)
+	footer := m.footer(width, height-chromeLines)
 	if height == chromeLines {
 		return strings.Join([]string{header, footer}, "\n")
 	}
 	return strings.Join([]string{header, m.body(width, height-chromeLines), footer}, "\n")
+}
+
+// footer renders the shared control hints for the body the size leaves. A Rain
+// body too short for a strip line of its own moves RG-007's strip accounting
+// into the footer, where it replaces the optional hints and keeps the mandatory
+// quit hint; every other view and size renders the shared footer unchanged.
+func (m Model) footer(width, bodyHeight int) string {
+	if m.mode != ModeRain {
+		return renderFooter(m.mode, width)
+	}
+	accounting, owed := m.interesting.footerAccounting(m.rain.stripBudget(m.charset, width, bodyHeight))
+	if !owed {
+		return renderFooter(m.mode, width)
+	}
+	return renderStripFooter(accounting, width)
 }
 
 // budget returns the render budget. Both dimensions stay unbounded until a
@@ -296,7 +319,7 @@ func (m Model) body(width, height int) string {
 	case ModeStream:
 		return m.stream.render(m.state, width, height)
 	case ModeRain:
-		return m.rain.render(m.state, m.charset, m.capability, width, height)
+		return m.rain.render(m.state, m.interesting, m.charset, m.capability, width, height)
 	default:
 		return m.overview.render(m.state, width, height)
 	}

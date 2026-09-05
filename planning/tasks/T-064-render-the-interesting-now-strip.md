@@ -1,13 +1,13 @@
 ---
 id: T-064-render-the-interesting-now-strip
 title: Render the Interesting Now strip
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.2.0.md#interesting-now-strip
 dependencies:
     - T-063-select-bounded-interesting-now-entries
     - T-062-render-and-navigate-the-rain-view
-updated_at: "2026-08-29T09:22:04Z"
+updated_at: "2026-09-05T13:05:14Z"
 ---
 
 # T-064-render-the-interesting-now-strip Render the Interesting Now strip
@@ -33,3 +33,4 @@ Render selected Interesting Now entries as a readable bounded companion to the R
 ## Implementation Notes
 
 - Render prepared entries without reranking or recency calculation.
+- 2026-09-05T13:05:09Z: verification pass
