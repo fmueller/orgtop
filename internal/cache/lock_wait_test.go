@@ -24,9 +24,8 @@ func TestDefaultWaitsAreTheClosedProductionBounds(t *testing.T) {
 
 // TestTheTestBinaryRunsOnShrunkenWaits proves the wait bounds every cache lock
 // acquisition uses are injectable rather than compiled in: the test binary
-// replaces them with strictly shorter ones, so a mutant that breaks locking or
-// budget arithmetic fails fast instead of holding a test open for the
-// production bound.
+// replaces them with strictly shorter ones, so a broken lock or budget fails
+// the suite fast instead of holding a test open for the production bound.
 func TestTheTestBinaryRunsOnShrunkenWaits(t *testing.T) {
 	t.Parallel()
 

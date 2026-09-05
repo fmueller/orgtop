@@ -35,8 +35,8 @@ func defaultWaits() waits {
 
 // lockWaits is the wait bound every cache lock acquisition in this process
 // uses. Production always runs on defaultWaits; the test binary replaces it
-// once, before any test runs, so a broken lock or budget fails fast instead of
-// holding a test open for the production bound.
+// once, before any test runs, so a broken lock or budget fails the suite fast
+// instead of holding a test open for the production bound.
 var lockWaits = defaultWaits()
 
 // The maintenance lock's two independent byte regions. The lifecycle region
