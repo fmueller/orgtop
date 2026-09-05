@@ -47,6 +47,9 @@ workflow refuses to publish otherwise.
 
 ### Changed
 
+- Overview and Stream now report the visible row range when terminal height
+  hides content. Stream navigation tracks a focused event and scrolls only when
+  that focus crosses the viewport, preserving it across resize and refresh.
 - Bare `--path` patterns turn their `--repo` selections into filtered path
   Scopes rather than whole-repository Scopes. Repository-only invocations keep
   their v0.1 meaning.

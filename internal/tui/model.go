@@ -165,6 +165,7 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width, m.height, m.sized = max(message.Width, 0), max(message.Height, 0), true
 		m = m.resizedRain()
+		m = m.clampedViews()
 	case tea.KeyPressMsg:
 		return m.handleKey(message)
 	case refreshDueMsg:
@@ -237,13 +238,28 @@ func (m Model) handleRainKey(keystroke string) Model {
 // cannot show.
 func (m Model) resizedRain() Model {
 	width, height := m.budget()
-	if height >= 0 {
-		height = max(height-chromeLines, 0)
-	}
+	height = contentHeight(height)
 	// The field is sized over the rows RG-007's height collapse leaves it once
 	// the strip has taken its share of the same body.
 	rows, _ := m.interesting.rows(m.rain.stripBudget(m.charset, width, height))
 	m.rain = m.rain.resized(width, m.rain.fieldRows(m.charset, width, height, rows))
+	return m
+}
+
+// clampedViews applies the current body budgets to the retained Overview and
+// Stream navigation state. It preserves numeric position where possible and
+// prevents a repeated resize or refresh from leaving a blank trailing window.
+func (m Model) clampedViews() Model {
+	width, height := m.budget()
+	bodyHeight := contentHeight(height)
+	overviewLines := len(overviewLines(m.state, width))
+	if bodyHeight == 0 {
+		m.overview.offset = m.overview.retained(overviewLines)
+	} else {
+		m.overview.offset = m.overview.clamped(overviewLines, bodyHeight)
+	}
+	_, lines, rowHeight := streamContent(m.state, width, bodyHeight)
+	m.stream = m.stream.contained(len(lines), rowHeight)
 	return m
 }
 
@@ -252,7 +268,7 @@ func (m Model) resizedRain() Model {
 // each over its own offset (FR-009, FR-010).
 func (m Model) scroll(keystroke string) Model {
 	width, height := m.budget()
-	bodyHeight := height - chromeLines
+	bodyHeight := contentHeight(height)
 	if m.mode == ModeStream {
 		m.stream = m.stream.scrolled(keystroke, m.state, width, bodyHeight)
 		return m
@@ -277,15 +293,77 @@ func (m Model) render() string {
 	if height == 0 {
 		return ""
 	}
-	header := renderHeader(m.state, m.mode, width)
+	bodyHeight := contentHeight(height)
+	header := renderHeader(m.state, m.mode, width, m.overflow(width, bodyHeight))
 	if height == 1 {
 		return header
 	}
-	footer := m.footer(width, height-chromeLines)
+	footer := m.footer(width, bodyHeight)
 	if height == chromeLines {
 		return strings.Join([]string{header, footer}, "\n")
 	}
-	return strings.Join([]string{header, m.body(width, height-chromeLines), footer}, "\n")
+	return strings.Join([]string{header, m.body(width, bodyHeight), footer}, "\n")
+}
+
+// contentHeight subtracts the shared chrome from a reported terminal height.
+// The unbounded pre-resize sentinel remains negative; a reported height at or
+// below the chrome is a real zero-row body.
+func contentHeight(height int) int {
+	if height < 0 {
+		return unbounded
+	}
+	return max(height-chromeLines, 0)
+}
+
+// overflow returns the active scrolling view's hidden-row accounting. Rain
+// owns its separate fixed-page, item, and strip accounting in its body/footer.
+func (m Model) overflow(width, height int) overflowRange {
+	switch m.mode {
+	case ModeOverview:
+		aggregates := m.state.Scoped.Aggregates()
+		if !hasObservations(aggregates) {
+			return quietOverviewRange(m.overview.offset, len(aggregates), height)
+		}
+		return visibleRange("scopes", m.overview.offset, len(aggregates), height)
+	case ModeStream:
+		_, lines, rowHeight := streamContent(m.state, width, height)
+		if streamStateLine(m.state.Freshness, len(m.state.Scoped.StreamEvents())) != "" {
+			return overflowRange{}
+		}
+		return visibleRange("events", m.stream.offset, len(lines), rowHeight)
+	default:
+		return overflowRange{}
+	}
+}
+
+// quietOverviewRange accounts only for Scope rows while the separate empty
+// state occupies the first body line. Its first/last values therefore remain
+// Scope ordinals rather than including that explanatory line.
+func quietOverviewRange(offset, total, height int) overflowRange {
+	if total <= 0 || height < 0 || height >= total+1 {
+		return overflowRange{}
+	}
+	if height <= 0 {
+		return overflowRange{kind: "scopes", total: total}
+	}
+	offset = viewport{offset: offset}.clamped(total+1, height)
+	first, last := max(offset, 1), min(offset+height-1, total)
+	if last < first {
+		return overflowRange{kind: "scopes", total: total}
+	}
+	return overflowRange{kind: "scopes", first: first, last: last, total: total}
+}
+
+// visibleRange builds a range only when the current viewport hides rows.
+func visibleRange(kind string, offset, total, height int) overflowRange {
+	if height < 0 || total <= height {
+		return overflowRange{}
+	}
+	if height <= 0 {
+		return overflowRange{kind: kind, total: total}
+	}
+	offset = viewport{offset: offset}.clamped(total, height)
+	return overflowRange{kind: kind, first: offset + 1, last: min(offset+height, total), total: total}
 }
 
 // footer renders the shared control hints for the body the size leaves. A Rain

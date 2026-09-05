@@ -29,11 +29,40 @@ type field struct {
 	style lipgloss.Style
 }
 
+// overflowRange is the active view's one-based inclusive visible range over
+// its prepared rows. A zero first/last pair means the view has no body row at
+// the current height, while total still accounts for what resize hid.
+type overflowRange struct {
+	kind               string
+	first, last, total int
+}
+
+// forms returns RG-012's range ladder from full to minimum. The minimum counts
+// everything outside the visible range, both above and below it.
+func (r overflowRange) forms() []string {
+	if r.total <= 0 {
+		return nil
+	}
+	if r.first == 0 || r.last == 0 {
+		return []string{
+			fmt.Sprintf("%s 0 shown of %d", r.kind, r.total),
+			fmt.Sprintf("0/%d", r.total),
+			fmt.Sprintf("+%d", r.total),
+		}
+	}
+	hidden := r.total - (r.last - r.first + 1)
+	return []string{
+		fmt.Sprintf("%s %d-%d of %d", r.kind, r.first, r.last, r.total),
+		fmt.Sprintf("%d-%d/%d", r.first, r.last, r.total),
+		fmt.Sprintf("+%d", hidden),
+	}
+}
+
 // renderHeader renders the widest header that fits the width. The active view,
 // the transport label, and the freshness marker are always retained; scope
 // context, the last success, and the product name give way to them.
-func renderHeader(state State, mode Mode, width int) string {
-	candidates := headerCandidates(state, mode)
+func renderHeader(state State, mode Mode, width int, overflow ...overflowRange) string {
+	candidates := headerCandidates(state, mode, overflow...)
 	for _, candidate := range candidates {
 		if fits(lipgloss.Width(plainFields(candidate)), width) {
 			return joinFields(candidate)
@@ -43,7 +72,7 @@ func renderHeader(state State, mode Mode, width int) string {
 }
 
 // headerCandidates returns the header layouts from richest to sparsest.
-func headerCandidates(state State, mode Mode) [][]field {
+func headerCandidates(state State, mode Mode, overflow ...overflowRange) [][]field {
 	title := []field{{text: appName, style: titleStyle}}
 	core := []field{{text: mode.Label(), style: viewStyle}, {text: transportLabel, style: transportStyle}}
 	if marker := state.Freshness.Marker(); marker != "" {
@@ -80,14 +109,27 @@ func headerCandidates(state State, mode Mode) [][]field {
 		context = updated
 	}
 
-	layouts := [][]field{
-		slices.Concat(title, core, cause, listed, updated),
-		slices.Concat(title, core, cause, counted, updated),
-		slices.Concat(title, core, cause, context),
-		slices.Concat(core, cause, context),
-		slices.Concat(core, cause),
-		slices.Concat(core, context),
-		core,
+	forms := []string{""}
+	if len(overflow) > 0 {
+		if prepared := overflow[0].forms(); len(prepared) > 0 {
+			forms = prepared
+		}
+	}
+	layouts := make([][]field, 0, len(forms)*7)
+	for _, form := range forms {
+		required := slices.Clone(core)
+		if form != "" {
+			required = append(required, field{text: form, style: contextStyle})
+		}
+		layouts = append(layouts,
+			slices.Concat(title, required, cause, listed, updated),
+			slices.Concat(title, required, cause, counted, updated),
+			slices.Concat(title, required, cause, context),
+			slices.Concat(required, cause, context),
+			slices.Concat(required, cause),
+			slices.Concat(required, context),
+			required,
+		)
 	}
 	return withSelection(layouts, selectionForms(state.Selection))
 }

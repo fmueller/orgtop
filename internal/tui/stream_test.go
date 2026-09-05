@@ -253,9 +253,10 @@ func TestStreamScrollKeysWindowTheEventsWithinBounds(t *testing.T) {
 		wantTop    int
 	}{
 		{name: "initial", wantTop: 1},
-		{name: "down", keystrokes: []string{"down"}, wantTop: 2},
+		{name: "down keeps the focused event in the first window", keystrokes: []string{"down"}, wantTop: 1},
+		{name: "down scrolls only after focus crosses the window", keystrokes: []string{"down", "down", "down", "down", "down", "down"}, wantTop: 2},
 		{name: "up clamps at the newest event", keystrokes: []string{"down", "up", "up"}, wantTop: 1},
-		{name: "page down", keystrokes: []string{"pgdown"}, wantTop: 1 + streamRowBudget},
+		{name: "page down minimally reveals focus", keystrokes: []string{"pgdown"}, wantTop: 2},
 		{name: "page up returns", keystrokes: []string{"pgdown", "pgup"}, wantTop: 1},
 		{name: "page down clamps at the oldest window", keystrokes: []string{"pgdown", "pgdown", "pgdown", "pgdown"}, wantTop: lastTop},
 		{name: "down clamps at the oldest window", keystrokes: []string{"pgdown", "pgdown", "pgdown", "down", "down"}, wantTop: lastTop},
@@ -272,6 +273,25 @@ func TestStreamScrollKeysWindowTheEventsWithinBounds(t *testing.T) {
 				t.Errorf("stream rendered %d event rows, want the full row budget of %d", len(rows), streamRowBudget)
 			}
 		})
+	}
+}
+
+func TestStreamPreservesFocusedIndexAcrossRepeatedResize(t *testing.T) {
+	model, _ := apply(t, streamModel(t, numberedEvents(t, scrollEvents)),
+		tea.WindowSizeMsg{Width: wideWidth, Height: scrollTerminalHeight})
+	model = scrolled(t, model, "pgdown", "pgdown")
+
+	const smallerHeight = 7
+	resized, _ := apply(t, model,
+		tea.WindowSizeMsg{Width: narrowWidth, Height: smallerHeight},
+		tea.WindowSizeMsg{Width: narrowWidth, Height: smallerHeight},
+	)
+	if resized.stream.focus != model.stream.focus {
+		t.Errorf("repeated resize moved focus from %d to %d", model.stream.focus, resized.stream.focus)
+	}
+	_, _, rowHeight := streamContent(resized.state, resized.width, smallerHeight-chromeLines)
+	if got, want := resized.stream.offset, resized.stream.focus-rowHeight+1; got != want {
+		t.Errorf("viewport offset after resize is %d, want minimally revealed offset %d", got, want)
 	}
 }
 
@@ -916,7 +936,7 @@ func TestStreamCoverageGivesWayBeforeTheHeadingsAndTheEventRow(t *testing.T) {
 			if got := namesColumns(lines[0]) || (len(lines) > 1 && namesColumns(lines[1])); got != testCase.wantHeadings {
 				t.Errorf("stream renders its headings = %t at height %d, want %t:\n%s", got, testCase.height, testCase.wantHeadings, content)
 			}
-			if got := strings.Contains(content, "events"); got != testCase.wantCoverage {
+			if got := strings.Contains(strings.Join(lines, "\n"), "events"); got != testCase.wantCoverage {
 				t.Errorf("stream renders its coverage disclosure = %t at height %d, want %t:\n%s", got, testCase.height, testCase.wantCoverage, content)
 			}
 			if !strings.Contains(content, "q quit") {

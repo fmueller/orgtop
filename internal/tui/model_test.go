@@ -397,6 +397,131 @@ func TestScrollKeysMoveOnlyTheActiveView(t *testing.T) {
 	}
 }
 
+func TestScrollableViewsAccountForHiddenRowsInTheHeader(t *testing.T) {
+	tests := []struct {
+		name       string
+		model      Model
+		wantFirst  string
+		keystrokes []string
+		wantMoved  string
+	}{
+		{
+			name:       "overview",
+			model:      scrollOverviewModel(t, scrollRepositories),
+			wantFirst:  "scopes 1-8 of 20",
+			keystrokes: []string{"pgdown"},
+			wantMoved:  "scopes 9-16 of 20",
+		},
+		{
+			name:       "stream",
+			model:      streamModel(t, numberedEvents(t, scrollEvents)),
+			wantFirst:  "events 1-6 of 20",
+			keystrokes: []string{"pgdown"},
+			wantMoved:  "events 2-7 of 20",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			model, _ := apply(t, test.model, tea.WindowSizeMsg{Width: wideWidth, Height: scrollTerminalHeight})
+			if content := model.View().Content; !strings.Contains(content, test.wantFirst) {
+				t.Fatalf("initial render does not account for hidden rows with %q:\n%s", test.wantFirst, content)
+			}
+			moved := scrolled(t, model, test.keystrokes...)
+			if content := moved.View().Content; !strings.Contains(content, test.wantMoved) {
+				t.Errorf("moved render does not account for hidden rows with %q:\n%s", test.wantMoved, content)
+			}
+		})
+	}
+}
+
+func TestOverviewAccountsForHiddenQuietScopesAfterItsEmptyState(t *testing.T) {
+	names := repositoryNames(scrollRepositories)
+	activities := make([]domain.RepositoryActivity, 0, len(names))
+	for _, name := range names {
+		activities = append(activities, testActivity(t, name))
+	}
+	model := publishSnapshots(newModel(t, names...), testScope(t, names...), activities)
+	model, _ = apply(t, model, tea.WindowSizeMsg{Width: wideWidth, Height: scrollTerminalHeight})
+
+	if content := model.View().Content; !strings.Contains(content, "scopes 1-7 of 20") {
+		t.Fatalf("quiet Overview does not account for the Scope rows below its empty-state line:\n%s", content)
+	}
+	moved := scrolled(t, model, "pgdown")
+	if content := moved.View().Content; !strings.Contains(content, "scopes 8-15 of 20") {
+		t.Errorf("scrolled quiet Overview reports the wrong Scope range:\n%s", content)
+	}
+}
+
+func TestStreamAccountsForZeroVisibleRowsAtChromeOnlyHeight(t *testing.T) {
+	model, _ := apply(t, streamModel(t, numberedEvents(t, scrollEvents)),
+		tea.WindowSizeMsg{Width: wideWidth, Height: chromeLines})
+	content := model.View().Content
+
+	assertFits(t, content, wideWidth, chromeLines)
+	for _, want := range []string{"STREAM", "POLLING", "events 0 shown of 20", "q quit"} {
+		if !strings.Contains(content, want) {
+			t.Errorf("chrome-only Stream does not contain %q:\n%s", want, content)
+		}
+	}
+}
+
+func TestScrollableViewsPreservePositionThroughZeroBodyRows(t *testing.T) {
+	t.Run("overview", func(t *testing.T) {
+		model, _ := apply(t, scrollOverviewModel(t, scrollRepositories),
+			tea.WindowSizeMsg{Width: wideWidth, Height: scrollTerminalHeight})
+		model = scrolled(t, model, "pgdown")
+		wantOffset, wantRange := model.overview.offset, "scopes 9-16 of 20"
+
+		collapsed, _ := apply(t, model,
+			tea.WindowSizeMsg{Width: narrowWidth, Height: chromeLines},
+			tea.WindowSizeMsg{Width: narrowWidth, Height: chromeLines})
+		if collapsed.overview.offset != wantOffset {
+			t.Fatalf("chrome-only resize moved Overview offset from %d to %d", wantOffset, collapsed.overview.offset)
+		}
+
+		restored, _ := apply(t, collapsed, tea.WindowSizeMsg{Width: wideWidth, Height: scrollTerminalHeight})
+		if restored.overview.offset != wantOffset || !strings.Contains(restored.View().Content, wantRange) {
+			t.Errorf("restored Overview did not return to offset %d and %q:\n%s", wantOffset, wantRange, restored.View().Content)
+		}
+	})
+
+	t.Run("stream", func(t *testing.T) {
+		model, _ := apply(t, streamModel(t, numberedEvents(t, scrollEvents)),
+			tea.WindowSizeMsg{Width: wideWidth, Height: scrollTerminalHeight})
+		model = scrolled(t, model, "pgdown", "pgdown")
+		wantFocus, wantOffset, wantRange := model.stream.focus, model.stream.offset, "events 8-13 of 20"
+
+		collapsed, _ := apply(t, model,
+			tea.WindowSizeMsg{Width: narrowWidth, Height: chromeLines},
+			tea.WindowSizeMsg{Width: narrowWidth, Height: chromeLines})
+		if collapsed.stream.focus != wantFocus || collapsed.stream.offset != wantOffset {
+			t.Fatalf("chrome-only resize moved Stream focus/offset from %d/%d to %d/%d",
+				wantFocus, wantOffset, collapsed.stream.focus, collapsed.stream.offset)
+		}
+
+		restored, _ := apply(t, collapsed, tea.WindowSizeMsg{Width: wideWidth, Height: scrollTerminalHeight})
+		if restored.stream.focus != wantFocus || restored.stream.offset != wantOffset || !strings.Contains(restored.View().Content, wantRange) {
+			t.Errorf("restored Stream did not return to focus/offset %d/%d and %q:\n%s",
+				wantFocus, wantOffset, wantRange, restored.View().Content)
+		}
+	})
+}
+
+func TestOverflowRangeUsesClosedFullCompactAndMinimumForms(t *testing.T) {
+	overflow := overflowRange{kind: "events", first: 8, last: 13, total: 20}
+	want := []string{"events 8-13 of 20", "8-13/20", "+14"}
+	if got := overflow.forms(); !reflect.DeepEqual(got, want) {
+		t.Errorf("overflow forms are %q, want %q", got, want)
+	}
+
+	zero := overflowRange{kind: "events", total: 20}
+	want = []string{"events 0 shown of 20", "0/20", "+20"}
+	if got := zero.forms(); !reflect.DeepEqual(got, want) {
+		t.Errorf("zero-row overflow forms are %q, want %q", got, want)
+	}
+}
+
 func TestSmallPositiveSizesRenderWithinBounds(t *testing.T) {
 	sizes := []tea.WindowSizeMsg{
 		{Width: 1, Height: 1},

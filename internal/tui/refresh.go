@@ -157,6 +157,7 @@ func (m Model) applyRefresh(message refreshedMsg) (tea.Model, tea.Cmd) {
 		// rows the field may no longer place an item on.
 		m.interesting = m.interesting.reconciled(m.state.Scopes, m.state.Scoped, at)
 		m = m.resizedRain()
+		m = m.clampedViews()
 	}
 	return m, m.tick(m.delay(message))
 }

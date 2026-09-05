@@ -40,6 +40,10 @@ type stream struct {
 	// viewport is the Stream's own scroll position, moved and clamped by the
 	// mechanism both views share.
 	viewport
+	// focus is the prepared event keyboard navigation addresses. It is retained
+	// independently from the first visible row so movement within a window does
+	// not needlessly scroll it.
+	focus int
 }
 
 // render returns the Stream body for the shared content area: the sticky chrome
@@ -58,7 +62,41 @@ func (s stream) render(state State, width, height int) string {
 // remain once Stream's own chrome has taken its lines.
 func (s stream) scrolled(keystroke string, state State, width, height int) stream {
 	_, lines, rowHeight := streamContent(state, width, height)
-	s.viewport = s.viewport.scrolled(keystroke, len(lines), rowHeight)
+	s = s.contained(len(lines), rowHeight)
+	step := max(rowHeight, 1)
+	switch keystroke {
+	case "up":
+		s.focus--
+	case "down":
+		s.focus++
+	case "pgup":
+		s.focus -= step
+	case "pgdown":
+		s.focus += step
+	}
+	return s.contained(len(lines), rowHeight)
+}
+
+// contained clamps focus and then moves the viewport only enough to reveal it.
+func (s stream) contained(count, height int) stream {
+	if count <= 0 {
+		s.focus, s.offset = 0, 0
+		return s
+	}
+	s.focus = min(max(s.focus, 0), count-1)
+	if height == 0 {
+		s.offset = s.retained(count)
+		return s
+	}
+	s.offset = s.clamped(count, height)
+	if height < 0 {
+		return s
+	}
+	if s.focus < s.offset {
+		s.offset = s.focus
+	} else if s.focus >= s.offset+height {
+		s.offset = s.focus - height + 1
+	}
 	return s
 }
 
@@ -78,6 +116,9 @@ func streamContent(state State, width, height int) (chrome []string, lines []str
 	}
 
 	laid := layoutFittingWidth(events, state.Scopes.Tokens(), state.LastSuccess, width)
+	if height == 0 {
+		return nil, renderStreamRows(laid.rows), 0
+	}
 	chrome = []string{streamCoverage(len(events), state.Scoped.Truncated()), laid.heading.String()}
 	// A non-positive height is unbounded and holds all of it; a bounded one
 	// gives up chrome lines, the disclosure first, to keep one event row.

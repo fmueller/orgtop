@@ -36,3 +36,11 @@ func (v viewport) clamped(count, height int) int {
 	}
 	return min(max(v.offset, 0), max(count-height, 0))
 }
+
+// retained bounds an offset while a reported terminal size has no body rows.
+// There is no visible window to align, so the last prepared row is the furthest
+// valid position; restoring a positive height can then clamp that position to
+// the new window without first losing it.
+func (v viewport) retained(count int) int {
+	return min(max(v.offset, 0), max(count-1, 0))
+}

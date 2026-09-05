@@ -704,12 +704,18 @@ func TestStreamScrollsToEveryEventBelowItsStickyHeadingsAtTheNarrowestSize(t *te
 	assertAbsent(t, top, oldest)
 
 	run.press("pgdown")
-	bottom := run.model.View().Content
-	scrolledRows := streamBody(t, bottom)
+	middle := run.model.View().Content
+	scrolledRows := streamBody(t, middle)
 	if len(scrolledRows) != streamRowBudget {
 		t.Fatalf("the scrolled stream rendered %d event rows, want the row budget of %d:\n%s",
-			len(scrolledRows), streamRowBudget, bottom)
+			len(scrolledRows), streamRowBudget, middle)
 	}
+	assertContains(t, middle, "events 2-7 of 8")
+	assertAbsent(t, middle, oldest)
+
+	run.press("pgdown")
+	bottom := run.model.View().Content
+	scrolledRows = streamBody(t, bottom)
 	assertContains(t, scrolledRows[len(scrolledRows)-1], oldest)
 	assertAbsent(t, bottom, " "+newest+" ")
 
@@ -720,6 +726,7 @@ func TestStreamScrollsToEveryEventBelowItsStickyHeadingsAtTheNarrowestSize(t *te
 		t.Errorf("paging past the oldest event moved the window:\n%s\nwant:\n%s", clamped, bottom)
 	}
 
+	run.press("pgup")
 	run.press("pgup")
 	assertContains(t, streamBody(t, run.model.View().Content)[0], newest)
 }

@@ -1,7 +1,7 @@
 ---
 id: T-065-implement-deterministic-responsive-overflow
 title: Implement deterministic responsive overflow
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.2.0.md#responsive-and-degraded-experience
 dependencies:
@@ -9,7 +9,7 @@ dependencies:
     - T-058-render-scope-context-in-stream
     - T-062-render-and-navigate-the-rain-view
     - T-064-render-the-interesting-now-strip
-updated_at: "2026-08-29T09:22:04Z"
+updated_at: "2026-09-05T14:42:27Z"
 ---
 
 # T-065-implement-deterministic-responsive-overflow Implement deterministic responsive overflow
@@ -35,3 +35,5 @@ Implement the closed RG-012 resize, overflow, paging/scrolling, label shortening
 ## Implementation Notes
 
 - Hide secondary detail before primary data and keep calculations bounded per update/render.
+- 2026-09-05T14:42:16Z: verification pass
+- 2026-09-05T14:42:27Z: Implemented and verified deterministic Overview/Stream overflow accounting, focus navigation, and bounded resize/refresh behavior; full check and representative 40x10 renders passed
