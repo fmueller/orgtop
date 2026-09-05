@@ -2,6 +2,7 @@ package toolchain
 
 import (
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -451,6 +452,13 @@ func TestMutationTiersSplitTheMutatorSet(t *testing.T) {
 	if !strings.Contains(gate, "--threshold-efficacy") {
 		t.Error("the weekly gate must keep an efficacy threshold; without it the widened mutator set gates nothing")
 	}
+	// NFR-006 expects every package to hold at least 90% efficacy. gremlins
+	// thresholds the repository total rather than each package, so the gate
+	// enforces the floor in aggregate and the per-package figures are read
+	// from the run's own report.
+	if threshold := thresholdEfficacy(t, gate); threshold < 90 {
+		t.Errorf("the weekly gate thresholds efficacy at %g%%, want at least the 90%% floor NFR-006 expects of every package", threshold)
+	}
 	// The cache suite waits out its retry bounds under mutation. At the default
 	// coefficient nearly every cache mutant times out, and timeouts count toward
 	// neither side of the efficacy ratio, so the package reports a perfect score
@@ -464,6 +472,26 @@ func TestMutationTiersSplitTheMutatorSet(t *testing.T) {
 	if strings.Contains(differential, "--threshold-efficacy") {
 		t.Error("the differential run must report rather than gate; thresholds belong to the weekly lane")
 	}
+}
+
+// thresholdEfficacy reports the percentage the gate's --threshold-efficacy flag
+// carries, so the guard reads the enforced floor rather than only its presence.
+func thresholdEfficacy(t *testing.T, command string) float64 {
+	t.Helper()
+
+	fields := strings.Fields(command)
+	for index, field := range fields {
+		if field != "--threshold-efficacy" || index+1 >= len(fields) {
+			continue
+		}
+		threshold, err := strconv.ParseFloat(fields[index+1], 64)
+		if err != nil {
+			t.Fatalf("--threshold-efficacy %q is not a number: %v", fields[index+1], err)
+		}
+		return threshold
+	}
+	t.Fatalf("the command carries no --threshold-efficacy value: %s", command)
+	return 0
 }
 
 // mutationCommand returns the gremlins invocation a mutation target runs, with

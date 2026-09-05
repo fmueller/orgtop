@@ -71,7 +71,7 @@ tasks:
         --invert-bitwise --invert-bwassign --remove-self-assignments
     cmds:
       - go clean -testcache
-      - go run github.com/go-gremlins/gremlins/cmd/gremlins@v0.6.0 unleash --exclude-files 'cmd/.*' {{.MUTATORS}} --output-statuses lt --workers 2 --timeout-coefficient 20 --threshold-efficacy 70
+      - go run github.com/go-gremlins/gremlins/cmd/gremlins@v0.6.0 unleash --exclude-files 'cmd/.*' {{.MUTATORS}} --output-statuses lt --workers 2 --timeout-coefficient 20 --threshold-efficacy 90
 
   run:smoke:
     desc: Start orgtop and require a clean exit (startup smoke)

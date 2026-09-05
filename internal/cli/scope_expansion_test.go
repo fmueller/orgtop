@@ -71,10 +71,11 @@ func TestScopeCapacityOutranksSelectorCapacity(t *testing.T) {
 	}
 }
 
-// TestParseArgsRejectsANulByteAnywhere keeps the RG-002 whole-value NUL
-// precondition covering the first byte of a pattern: a NUL is never literal text,
-// wherever it occurs.
-func TestParseArgsRejectsANulByteAnywhere(t *testing.T) {
+// TestParseArgsRejectsALeadingNulByte keeps the RG-002 whole-value NUL
+// precondition covering the first byte of a pattern. A NUL is never literal
+// text, and the first byte is the one position an offset check can accept by
+// mistake; TestParseArgsRejectsInvalidPathValues covers a NUL further in.
+func TestParseArgsRejectsALeadingNulByte(t *testing.T) {
 	tests := []struct {
 		name  string
 		value string
