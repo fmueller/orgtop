@@ -13,9 +13,19 @@ import (
 	"github.com/fmueller/orgtop/internal/domain"
 )
 
-// maintMutPathSet builds count distinct changed paths whose lengths sum to
+// paddedPath builds one path of exactly length bytes beneath the given prefix.
+func paddedPath(t *testing.T, prefix string, length int) string {
+	t.Helper()
+
+	if length <= len(prefix) {
+		t.Fatalf("the fixture needs paths longer than %d bytes", len(prefix))
+	}
+	return prefix + strings.Repeat("p", length-len(prefix))
+}
+
+// boundedPathSet builds count distinct changed paths whose lengths sum to
 // exactly total bytes, so a test can state the growth one replacement projects.
-func maintMutPathSet(t *testing.T, count, total int) []domain.ChangedPath {
+func boundedPathSet(t *testing.T, count, total int) []domain.ChangedPath {
 	t.Helper()
 
 	values := make([]string, 0, count)
@@ -23,35 +33,27 @@ func maintMutPathSet(t *testing.T, count, total int) []domain.ChangedPath {
 	for index := 0; index < count; index++ {
 		length := remaining / (count - index)
 		remaining -= length
-		prefix := fmt.Sprintf("d%d/", index)
-		if length <= len(prefix) {
-			t.Fatalf("the fixture needs paths longer than %d bytes", len(prefix))
-		}
-		values = append(values, prefix+strings.Repeat("p", length-len(prefix)))
+		values = append(values, paddedPath(t, fmt.Sprintf("d%d/", index), length))
 	}
 	return changedPaths(t, values...)
 }
 
-// maintMutFillerPaths builds count distinct paths of the given length.
-func maintMutFillerPaths(t *testing.T, count, length int) []string {
+// fillerPaths builds count distinct paths of the given length.
+func fillerPaths(t *testing.T, count, length int) []string {
 	t.Helper()
 
 	values := make([]string, 0, count)
 	for index := 0; index < count; index++ {
-		prefix := fmt.Sprintf("f%d/", index)
-		if length <= len(prefix) {
-			t.Fatalf("the fixture needs paths longer than %d bytes", len(prefix))
-		}
-		values = append(values, prefix+strings.Repeat("p", length-len(prefix)))
+		values = append(values, paddedPath(t, fmt.Sprintf("f%d/", index), length))
 	}
 	return values
 }
 
-// maintMutRetainedFileBytes sums the OrgTop-owned files that survive a
-// truncating checkpoint. RG-005 projects `page_count * 4,096 + other retained
-// files`, and the database, its write-ahead log, and its shared-memory index are
-// not among the retained files.
-func maintMutRetainedFileBytes(t *testing.T, location Location) int64 {
+// retainedFileBytes sums the OrgTop-owned files that survive a truncating
+// checkpoint. RG-005 projects `page_count * 4,096 + other retained files`, and
+// the database, its write-ahead log, and its shared-memory index are not among
+// the retained files.
+func retainedFileBytes(t *testing.T, location Location) int64 {
 	t.Helper()
 
 	var total int64
@@ -73,9 +75,9 @@ func maintMutRetainedFileBytes(t *testing.T, location Location) int64 {
 	return total
 }
 
-// maintMutCheckpoint truncates the write-ahead log with an independent
-// connection, so the page count and the apparent bytes describe one state.
-func maintMutCheckpoint(t *testing.T, location Location) {
+// truncateLog truncates the write-ahead log with an independent connection, so
+// the page count and the apparent bytes describe one state.
+func truncateLog(t *testing.T, location Location) {
 	t.Helper()
 
 	var busy, log, checkpointed int
@@ -85,41 +87,52 @@ func maintMutCheckpoint(t *testing.T, location Location) {
 	}
 }
 
-// maintMutGenerousBounds are shrunken bounds whose row limits still admit a
-// multi-record fixture, so a test seeds it before narrowing the bound it proves.
-func maintMutGenerousBounds() bounds {
+// generousBounds are shrunken bounds whose row limits still admit a multi-record
+// fixture, so a test seeds it before narrowing the bound it proves.
+// Applying them narrows the store in place, which is how the seeding helpers
+// below widen admission for the fixture itself.
+func generousBounds() bounds {
 	limits := smallBounds()
 	limits.evidenceRecords = 1_000
 	limits.childRecords = 10_000
 	return limits
 }
 
-// maintMutSeedExpired saves one expired record per name, each carrying
-// pathsPerRecord paths.
-func maintMutSeedExpired(t *testing.T, store *Store, names []string, pathsPerRecord int) {
+// numberedPaths builds pathsPerRecord distinct paths beneath one record's name.
+func numberedPaths(name string, pathsPerRecord int) []string {
+	paths := make([]string, 0, pathsPerRecord)
+	for index := 0; index < pathsPerRecord; index++ {
+		paths = append(paths, fmt.Sprintf("%s/%d.go", name, index))
+	}
+	return paths
+}
+
+// freshEntry builds the record a write admitted right now stores: one whose
+// acquisition and last use both read the fixed refresh clock.
+func freshEntry(key Key, paths []domain.ChangedPath) Entry {
+	return Entry{Key: key, Paths: paths, AcquiredAt: referenceTime, LastUsedAt: referenceTime}
+}
+
+// seedExpired saves one expired record per name, each carrying pathsPerRecord
+// paths.
+func seedExpired(t *testing.T, store *Store, names []string, pathsPerRecord int) {
 	t.Helper()
 
-	store.withBounds(maintMutGenerousBounds())
+	store.withBounds(generousBounds())
+	expired := referenceTime.Add(-evidenceTTL)
 	for _, name := range names {
-		paths := make([]string, 0, pathsPerRecord)
-		for index := 0; index < pathsPerRecord; index++ {
-			paths = append(paths, fmt.Sprintf("%s/%d.go", name, index))
-		}
-		seedEntry(t, store, name, referenceTime.Add(-evidenceTTL), referenceTime.Add(-evidenceTTL), paths...)
+		seedEntry(t, store, name, expired, expired, numberedPaths(name, pathsPerRecord)...)
 	}
 }
 
-// maintMutSeedFresh saves one fresh record per name, each carrying
-// pathsPerRecord paths, with distinct last-use times so eviction order is total.
-func maintMutSeedFresh(t *testing.T, store *Store, names []string, pathsPerRecord int) {
+// seedFresh saves one fresh record per name, each carrying pathsPerRecord paths,
+// with distinct last-use times so eviction order is total.
+func seedFresh(t *testing.T, store *Store, names []string, pathsPerRecord int) {
 	t.Helper()
 
-	store.withBounds(maintMutGenerousBounds())
+	store.withBounds(generousBounds())
 	for index, name := range names {
-		paths := make([]string, 0, pathsPerRecord)
-		for path := 0; path < pathsPerRecord; path++ {
-			paths = append(paths, fmt.Sprintf("%s/%d.go", name, path))
-		}
+		paths := numberedPaths(name, pathsPerRecord)
 		used := referenceTime.Add(-time.Duration(len(names)-index) * time.Hour)
 		seedEntry(t, store, name, used, used, paths...)
 	}
@@ -170,12 +183,7 @@ func TestAdmissionAllowsExactlyTheTemporaryEnvelope(t *testing.T) {
 	if err != nil {
 		t.Fatalf("PhysicalBytes() error = %v", err)
 	}
-	replacement := Entry{
-		Key:        kept.Key,
-		Paths:      changedPaths(t, "b.go"),
-		AcquiredAt: referenceTime,
-		LastUsedAt: referenceTime,
-	}
+	replacement := freshEntry(kept.Key, changedPaths(t, "b.go"))
 
 	limits := smallBounds()
 	limits.temporaryBytes = used + limits.writeReservation - 1
@@ -199,12 +207,7 @@ func TestReplacingARecordWithoutStoredPathsAddsNoEvidenceRow(t *testing.T) {
 
 	limits := smallBounds()
 	limits.evidenceRecords = 1
-	err := store.withBounds(limits).Save(context.Background(), Entry{
-		Key:        empty.Key,
-		Paths:      changedPaths(t, "a.go"),
-		AcquiredAt: referenceTime,
-		LastUsedAt: referenceTime,
-	})
+	err := store.withBounds(limits).Save(context.Background(), freshEntry(empty.Key, changedPaths(t, "a.go")))
 	if err != nil {
 		t.Errorf("Save() error = %v, want the replacement of the only stored record admitted", err)
 	}
@@ -225,12 +228,8 @@ func TestReplacementProjectsTheExactKeyDeletedChildRows(t *testing.T) {
 
 		limits := smallBounds()
 		limits.childRecords = 5
-		err := store.withBounds(limits).Save(context.Background(), Entry{
-			Key:        stored.Key,
-			Paths:      changedPaths(t, "w.go", "x.go", "y.go", "z.go"),
-			AcquiredAt: referenceTime,
-			LastUsedAt: referenceTime,
-		})
+		err := store.withBounds(limits).Save(context.Background(),
+			freshEntry(stored.Key, changedPaths(t, "w.go", "x.go", "y.go", "z.go")))
 		if err != nil {
 			t.Errorf("Save() error = %v, want four rows admitted once the three replaced rows are released", err)
 		}
@@ -242,19 +241,10 @@ func TestReplacementProjectsTheExactKeyDeletedChildRows(t *testing.T) {
 		store, _ := fixedClockStore(t)
 		seedEntry(t, store, "stored", referenceTime.Add(-time.Hour), referenceTime.Add(-time.Hour),
 			"a.go", "b.go", "c.go")
-		key, err := CompareKey(testRepository(t, "owner", "other"), baseSHA, headSHA)
-		if err != nil {
-			t.Fatalf("CompareKey() error = %v", err)
-		}
-
 		limits := smallBounds()
 		limits.childRecords = 5
-		err = store.withBounds(limits).Save(context.Background(), Entry{
-			Key:        key,
-			Paths:      changedPaths(t, "w.go", "x.go", "y.go", "z.go"),
-			AcquiredAt: referenceTime,
-			LastUsedAt: referenceTime,
-		})
+		err := store.withBounds(limits).Save(context.Background(),
+			freshEntry(namedKey(t, "other"), changedPaths(t, "w.go", "x.go", "y.go", "z.go")))
 		if !errors.Is(err, ErrOverCapacity) {
 			t.Errorf("Save() error = %v, want ErrOverCapacity for seven projected child rows above five", err)
 		}
@@ -272,19 +262,10 @@ func TestAdmissionAllowsAProjectionExactlyAtAHardRowLimit(t *testing.T) {
 
 		store, _ := fixedClockStore(t)
 		seedEntry(t, store, "first", referenceTime.Add(-time.Hour), referenceTime.Add(-time.Hour), "a.go")
-		key, err := CompareKey(testRepository(t, "owner", "second"), baseSHA, headSHA)
-		if err != nil {
-			t.Fatalf("CompareKey() error = %v", err)
-		}
-
 		limits := smallBounds()
 		limits.evidenceRecords = 2
-		err = store.withBounds(limits).Save(context.Background(), Entry{
-			Key:        key,
-			Paths:      changedPaths(t, "b.go"),
-			AcquiredAt: referenceTime,
-			LastUsedAt: referenceTime,
-		})
+		err := store.withBounds(limits).Save(context.Background(),
+			freshEntry(namedKey(t, "second"), changedPaths(t, "b.go")))
 		if err != nil {
 			t.Errorf("Save() error = %v, want the second of two admitted evidence records", err)
 		}
@@ -295,19 +276,10 @@ func TestAdmissionAllowsAProjectionExactlyAtAHardRowLimit(t *testing.T) {
 
 		store, _ := fixedClockStore(t)
 		seedEntry(t, store, "first", referenceTime.Add(-time.Hour), referenceTime.Add(-time.Hour), "a.go")
-		key, err := CompareKey(testRepository(t, "owner", "second"), baseSHA, headSHA)
-		if err != nil {
-			t.Fatalf("CompareKey() error = %v", err)
-		}
-
 		limits := smallBounds()
 		limits.childRecords = 3
-		err = store.withBounds(limits).Save(context.Background(), Entry{
-			Key:        key,
-			Paths:      changedPaths(t, "b.go", "c.go"),
-			AcquiredAt: referenceTime,
-			LastUsedAt: referenceTime,
-		})
+		err := store.withBounds(limits).Save(context.Background(),
+			freshEntry(namedKey(t, "second"), changedPaths(t, "b.go", "c.go")))
 		if err != nil {
 			t.Errorf("Save() error = %v, want three projected child rows admitted at a limit of three", err)
 		}
@@ -318,8 +290,8 @@ func TestAdmissionAllowsAProjectionExactlyAtAHardRowLimit(t *testing.T) {
 // exactly 21 pages, so the page rounding and every term of the projection are
 // observable at the ceiling.
 const (
-	maintMutProjectedPaths     = 30
-	maintMutProjectedPathBytes = 41_312
+	projectedPaths     = 30
+	projectedPathBytes = 41_312
 )
 
 // TestSaveIsAdmittedExactlyAtTheProjectedRetainedCeiling proves RG-005's
@@ -334,54 +306,45 @@ func TestSaveIsAdmittedExactlyAtTheProjectedRetainedCeiling(t *testing.T) {
 		t.Parallel()
 
 		store, location := fixedClockStore(t)
-		maintMutAssertProjectedCeiling(t, store, location)
+		assertProjectedCeiling(t, store, location)
 	})
 
 	t.Run("with reusable free pages", func(t *testing.T) {
 		t.Parallel()
 
 		store, location := fixedClockStore(t)
-		store = store.withBounds(maintMutGenerousBounds())
+		store = store.withBounds(generousBounds())
 		seedEntry(t, store, "released", referenceTime.Add(-time.Hour), referenceTime.Add(-time.Hour),
-			maintMutFillerPaths(t, 20, 900)...)
+			fillerPaths(t, 20, 900)...)
 		// Incremental auto-vacuum keeps the pages a deletion releases on the free
 		// list, so the next write reuses them instead of growing the database.
 		execDatabase(t, location, "DELETE FROM evidence_path", "DELETE FROM evidence")
 		if free := queryScalar[int64](t, location, "PRAGMA freelist_count"); free == 0 {
 			t.Fatalf("the fixture needs the deletion to release reusable free pages")
 		}
-		maintMutAssertProjectedCeiling(t, store, location)
+		assertProjectedCeiling(t, store, location)
 	})
 }
 
-// maintMutAssertProjectedCeiling proves one replacement is admitted exactly at
-// its projected retained bytes and skipped one byte below them.
-func maintMutAssertProjectedCeiling(t *testing.T, store *Store, location Location) {
+// assertProjectedCeiling proves one replacement is admitted exactly at its
+// projected retained bytes and skipped one byte below them.
+func assertProjectedCeiling(t *testing.T, store *Store, location Location) {
 	t.Helper()
 
 	// Two OrgTop-owned files that survive a checkpoint, so the projection has to
 	// account for retained bytes beyond the database itself.
 	stageFile(t, location.Bootstrap(), strings.Repeat("b", 700))
 	stageFile(t, location.Tombstone(), strings.Repeat("t", 300))
-	maintMutCheckpoint(t, location)
+	truncateLog(t, location)
 
 	pages := queryScalar[int64](t, location, "PRAGMA page_count")
 	free := queryScalar[int64](t, location, "PRAGMA freelist_count")
-	retained := maintMutRetainedFileBytes(t, location)
+	retained := retainedFileBytes(t, location)
 
-	key, err := CompareKey(testRepository(t, "owner", "projected"), baseSHA, headSHA)
-	if err != nil {
-		t.Fatalf("CompareKey() error = %v", err)
-	}
-	entry := Entry{
-		Key:        key,
-		Paths:      maintMutPathSet(t, maintMutProjectedPaths, maintMutProjectedPathBytes),
-		AcquiredAt: referenceTime,
-		LastUsedAt: referenceTime,
-	}
+	entry := freshEntry(namedKey(t, "projected"), boundedPathSet(t, projectedPaths, projectedPathBytes))
 	// The parent row, plus every stored path's child row and the unique index
 	// entry that repeats it. The fixture makes that an exact page multiple.
-	growth := int64(evidenceRowBytes + maintMutProjectedPaths*pathRowBytes + 2*maintMutProjectedPathBytes)
+	growth := int64(evidenceRowBytes + projectedPaths*pathRowBytes + 2*projectedPathBytes)
 	if growth%pageSize != 0 {
 		t.Fatalf("the fixture growth %d must be a whole number of %d byte pages", growth, pageSize)
 	}
@@ -487,9 +450,9 @@ func TestSelectionSpendsTheChildRowBudget(t *testing.T) {
 		t.Parallel()
 
 		store, location := fixedClockStore(t)
-		maintMutSeedExpired(t, store, []string{"aaa", "bbb"}, 2)
+		seedExpired(t, store, []string{"aaa", "bbb"}, 2)
 
-		limits := maintMutGenerousBounds()
+		limits := generousBounds()
 		limits.childBatch = 4
 		report, err := store.withBounds(limits).Maintain(context.Background())
 		if err != nil {
@@ -507,9 +470,9 @@ func TestSelectionSpendsTheChildRowBudget(t *testing.T) {
 		t.Parallel()
 
 		store, location := fixedClockStore(t)
-		maintMutSeedExpired(t, store, []string{"aaa", "bbb", "ccc"}, 2)
+		seedExpired(t, store, []string{"aaa", "bbb", "ccc"}, 2)
 
-		limits := maintMutGenerousBounds()
+		limits := generousBounds()
 		limits.childBatch = 5
 		report, err := store.withBounds(limits).Maintain(context.Background())
 		if err != nil {
@@ -531,7 +494,7 @@ func TestSelectionAccumulatesStoredPathBytesAcrossRecords(t *testing.T) {
 	t.Parallel()
 
 	store, location := fixedClockStore(t)
-	limits := maintMutGenerousBounds()
+	limits := generousBounds()
 	limits.selectionPathBytes = 12
 	store = store.withBounds(limits)
 	for _, name := range []string{"aaa", "bbb", "ccc"} {
@@ -560,10 +523,10 @@ func TestEvictionCountsWhatTheBatchAlreadySelected(t *testing.T) {
 		t.Parallel()
 
 		store, _ := fixedClockStore(t)
-		maintMutSeedFresh(t, store, []string{"aaa", "bbb", "ccc"}, 1)
-		maintMutSeedExpired(t, store, []string{"ddd"}, 1)
+		seedFresh(t, store, []string{"aaa", "bbb", "ccc"}, 1)
+		seedExpired(t, store, []string{"ddd"}, 1)
 
-		limits := maintMutGenerousBounds()
+		limits := generousBounds()
 		limits.evidenceRecords = 4
 		report, err := store.withBounds(limits).Maintain(context.Background())
 		if err != nil {
@@ -578,10 +541,10 @@ func TestEvictionCountsWhatTheBatchAlreadySelected(t *testing.T) {
 		t.Parallel()
 
 		store, _ := fixedClockStore(t)
-		maintMutSeedFresh(t, store, []string{"aaa", "bbb", "ccc"}, 2)
-		maintMutSeedExpired(t, store, []string{"ddd"}, 2)
+		seedFresh(t, store, []string{"aaa", "bbb", "ccc"}, 2)
+		seedExpired(t, store, []string{"ddd"}, 2)
 
-		limits := maintMutGenerousBounds()
+		limits := generousBounds()
 		limits.childRecords = 6
 		report, err := store.withBounds(limits).Maintain(context.Background())
 		if err != nil {
@@ -602,9 +565,9 @@ func TestEvictionStopsAtTheChildRowTarget(t *testing.T) {
 		t.Parallel()
 
 		store, location := fixedClockStore(t)
-		maintMutSeedFresh(t, store, []string{"aaa", "bbb", "ccc", "ddd", "eee", "fff"}, 2)
+		seedFresh(t, store, []string{"aaa", "bbb", "ccc", "ddd", "eee", "fff"}, 2)
 
-		limits := maintMutGenerousBounds()
+		limits := generousBounds()
 		limits.childRecords = 8
 		report, err := store.withBounds(limits).Maintain(context.Background())
 		if err != nil {
@@ -622,9 +585,9 @@ func TestEvictionStopsAtTheChildRowTarget(t *testing.T) {
 		t.Parallel()
 
 		store, _ := fixedClockStore(t)
-		maintMutSeedFresh(t, store, []string{"aaa", "bbb", "ccc"}, 2)
+		seedFresh(t, store, []string{"aaa", "bbb", "ccc"}, 2)
 
-		limits := maintMutGenerousBounds()
+		limits := generousBounds()
 		limits.childRecords = 8
 		report, err := store.withBounds(limits).Maintain(context.Background())
 		if err != nil {
@@ -642,13 +605,13 @@ func TestEvictionDoesNotRunAtTheRetainedTarget(t *testing.T) {
 	t.Parallel()
 
 	store, _ := fixedClockStore(t)
-	maintMutSeedFresh(t, store, []string{"aaa", "bbb"}, 1)
+	seedFresh(t, store, []string{"aaa", "bbb"}, 1)
 	used, err := store.PhysicalBytes()
 	if err != nil {
 		t.Fatalf("PhysicalBytes() error = %v", err)
 	}
 
-	limits := maintMutGenerousBounds()
+	limits := generousBounds()
 	limits.retainedBytes = 0
 	for ceiling := 4 * used / 3; ceiling <= 4*used/3+4; ceiling++ {
 		candidate := limits

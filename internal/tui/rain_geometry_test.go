@@ -8,17 +8,9 @@ import (
 	"github.com/fmueller/orgtop/internal/domain"
 )
 
-// geometryMutScopeAt returns the repository Scope of the numbered fixture
-// repository. The numbering keeps the stable lowercase-key Scope order RG-006
-// pages over.
-func geometryMutScopeAt(t *testing.T, index int) domain.Scope {
-	t.Helper()
-	return domain.NewRepositoryScope(testRepository(t, fmt.Sprintf("acme/g%d", index)))
-}
-
-// geometryMutItems returns count retained pushes of the repository, each one
+// staggeredItems returns count retained pushes of the repository, each one
 // minute older than the last, so candidate ordering is total and stable.
-func geometryMutItems(t *testing.T, prefix, repository string, count int) []domain.EventEvidence {
+func staggeredItems(t *testing.T, prefix, repository string, count int) []domain.EventEvidence {
 	t.Helper()
 	retained := make([]domain.EventEvidence, 0, count)
 	for index := range count {
@@ -28,8 +20,8 @@ func geometryMutItems(t *testing.T, prefix, repository string, count int) []doma
 	return retained
 }
 
-// geometryMutOccupant returns the column's first occupied cell.
-func geometryMutOccupant(column rainColumn) (rainCell, bool) {
+// firstOccupant returns the column's first occupied cell.
+func firstOccupant(column rainColumn) (rainCell, bool) {
 	for _, row := range column.rows {
 		for _, cell := range row {
 			if cell.occupied {
@@ -70,15 +62,9 @@ func TestRainColumnHelpersAreTotalForDegenerateCounts(t *testing.T) {
 // N` header input: the fixed pages of eight Scopes at width 40 begin at Scope
 // indexes 0, 3, and 6, and the page holding start `S` is numbered `S/K+1`.
 func TestRainFieldNumbersTheVisiblePage(t *testing.T) {
-	selected := make([]domain.Scope, 0, 8)
-	retained := make([]domain.EventEvidence, 0, 8)
-	for index := range 8 {
-		scope := geometryMutScopeAt(t, index)
-		selected = append(selected, scope)
-		retained = append(retained, rainEvidence(t, fmt.Sprintf("e%d", index), scope.Repository().String(), time.Minute))
-	}
+	selected := rainScopes(t, 8)
 	scopes := scopeSet(t, selected...)
-	state := startedRain(scopes, rainSnapshot(scopes, retained...), 40, 7)
+	state := startedRain(scopes, rainSnapshot(scopes, oneItemPerScope(t, selected)...), 40, 7)
 
 	cases := []struct {
 		steps, page, first, last int
@@ -111,11 +97,12 @@ func TestRainFieldNumbersTheVisiblePage(t *testing.T) {
 // last column's alone. Two 12-cell columns of six slots with eight admitted
 // items each group two items apiece, so the page reports four.
 func TestRainFieldTotalsCollisionsOverEveryColumn(t *testing.T) {
-	first, second := geometryMutScopeAt(t, 0), geometryMutScopeAt(t, 1)
+	selected := rainScopes(t, 2)
+	first, second := selected[0], selected[1]
 	scopes := scopeSet(t, first, second)
 	retained := append(
-		geometryMutItems(t, "a", first.Repository().String(), 8),
-		geometryMutItems(t, "b", second.Repository().String(), 8)...)
+		staggeredItems(t, "a", first.Repository().String(), 8),
+		staggeredItems(t, "b", second.Repository().String(), 8)...)
 	// Width 25 seats exactly two 12-cell columns of six slots each; one row
 	// makes every item past the sixth of a column group.
 	state := startedRain(scopes, rainSnapshot(scopes, retained...), 25, 1)
@@ -142,12 +129,10 @@ func TestRainFieldTotalsCollisionsOverEveryColumn(t *testing.T) {
 // the off-page ones. Without a single field row no column can place anything,
 // so all sixteen admitted items are hidden.
 func TestRainFieldTotalsHiddenItemsOverEveryColumn(t *testing.T) {
-	selected := make([]domain.Scope, 0, 8)
+	selected := rainScopes(t, 8)
 	retained := make([]domain.EventEvidence, 0, 16)
-	for index := range 8 {
-		scope := geometryMutScopeAt(t, index)
-		selected = append(selected, scope)
-		retained = append(retained, geometryMutItems(t, fmt.Sprintf("s%d", index), scope.Repository().String(), 2)...)
+	for index, scope := range selected {
+		retained = append(retained, staggeredItems(t, fmt.Sprintf("s%d", index), scope.Repository().String(), 2)...)
 	}
 	scopes := scopeSet(t, selected...)
 	state := startedRain(scopes, rainSnapshot(scopes, retained...), 40, 0)
@@ -175,9 +160,9 @@ func TestRainFieldTotalsHiddenItemsOverEveryColumn(t *testing.T) {
 // item of that row groups into it, so a ten-item two-row column reports eight
 // collisions and both rows carry their groupings.
 func TestRainColumnTotalsCollisionsOverEveryRow(t *testing.T) {
-	scope := geometryMutScopeAt(t, 0)
+	scope := rainScopes(t, 1)[0]
 	scopes := scopeSet(t, scope)
-	retained := geometryMutItems(t, "row", scope.Repository().String(), 10)
+	retained := staggeredItems(t, "row", scope.Repository().String(), 10)
 	// Interior width two is one slot, so a row holds exactly one occupant.
 	state := startedRain(scopes, rainSnapshot(scopes, retained...), 2, 2)
 	field := state.field()
@@ -230,7 +215,7 @@ func TestRainFieldClipsQualificationOnlyWhenTheColumnIsOneCell(t *testing.T) {
 	if column.interior <= 1 {
 		t.Fatalf("the column interior is %d cells, want a column wide enough for the qualifier", column.interior)
 	}
-	occupant, found := geometryMutOccupant(column)
+	occupant, found := firstOccupant(column)
 	if !found {
 		t.Fatal("the admitted qualified item occupies no cell")
 	}

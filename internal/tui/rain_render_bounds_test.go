@@ -10,13 +10,13 @@ import (
 	"github.com/fmueller/orgtop/internal/domain"
 )
 
-// renderMutRain returns a started Rain over one repository Scope holding one
+// publishedRain returns a started Rain over one repository Scope holding one
 // admitted push, sized to a field the given prepared rows deep, together with
 // the published State one successful refresh leaves behind.
-func renderMutRain(t *testing.T, width, height int) (rain, State) {
+func publishedRain(t *testing.T, width, height int) (rain, State) {
 	t.Helper()
 	repository := "acme/api"
-	scopes := scopeSet(t, domain.NewRepositoryScope(testRepository(t, repository)))
+	scopes := scopeSet(t, repositoryScope(t, repository))
 	snapshot := rainSnapshot(scopes, rainEvidence(t, "one", repository, time.Minute))
 	return startedRain(scopes, snapshot, width, height), State{
 		Scopes:      scopes,
@@ -26,10 +26,16 @@ func renderMutRain(t *testing.T, width, height int) (rain, State) {
 	}
 }
 
-// renderMutLegendEntry is the first legend entry: the shared glyph beside its
+// firstLegendEntry is the first legend entry: the shared glyph beside its
 // full text, which only the complete legend line spells.
-func renderMutLegendEntry() string {
+func firstLegendEntry() string {
 	return categoryGlyph(domain.CategoryPush, charsetUTF8) + " " + categoryText(domain.CategoryPush, registerRich)
+}
+
+// onePageField is the prepared geometry of a one-Scope selection on its only
+// page: the smallest page whose context line still states every position.
+func onePageField() rainField {
+	return rainField{scopes: 1, page: 1, pages: 1, first: 1, last: 1, window: defaultRainWindow}
 }
 
 // TestRainVisibleLegendNeedsAHeightBeyondTheOtherChrome guards RG-008 and
@@ -59,8 +65,8 @@ func TestRainVisibleLegendNeedsAHeightBeyondTheOtherChrome(t *testing.T) {
 				t.Errorf("a %dx%d Rain exposes its legend=%v, want %v: %q",
 					testCase.width, testCase.height, visible, testCase.visible, legend)
 			}
-			if testCase.visible && !strings.Contains(legend, renderMutLegendEntry()) {
-				t.Errorf("the exposed legend omits %q: %q", renderMutLegendEntry(), legend)
+			if testCase.visible && !strings.Contains(legend, firstLegendEntry()) {
+				t.Errorf("the exposed legend omits %q: %q", firstLegendEntry(), legend)
 			}
 		})
 	}
@@ -70,7 +76,7 @@ func TestRainVisibleLegendNeedsAHeightBeyondTheOtherChrome(t *testing.T) {
 // ladder: the field keeps a row at every positive height and Rain's own chrome
 // yields around it, the legend first, then the headings, then the context line.
 func TestRainRenderYieldsItsChromeInPriorityOrder(t *testing.T) {
-	state, published := renderMutRain(t, 120, 1)
+	state, published := publishedRain(t, 120, 1)
 	cases := []struct {
 		name                      string
 		height, lines             int
@@ -97,7 +103,7 @@ func TestRainRenderYieldsItsChromeInPriorityOrder(t *testing.T) {
 			}{
 				{what: "the Scope headings", marker: "R1 acme/api", present: testCase.headings},
 				{what: "the context line", marker: "window 60m", present: testCase.context},
-				{what: "the legend", marker: renderMutLegendEntry(), present: testCase.legend},
+				{what: "the legend", marker: firstLegendEntry(), present: testCase.legend},
 			} {
 				if got := strings.Contains(body, want.marker); got != want.present {
 					t.Errorf("height %d renders %s=%v, want %v:\n%s", testCase.height, want.what, got, want.present, body)
@@ -208,7 +214,7 @@ func TestPadColumnFillsExactlyTheGrantedInterior(t *testing.T) {
 // the ladder never drops it and never renders an empty context line, however
 // narrow the terminal is.
 func TestRainContextKeepsTheWindowAtEveryWidth(t *testing.T) {
-	field := rainField{scopes: 1, page: 1, pages: 1, first: 1, last: 1, window: defaultRainWindow}
+	field := onePageField()
 	for _, width := range []int{80, 20, 10, 5, 2, 1} {
 		line := rainContextLine(field, capabilityTruecolor, false, width)
 		if lipgloss.Width(line) == 0 {
@@ -270,7 +276,8 @@ func TestRainOmittedTotalsEveryCapacityRejection(t *testing.T) {
 	if got, want := rainOmitted(counts), 7; got != want {
 		t.Errorf("the capacity rejections total %d, want %d", got, want)
 	}
-	field := rainField{scopes: 1, page: 1, pages: 1, first: 1, last: 1, window: defaultRainWindow, counts: counts}
+	field := onePageField()
+	field.counts = counts
 	line := rainContextLine(field, capabilityTruecolor, false, 80)
 	if want := hiddenMark + "7 omitted"; !strings.Contains(line, want) {
 		t.Errorf("the context reports %q, want it to contain %q", line, want)

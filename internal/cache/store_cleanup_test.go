@@ -27,11 +27,7 @@ func smallBounds() bounds {
 func seedEntry(t *testing.T, store *Store, name string, acquired, lastUsed time.Time, paths ...string) Entry {
 	t.Helper()
 
-	key, err := CompareKey(testRepository(t, "owner", name), baseSHA, headSHA)
-	if err != nil {
-		t.Fatalf("CompareKey() error = %v", err)
-	}
-	entry := Entry{Key: key, Paths: changedPaths(t, paths...), AcquiredAt: acquired, LastUsedAt: lastUsed}
+	entry := Entry{Key: namedKey(t, name), Paths: changedPaths(t, paths...), AcquiredAt: acquired, LastUsedAt: lastUsed}
 	if err := store.Save(context.Background(), entry); err != nil {
 		t.Fatalf("Save(%q) error = %v", name, err)
 	}

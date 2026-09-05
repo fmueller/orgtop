@@ -67,17 +67,18 @@ func TestConcurrentProcessesCannotBothMutate(t *testing.T) {
 	if err := holder.Start(); err != nil {
 		t.Fatalf("start holder error = %v", err)
 	}
-	var holderErr error
-	exited := make(chan struct{})
+	// The exit is buffered and then broadcast by the close, so both the wait for
+	// readiness and the cleanup can observe it.
+	exited := make(chan error, 1)
 	go func() {
-		holderErr = holder.Wait()
+		exited <- holder.Wait()
 		close(exited)
 	}()
 	t.Cleanup(func() {
 		_ = holder.Process.Kill()
 		<-exited
 	})
-	awaitHolderReady(t, exited, &holderErr, root+"/holding")
+	awaitHolderReady(t, exited, root+"/holding")
 
 	store, err := Open(LocationIn(root))
 	if err != nil {
@@ -245,7 +246,7 @@ const holderReadyWait = 500 * time.Millisecond
 // the moment the holder exits without writing it. Polling blind would wait the
 // whole bound out whenever the second process cannot open the cache at all,
 // which is exactly the state a broken setup path leaves it in.
-func awaitHolderReady(t *testing.T, exited <-chan struct{}, holderErr *error, path string) {
+func awaitHolderReady(t *testing.T, exited <-chan error, path string) {
 	t.Helper()
 
 	deadline := time.After(holderReadyWait)
@@ -254,8 +255,8 @@ func awaitHolderReady(t *testing.T, exited <-chan struct{}, holderErr *error, pa
 			return
 		}
 		select {
-		case <-exited:
-			t.Fatalf("the holder process exited before signalling readiness at %q: %v", path, *holderErr)
+		case err := <-exited:
+			t.Fatalf("the holder process exited before signalling readiness at %q: %v", path, err)
 		case <-deadline:
 			t.Fatalf("the holder process never signalled readiness at %q", path)
 		case <-time.After(retryInterval):

@@ -84,6 +84,18 @@ func commitEntry(t *testing.T, paths ...string) Entry {
 	return Entry{Key: key, VerifiedParent: baseSHA, Paths: changedPaths(t, paths...)}
 }
 
+// namedKey builds the compare key of one distinctly named repository, so a test
+// needing several stored records can name them apart.
+func namedKey(t *testing.T, name string) Key {
+	t.Helper()
+
+	key, err := CompareKey(testRepository(t, "owner", name), baseSHA, headSHA)
+	if err != nil {
+		t.Fatalf("CompareKey(%q) error = %v", name, err)
+	}
+	return key
+}
+
 // unixLiteral renders a time as the signed Unix seconds a stored row carries.
 func unixLiteral(value time.Time) string {
 	return strconv.FormatInt(value.Unix(), 10)

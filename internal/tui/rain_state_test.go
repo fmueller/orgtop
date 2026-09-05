@@ -7,10 +7,10 @@ import (
 	"github.com/fmueller/orgtop/internal/domain"
 )
 
-// rainMutEvidence builds one retained push of the repository occurring the
+// rainPathEvidence builds one retained push of the repository occurring the
 // given time before the fixture base, settled at complete event-time evidence
 // for the changed paths so a path Scope decides membership from them.
-func rainMutEvidence(t *testing.T, id, repository string, since time.Duration, paths ...string) domain.EventEvidence {
+func rainPathEvidence(t *testing.T, id, repository string, since time.Duration, paths ...string) domain.EventEvidence {
 	t.Helper()
 	evidence := rainEvidence(t, id, repository, since)
 	if len(paths) > 0 {
@@ -19,23 +19,13 @@ func rainMutEvidence(t *testing.T, id, repository string, since time.Duration, p
 	return evidence
 }
 
-// rainMutKeys returns the admitted field's identities in storage order.
-func rainMutKeys(field rain) []rainKey {
+// rainKeys returns the admitted field's identities in storage order.
+func rainKeys(field rain) []rainKey {
 	keys := make([]rainKey, 0, len(field.items))
 	for _, item := range field.items {
 		keys = append(keys, item.key)
 	}
 	return keys
-}
-
-// rainMutQueued reports whether the paused arrival queue holds the identity.
-func rainMutQueued(field rain, event string, scope domain.Scope) bool {
-	for _, item := range field.queue {
-		if item.key == rainKeyOf(event, scope) {
-			return true
-		}
-	}
-	return false
 }
 
 // TestRainRepagingKeepsAFoundAnchorAtIndexZero guards RG-006's fixed paging: a
@@ -146,8 +136,8 @@ func TestRainExpiryRemovesOnlyTheOutOfWindowItem(t *testing.T) {
 		domain.NewRepositoryScope(testRepository(t, second)),
 	)
 	snapshot := rainSnapshot(scopes,
-		rainMutEvidence(t, "old", first, 55*time.Minute),
-		rainMutEvidence(t, "fresh", second, 0),
+		rainPathEvidence(t, "old", first, 55*time.Minute),
+		rainPathEvidence(t, "fresh", second, 0),
 	)
 	field := startedRain(scopes, snapshot, 40, 7)
 	ordered := scopes.Ordered()
@@ -197,12 +187,12 @@ func TestRainPausedQueueSurvivesRepeatedRefreshesWithAnEmptyField(t *testing.T) 
 
 	arrivals := rainSnapshot(scopes, rainEvidence(t, "arrival", repository, 0))
 	field = field.reconciled(scopes, arrivals, rainAt(time.Minute))
-	if !rainMutQueued(field, "arrival", scope) {
+	if !queuedHas(field, "arrival", scope) {
 		t.Fatalf("the first paused refresh queued %d arrivals, want the one arrival", len(field.queue))
 	}
 
 	field = field.reconciled(scopes, arrivals, rainAt(2*time.Minute))
-	if !rainMutQueued(field, "arrival", scope) {
+	if !queuedHas(field, "arrival", scope) {
 		t.Errorf("the second paused refresh dropped the retained arrival")
 	}
 	if len(field.items) != 0 {
@@ -220,7 +210,7 @@ func TestRainSkipsNotMemberScopesOfTheSameEvent(t *testing.T) {
 	repository := "acme/api"
 	unmatched, matched := pathScope(t, repository, "alpha"), pathScope(t, repository, "zeta")
 	scopes := scopeSet(t, unmatched, matched)
-	snapshot := rainSnapshot(scopes, rainMutEvidence(t, "one", repository, 0, "zeta/main.go"))
+	snapshot := rainSnapshot(scopes, rainPathEvidence(t, "one", repository, 0, "zeta/main.go"))
 	field := startedRain(scopes, snapshot, 40, 7)
 
 	if rainAdmits(field, "one", unmatched) {
@@ -241,7 +231,7 @@ func TestRainSkipsOutOfWindowScopesOfTheSameEvent(t *testing.T) {
 	name := "acme/api"
 	repository := domain.NewRepositoryScope(testRepository(t, name))
 	path := pathScope(t, name, "src")
-	evidence := rainMutEvidence(t, "one", name, 0, "src/main.go")
+	evidence := rainPathEvidence(t, "one", name, 0, "src/main.go")
 
 	only := scopeSet(t, path)
 	field := startedRain(only, rainSnapshot(only, evidence), 40, 7)
@@ -266,18 +256,18 @@ func TestRainPausedArrivalsQueueBehindStandingFieldItems(t *testing.T) {
 		domain.NewRepositoryScope(testRepository(t, first)),
 		domain.NewRepositoryScope(testRepository(t, second)),
 	)
-	standing := rainMutEvidence(t, "standing", first, time.Minute)
+	standing := rainPathEvidence(t, "standing", first, time.Minute)
 	field := startedRain(scopes, rainSnapshot(scopes, standing), 40, 7)
 	field = field.toggledPause()
 
-	arrival := rainMutEvidence(t, "arrival", second, 0)
+	arrival := rainPathEvidence(t, "arrival", second, 0)
 	field = field.reconciled(scopes, rainSnapshot(scopes, standing, arrival), rainAt(time.Minute))
 
 	ordered := scopes.Ordered()
 	if !rainAdmits(field, "standing", ordered[0]) {
 		t.Errorf("the paused refresh removed the standing field item")
 	}
-	if !rainMutQueued(field, "arrival", ordered[1]) {
+	if !queuedHas(field, "arrival", ordered[1]) {
 		t.Errorf("the paused refresh queued %d arrivals, want the one behind the standing item", len(field.queue))
 	}
 }
@@ -289,14 +279,14 @@ func TestRainWindowChangeWhilePausedOmitsNoArrival(t *testing.T) {
 	repository := "acme/api"
 	scopes := scopeSet(t, domain.NewRepositoryScope(testRepository(t, repository)))
 	scope := scopes.Ordered()[0]
-	standing := rainMutEvidence(t, "standing", repository, time.Minute)
+	standing := rainPathEvidence(t, "standing", repository, time.Minute)
 	field := startedRain(scopes, rainSnapshot(scopes, standing), 40, 7)
 	field = field.toggledPause()
 
-	arrival := rainMutEvidence(t, "arrival", repository, 0)
+	arrival := rainPathEvidence(t, "arrival", repository, 0)
 	snapshot := rainSnapshot(scopes, standing, arrival)
 	field = field.reconciled(scopes, snapshot, rainAt(time.Minute))
-	if !rainMutQueued(field, "arrival", scope) {
+	if !queuedHas(field, "arrival", scope) {
 		t.Fatalf("the paused refresh did not queue the arrival")
 	}
 
@@ -304,7 +294,7 @@ func TestRainWindowChangeWhilePausedOmitsNoArrival(t *testing.T) {
 	if got, want := field.window.String(), "30m"; got != want {
 		t.Fatalf("the paused window change selected %s, want %s", got, want)
 	}
-	if !rainMutQueued(field, "arrival", scope) {
+	if !queuedHas(field, "arrival", scope) {
 		t.Errorf("the paused window change dropped the still eligible arrival")
 	}
 	if !rainAdmits(field, "standing", scope) {
@@ -327,10 +317,10 @@ func TestRainStoresAdmittedItemsInScopeThenCandidateOrder(t *testing.T) {
 	)
 	ordered := scopes.Ordered()
 	snapshot := rainSnapshot(scopes,
-		rainMutEvidence(t, "a-new", first, time.Minute),
-		rainMutEvidence(t, "b-new", second, 2*time.Minute),
-		rainMutEvidence(t, "a-old", first, 3*time.Minute),
-		rainMutEvidence(t, "b-old", second, 4*time.Minute),
+		rainPathEvidence(t, "a-new", first, time.Minute),
+		rainPathEvidence(t, "b-new", second, 2*time.Minute),
+		rainPathEvidence(t, "a-old", first, 3*time.Minute),
+		rainPathEvidence(t, "b-old", second, 4*time.Minute),
 	)
 	field := startedRain(scopes, snapshot, 40, 7)
 
@@ -340,7 +330,7 @@ func TestRainStoresAdmittedItemsInScopeThenCandidateOrder(t *testing.T) {
 		rainKeyOf("b-new", ordered[1]),
 		rainKeyOf("b-old", ordered[1]),
 	}
-	got := rainMutKeys(field)
+	got := rainKeys(field)
 	if len(got) != len(want) {
 		t.Fatalf("the field stores %d items, want %d", len(got), len(want))
 	}

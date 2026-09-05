@@ -57,6 +57,24 @@ func repositoryScope(t *testing.T, repository string) domain.Scope {
 // stripRotationFixture returns the three-repository selection and the ten
 // pushes per repository the rotation vectors share, which is more candidates
 // than the 20-entry bound stores.
+// stripPushes returns one retained push per repository per event index, each
+// one minute older than the last, with the repository and index in its source
+// event ID.
+func stripPushes(t *testing.T, repositories []string, events int) []domain.EventEvidence {
+	t.Helper()
+	retained := make([]domain.EventEvidence, 0, len(repositories)*events)
+	for index := range events {
+		for _, repository := range repositories {
+			retained = append(retained, stripEvidence(t,
+				fmt.Sprintf("%s-%02d", repository, index),
+				repository,
+				time.Duration(index)*time.Minute,
+			))
+		}
+	}
+	return retained
+}
+
 func stripRotationFixture(t *testing.T) (domain.ScopeSet, []domain.EventEvidence) {
 	t.Helper()
 	repositories := []string{"acme/api", "acme/web", "acme/ops"}
@@ -65,13 +83,7 @@ func stripRotationFixture(t *testing.T) (domain.ScopeSet, []domain.EventEvidence
 		repositoryScope(t, repositories[1]),
 		repositoryScope(t, repositories[2]),
 	)
-	var retained []domain.EventEvidence
-	for index := range 10 {
-		for _, repository := range repositories {
-			retained = append(retained, stripEvidence(t, fmt.Sprintf("%s-%02d", repository, index), repository, time.Duration(index)*time.Minute))
-		}
-	}
-	return scopes, retained
+	return scopes, stripPushes(t, repositories, 10)
 }
 
 // TestInterestingStoresTwentyAndShowsFive guards RG-007's bounds: 30 eligible

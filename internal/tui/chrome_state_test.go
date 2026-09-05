@@ -11,10 +11,10 @@ import (
 	"github.com/fmueller/orgtop/internal/domain"
 )
 
-// chromeMutSelection returns the published selection of an invocation whose two
+// omittingSelection returns the published selection of an invocation whose two
 // organization selectors each omitted eligible repositories, so the disclosed
 // omission has to be the sum of both rather than either one of them.
-func chromeMutSelection(t *testing.T, first, second int) Selection {
+func omittingSelection(t *testing.T, first, second int) Selection {
 	t.Helper()
 	scopes := testScope(t, "acme/backend", "beta/frontend")
 	return Selection{
@@ -35,7 +35,7 @@ func chromeMutSelection(t *testing.T, first, second int) Selection {
 // disclosed omission counts every selector's omitted repositories rather than
 // only the last selector's.
 func TestSelectionDisclosesTheOmissionsOfEverySelectorTogether(t *testing.T) {
-	forms := selectionForms(chromeMutSelection(t, 2, 3))
+	forms := selectionForms(omittingSelection(t, 2, 3))
 
 	if len(forms) != 3 {
 		t.Fatalf("the disclosed selection has %d forms, want the full, compact, and minimum ones: %q", len(forms), forms)
@@ -50,7 +50,7 @@ func TestSelectionDisclosesTheOmissionsOfEverySelectorTogether(t *testing.T) {
 // TestSelectionDisclosesNoOmissionWhenNoSelectorOmitted guards RG-010's other
 // side: a selection that omitted nothing states no omission at all.
 func TestSelectionDisclosesNoOmissionWhenNoSelectorOmitted(t *testing.T) {
-	for _, form := range selectionForms(chromeMutSelection(t, 0, 0)) {
+	for _, form := range selectionForms(omittingSelection(t, 0, 0)) {
 		if strings.Contains(form, "omitted") || strings.HasPrefix(form, "SEL") {
 			t.Errorf("a selection that omitted nothing discloses %q", form)
 		}
@@ -93,13 +93,13 @@ func TestShortenKeepsALeadingPrefixOfTheLine(t *testing.T) {
 	}
 }
 
-// chromeMutShortEnricher settles fewer outcomes than the refresh gave it events,
-// which is the short result FR-004 leaves undecided rather than decided.
-type chromeMutShortEnricher struct {
+// shortEnricher settles fewer outcomes than the refresh gave it events, which
+// is the short result FR-004 leaves undecided rather than decided.
+type shortEnricher struct {
 	outcomes []domain.EvidenceOutcome
 }
 
-func (e *chromeMutShortEnricher) Evidence(context.Context, []domain.Event) (Evidence, error) {
+func (e *shortEnricher) Evidence(context.Context, []domain.Event) (Evidence, error) {
 	return Evidence{Outcomes: e.outcomes}, nil
 }
 
@@ -110,7 +110,7 @@ func (e *chromeMutShortEnricher) Evidence(context.Context, []domain.Event) (Evid
 func TestShortEvidenceResultLeavesTheRemainingEventsUndecided(t *testing.T) {
 	scopes, _ := mixedScope(t, "acme/backend", "src")
 	reported := completeEvidence(t, "src/main.go")
-	model := Model{enricher: &chromeMutShortEnricher{outcomes: []domain.EvidenceOutcome{reported}}}
+	model := Model{enricher: &shortEnricher{outcomes: []domain.EvidenceOutcome{reported}}}
 
 	outcomes, _, _ := model.settle(context.Background(), scopes, make([]domain.Event, 3))
 
@@ -130,17 +130,13 @@ func TestShortEvidenceResultLeavesTheRemainingEventsUndecided(t *testing.T) {
 	}
 }
 
-// chromeMutRainModel returns the root model looking at a Rain field over the
+// rainPagingModel returns the root model looking at a Rain field over the
 // given number of Scopes at a width that seats several fixed pages.
-func chromeMutRainModel(t *testing.T, scopes int, width int) Model {
+func rainPagingModel(t *testing.T, scopes int, width int) Model {
 	t.Helper()
-	all := make([]domain.Scope, 0, scopes)
-	for index := range scopes {
-		all = append(all, domain.NewRepositoryScope(testRepository(t, fmt.Sprintf("acme/r%d", index))))
-	}
 	model := newModel(t, "acme/r0")
 	model.mode = ModeRain
-	model.rain = rain{scopes: all, width: width}
+	model.rain = rain{scopes: rainScopes(t, scopes), width: width}
 	return model
 }
 
@@ -153,7 +149,7 @@ func TestRainPageBackwardMovesToThePrecedingPage(t *testing.T) {
 		width   = 40
 		perPage = 3
 	)
-	model := chromeMutRainModel(t, scopes, width)
+	model := rainPagingModel(t, scopes, width)
 	if got := rainPerPage(width, scopes); got != perPage {
 		t.Fatalf("a width of %d seats %d Scopes per page, want %d", width, got, perPage)
 	}
@@ -298,9 +294,9 @@ func TestScopeContextIntermediateOmitsAnAbsentQualifiedCount(t *testing.T) {
 	}
 }
 
-// chromeMutManyMembers builds the context of an event matching many members and
+// membersOnlyContext builds the context of an event matching many members and
 // no unknowns, where the spelled-out counts are narrower than the token form.
-func chromeMutManyMembers(t *testing.T, count int) scopeContext {
+func membersOnlyContext(t *testing.T, count int) scopeContext {
 	t.Helper()
 	members := make([]string, 0, count)
 	for index := range count {
@@ -313,7 +309,7 @@ func chromeMutManyMembers(t *testing.T, count int) scopeContext {
 // counted rung states the counts the row actually holds, so a row with no
 // unknown and no current-PR qualified member states neither of them.
 func TestScopeContextCountedFormOmitsTheCountsTheRowHoldsNoneOf(t *testing.T) {
-	context := chromeMutManyMembers(t, 500)
+	context := membersOnlyContext(t, 500)
 
 	got := context.render(10)
 
@@ -330,7 +326,7 @@ func TestScopeContextCountedFormOmitsTheCountsTheRowHoldsNoneOf(t *testing.T) {
 // TestScopeContextMinimumFormOmitsTheCountsTheRowHoldsNoneOf guards RG-012 at
 // the narrowest counted rung: the same omission holds behind the short marks.
 func TestScopeContextMinimumFormOmitsTheCountsTheRowHoldsNoneOf(t *testing.T) {
-	context := chromeMutManyMembers(t, 500)
+	context := membersOnlyContext(t, 500)
 
 	got := context.render(4)
 
@@ -357,9 +353,9 @@ func TestViewportDoesNotScrollAtANonPositiveHeight(t *testing.T) {
 	}
 }
 
-// chromeMutLocale resolves the glyph repertoire of an environment naming only
+// localeCharset resolves the glyph repertoire of an environment naming only
 // the locale variable, leaving TERM unset.
-func chromeMutLocale(locale string) charset {
+func localeCharset(locale string) charset {
 	return resolveCharset(func(name string) string {
 		if name == "LANG" {
 			return locale
@@ -379,7 +375,7 @@ func TestCharsetIgnoresACodesetSpelledInsideTheModifier(t *testing.T) {
 	}
 
 	for locale, want := range cases {
-		if got := chromeMutLocale(locale); got != want {
+		if got := localeCharset(locale); got != want {
 			t.Errorf("the locale %q resolved to charset %d, want %d", locale, got, want)
 		}
 	}
@@ -397,7 +393,7 @@ func TestCharsetReadsTheCodesetAfterTheFinalSeparator(t *testing.T) {
 	}
 
 	for locale, want := range cases {
-		if got := chromeMutLocale(locale); got != want {
+		if got := localeCharset(locale); got != want {
 			t.Errorf("the locale %q resolved to charset %d, want %d", locale, got, want)
 		}
 	}

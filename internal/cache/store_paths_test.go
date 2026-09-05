@@ -14,8 +14,8 @@ import (
 	"github.com/fmueller/orgtop/internal/domain"
 )
 
-// storeMutPermissions reports the permission bits of one cache path.
-func storeMutPermissions(t *testing.T, path string) os.FileMode {
+// pathPermissions reports the permission bits of one cache path.
+func pathPermissions(t *testing.T, path string) os.FileMode {
 	t.Helper()
 
 	info, err := os.Lstat(path)
@@ -25,9 +25,9 @@ func storeMutPermissions(t *testing.T, path string) os.FileMode {
 	return info.Mode().Perm()
 }
 
-// storeMutLockDescriptorIsOpen reports whether the process still holds the
-// counted maintenance lock descriptor of one cache location.
-func storeMutLockDescriptorIsOpen(location Location) bool {
+// lockDescriptorIsOpen reports whether the process still holds the counted
+// maintenance lock descriptor of one cache location.
+func lockDescriptorIsOpen(location Location) bool {
 	lockFiles.mutex.Lock()
 	defer lockFiles.mutex.Unlock()
 
@@ -35,10 +35,10 @@ func storeMutLockDescriptorIsOpen(location Location) bool {
 	return ok
 }
 
-// storeMutMaximalPaths builds the largest storable changed-path set: every path
-// is exactly the per-path byte bound and the set is exactly the per-entity byte
+// maximalPaths builds the largest storable changed-path set: every path is
+// exactly the per-path byte bound and the set is exactly the per-entity byte
 // bound, so both closed RG-005 bounds are met without being exceeded.
-func storeMutMaximalPaths(t *testing.T) []domain.ChangedPath {
+func maximalPaths(t *testing.T) []domain.ChangedPath {
 	t.Helper()
 
 	count := domain.MaxEvidenceBytes / domain.MaxChangedPathBytes
@@ -124,7 +124,7 @@ func TestOpenNarrowsABroaderExistingDatabaseFile(t *testing.T) {
 	}
 	defer func() { _ = reopened.Close() }()
 
-	if got, want := storeMutPermissions(t, location.Database()), os.FileMode(0o600); got != want {
+	if got, want := pathPermissions(t, location.Database()), os.FileMode(0o600); got != want {
 		t.Errorf("database mode = %04o, want %04o", got, want)
 	}
 }
@@ -146,7 +146,7 @@ func TestOpenNarrowsALaterOwnedFileBeyondNarrowAndAbsentOnes(t *testing.T) {
 	if err := os.Chmod(location.Lock(), 0o666); err != nil {
 		t.Fatalf("Chmod() error = %v", err)
 	}
-	if got, want := storeMutPermissions(t, location.Database()), os.FileMode(0o600); got != want {
+	if got, want := pathPermissions(t, location.Database()), os.FileMode(0o600); got != want {
 		t.Fatalf("the database must already be narrow for this case, mode = %04o, want %04o", got, want)
 	}
 
@@ -156,7 +156,7 @@ func TestOpenNarrowsALaterOwnedFileBeyondNarrowAndAbsentOnes(t *testing.T) {
 	}
 	defer func() { _ = reopened.Close() }()
 
-	if got, want := storeMutPermissions(t, location.Lock()), os.FileMode(0o600); got != want {
+	if got, want := pathPermissions(t, location.Lock()), os.FileMode(0o600); got != want {
 		t.Errorf("maintenance lock mode = %04o, want %04o", got, want)
 	}
 }
@@ -278,14 +278,14 @@ func TestTheLastStoreReleasesTheProcessLockDescriptor(t *testing.T) {
 	if err := second.Close(); err != nil {
 		t.Fatalf("second Close() error = %v", err)
 	}
-	if !storeMutLockDescriptorIsOpen(location) {
+	if !lockDescriptorIsOpen(location) {
 		t.Fatal("the shared lock descriptor was released while a store still used it")
 	}
 
 	if err := first.Close(); err != nil {
 		t.Fatalf("Close() error = %v", err)
 	}
-	if storeMutLockDescriptorIsOpen(location) {
+	if lockDescriptorIsOpen(location) {
 		t.Error("the shared lock descriptor outlived the last store using it")
 	}
 }
@@ -314,7 +314,7 @@ func TestSaveAcceptsAnEntityAtExactlyTheByteBounds(t *testing.T) {
 
 	store, _ := fixedClockStore(t)
 	entry := compareEntry(t)
-	entry.Paths = storeMutMaximalPaths(t)
+	entry.Paths = maximalPaths(t)
 
 	if err := store.Save(context.Background(), entry); err != nil {
 		t.Fatalf("Save() error = %v, want a set at exactly the closed byte bounds stored", err)

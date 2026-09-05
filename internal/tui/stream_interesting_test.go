@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"fmt"
 	"slices"
 	"strings"
 	"testing"
@@ -10,11 +9,11 @@ import (
 	"github.com/fmueller/orgtop/internal/domain"
 )
 
-// streamMutScopeColumn returns the Scope context column of a rendered Stream
-// row: the field between the category column and the row's detail. The columns
-// are joined by the shared row gap, so the context ends where the first gap
-// after the category does.
-func streamMutScopeColumn(t *testing.T, row string) string {
+// rowScopeColumn returns the Scope context column of a rendered Stream row: the
+// field between the category column and the row's detail. The columns are joined
+// by the shared row gap, so the context ends where the first gap after the
+// category does.
+func rowScopeColumn(t *testing.T, row string) string {
 	t.Helper()
 	_, after, found := strings.Cut(row, "push"+rowGap)
 	if !found {
@@ -24,23 +23,10 @@ func streamMutScopeColumn(t *testing.T, row string) string {
 	return strings.TrimRight(column, " ")
 }
 
-// streamMutHeadings returns the column heading line of a Stream render, which
-// is the body line naming the age column.
-func streamMutHeadings(t *testing.T, content string) string {
-	t.Helper()
-	for _, line := range bodyLines(t, content) {
-		if strings.HasPrefix(strings.TrimSpace(line), "age") {
-			return line
-		}
-	}
-	t.Fatalf("stream rendered no column headings:\n%s", content)
-	return ""
-}
-
-// streamMutOverlappingScopes returns a selection of six path Scopes of one
-// repository and one event matching every one of them, which is more Scope
-// context than a constrained row can spell out.
-func streamMutOverlappingScopes(t *testing.T, repository string) (domain.ScopeSet, []domain.EventEvidence) {
+// overlappingPathScopes returns a selection of six path Scopes of one repository
+// and one event matching every one of them, which is more Scope context than a
+// constrained row can spell out.
+func overlappingPathScopes(t *testing.T, repository string) (domain.ScopeSet, []domain.EventEvidence) {
 	t.Helper()
 	segments := []string{"alpha", "bravo", "delta", "echo", "fox", "golf"}
 	scopes := make([]domain.Scope, 0, len(segments))
@@ -94,8 +80,8 @@ func TestStreamKeepsReadableDetailWhenChoosingItsLayout(t *testing.T) {
 	)
 	model := streamModel(t, detailedEvents(t))
 
-	sparseHeadings := streamMutHeadings(t, renderAt(t, model, sparse, wideHeight))
-	richHeadings := streamMutHeadings(t, renderAt(t, model, rich, wideHeight))
+	sparseHeadings := headingLine(t, renderAt(t, model, sparse, wideHeight))
+	richHeadings := headingLine(t, renderAt(t, model, rich, wideHeight))
 
 	for _, spelling := range []string{"repository", "category", "description"} {
 		if strings.Contains(sparseHeadings, spelling) {
@@ -122,7 +108,7 @@ func TestStreamKeepsReadableDetailWhenChoosingItsLayout(t *testing.T) {
 func TestStreamBoundsScopeContextToWhatTheWidthHasLeft(t *testing.T) {
 	const width = 40
 	api := "acme/api"
-	scopes, retained := streamMutOverlappingScopes(t, api)
+	scopes, retained := overlappingPathScopes(t, api)
 
 	content := renderAt(t, scopedStreamModel(t, scopes, retained), width, wideHeight)
 
@@ -131,7 +117,7 @@ func TestStreamBoundsScopeContextToWhatTheWidthHasLeft(t *testing.T) {
 	if len(rows) != 1 {
 		t.Fatalf("stream rendered %d rows for one event, want 1:\n%v", len(rows), rows)
 	}
-	if got, want := streamMutScopeColumn(t, rows[0]), "P1, P2, P3, +3"; got != want {
+	if got, want := rowScopeColumn(t, rows[0]), "P1, P2, P3, +3"; got != want {
 		t.Errorf("the %d-cell row context is %q, want %q", width, got, want)
 	}
 }
@@ -148,27 +134,9 @@ func TestStreamSpendsNoScopeBudgetWithoutAReportedWidth(t *testing.T) {
 	}
 }
 
-// streamMutRepositoryEvidence returns one retained push per repository, each
-// occurring the given number of minutes before the strip fixture base, with the
-// repository and index in its source event ID.
-func streamMutRepositoryEvidence(t *testing.T, repositories []string, events int) []domain.EventEvidence {
-	t.Helper()
-	retained := make([]domain.EventEvidence, 0, len(repositories)*events)
-	for index := range events {
-		for _, repository := range repositories {
-			retained = append(retained, stripEvidence(t,
-				fmt.Sprintf("%s-%02d", repository, index),
-				repository,
-				time.Duration(index)*time.Minute,
-			))
-		}
-	}
-	return retained
-}
-
-// streamMutSponsor returns the sponsoring Scope identifier of the strip's
+// stripSponsor returns the sponsoring Scope identifier of the strip's
 // first stored entry, which is the Scope whose turn the selection began at.
-func streamMutSponsor(t *testing.T, strip interesting) string {
+func stripSponsor(t *testing.T, strip interesting) string {
 	t.Helper()
 	if len(strip.entries) == 0 {
 		t.Fatal("the strip stored no entries to read a sponsor from")
@@ -216,10 +184,10 @@ func TestInterestingKeepsTheSurvivingAnchorsOwnTurn(t *testing.T) {
 
 	web, zeta := repositoryScope(t, "acme/web"), repositoryScope(t, "acme/zeta")
 	next := scopeSet(t, web, zeta)
-	later := streamMutRepositoryEvidence(t, []string{"acme/web", "acme/zeta"}, 10)
+	later := stripPushes(t, []string{"acme/web", "acme/zeta"}, 10)
 	strip = strip.reconciled(next, stripSnapshot(next, later...), stripBase)
 
-	if got, want := streamMutSponsor(t, strip), web.String(); got != want {
+	if got, want := stripSponsor(t, strip), web.String(); got != want {
 		t.Errorf("the remapped rotation began at %q, want the retained anchor %q", got, want)
 	}
 }
@@ -233,10 +201,10 @@ func TestInterestingRotatesPastEveryTurnThatFillsTheStrip(t *testing.T) {
 	snapshot := stripSnapshot(scopes, retained...)
 
 	strip := startedStrip(scopes, snapshot)
-	sponsors := []string{streamMutSponsor(t, strip)}
+	sponsors := []string{stripSponsor(t, strip)}
 	for range 2 {
 		strip = strip.reconciled(scopes, snapshot, stripBase)
-		sponsors = append(sponsors, streamMutSponsor(t, strip))
+		sponsors = append(sponsors, stripSponsor(t, strip))
 	}
 
 	want := []string{"acme/api", "acme/web", "acme/ops"}
@@ -325,7 +293,7 @@ func TestInterestingKeepsItsNextStartWhenTheQueuesExhaust(t *testing.T) {
 		repositoryScope(t, repositories[1]),
 		repositoryScope(t, repositories[2]),
 	)
-	snapshot := stripSnapshot(scopes, streamMutRepositoryEvidence(t, repositories, 1)...)
+	snapshot := stripSnapshot(scopes, stripPushes(t, repositories, 1)...)
 
 	strip := startedStrip(scopes, snapshot)
 	want := stripIDs(strip)
@@ -338,7 +306,7 @@ func TestInterestingKeepsItsNextStartWhenTheQueuesExhaust(t *testing.T) {
 	if got := stripIDs(strip); !slices.Equal(got, want) {
 		t.Errorf("the following refresh stored %v, want the unchanged rotation %v", got, want)
 	}
-	if got, want := streamMutSponsor(t, strip), repositories[0]; got != want {
+	if got, want := stripSponsor(t, strip), repositories[0]; got != want {
 		t.Errorf("the following refresh began at %q, want the unchanged %q", got, want)
 	}
 }
