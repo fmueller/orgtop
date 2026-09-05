@@ -15,6 +15,16 @@ import (
 
 // selectorNames returns the retained requested spelling of every organization
 // selector in its shared first-occurrence order.
+// selectorArgs requests count distinct organization selectors, the selection the
+// RG-010 selector bound is measured against.
+func selectorArgs(count int) []string {
+	args := make([]string, 0, 2*count)
+	for i := range count {
+		args = append(args, "--org", fmt.Sprintf("acme%02d", i))
+	}
+	return args
+}
+
 func selectorNames(config cli.Config) []string {
 	out := make([]string, 0, len(config.Organizations))
 	for _, selector := range config.Organizations {
@@ -174,14 +184,6 @@ func TestParseArgsRejectsInvalidOrganizationValues(t *testing.T) {
 // TestParseArgsEnforcesOrganizationSelectorCapacity keeps the RG-010 selector
 // bound checked before credential, cache, network, or TUI work (A-061).
 func TestParseArgsEnforcesOrganizationSelectorCapacity(t *testing.T) {
-	selectorArgs := func(count int) []string {
-		args := make([]string, 0, 2*count)
-		for i := range count {
-			args = append(args, "--org", fmt.Sprintf("acme%02d", i))
-		}
-		return args
-	}
-
 	t.Run("the maximum selector count is accepted", func(t *testing.T) {
 		config := parseValid(t, selectorArgs(cli.MaxOrganizationSelectors))
 		if got := len(config.Organizations); got != cli.MaxOrganizationSelectors {
@@ -202,10 +204,8 @@ func TestParseArgsEnforcesOrganizationSelectorCapacity(t *testing.T) {
 	})
 
 	t.Run("repository capacity outranks selector capacity", func(t *testing.T) {
-		args := selectorArgs(cli.MaxOrganizationSelectors + 1)
-		for i := range domain.MaxSelectedRepositories + 1 {
-			args = append(args, "--repo", fmt.Sprintf("acme/repo%02d", i))
-		}
+		args := append(selectorArgs(cli.MaxOrganizationSelectors+1),
+			repositoryArgs(domain.MaxSelectedRepositories+1)...)
 		var output bytes.Buffer
 		_, err := cli.ParseArgs("orgtop", args, &output)
 		if !errors.Is(err, domain.ErrScopeCapacity) {

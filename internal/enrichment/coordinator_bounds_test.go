@@ -2,6 +2,7 @@ package enrichment_test
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 
@@ -10,20 +11,34 @@ import (
 	"github.com/fmueller/orgtop/internal/enrichment"
 )
 
-// pathsOf names the stored paths of one outcome, so a test can prove an event
-// settled from real evidence rather than from an unwritten result slot.
-func pathsOf(outcome domain.EvidenceOutcome) []string {
-	names := make([]string, 0, len(outcome.Paths()))
+// assertPaths reports the paths an outcome settled with, so a test can prove the
+// event took the evidence acquired for it rather than an unwritten result slot.
+// The label names which outcome is under test.
+func assertPaths(t *testing.T, label string, outcome domain.EvidenceOutcome, want ...string) {
+	t.Helper()
+	got := make([]string, 0, len(outcome.Paths()))
 	for _, path := range outcome.Paths() {
-		names = append(names, path.String())
+		got = append(got, path.String())
 	}
-	return names
+	if !slices.Equal(got, want) {
+		t.Errorf("%s paths = %v, want %v", label, got, want)
+	}
 }
 
 // completeWith scripts one acquired changed-file result whose paths identify it.
 func completeWith(t *testing.T, provenance domain.EvidenceProvenance, value string) domain.EvidenceOutcome {
 	t.Helper()
 	return domain.CompleteOutcome(provenance, []domain.ChangedPath{changedPath(t, value)})
+}
+
+// derivedCompare builds the compare that a current-PR metadata read resolves to.
+func derivedCompare(t *testing.T, base, head string) domain.EvidenceDescriptor {
+	t.Helper()
+	descriptor, err := domain.NewCompareEvidence(repository(t), base, head, domain.ProvenanceCurrentPR)
+	if err != nil {
+		t.Fatalf("building the derived compare failed: %v", err)
+	}
+	return descriptor
 }
 
 // TestStoredEvidenceCarriesTheRefreshClock guards the RG-009 cache reuse rule
@@ -74,9 +89,7 @@ func TestDuplicateEvidenceStillEnrichesTheLaterDistinctIdentity(t *testing.T) {
 	if got := len(adapter.dispatched()); got != 2 {
 		t.Errorf("dispatched = %v, want both distinct identities", adapter.dispatched())
 	}
-	if got := pathsOf(result.Outcomes[2]); len(got) != 1 || got[0] != "internal/last.go" {
-		t.Errorf("last outcome paths = %v, want the evidence acquired for it", got)
-	}
+	assertPaths(t, "the last outcome", result.Outcomes[2], "internal/last.go")
 }
 
 // TestSettledEvidenceDoesNotStopLaterEventsFromSettling guards the FR contract
@@ -97,12 +110,8 @@ func TestSettledEvidenceDoesNotStopLaterEventsFromSettling(t *testing.T) {
 	if err != nil {
 		t.Fatalf("coordinating settled evidence before enriched evidence failed: %v", err)
 	}
-	if got := pathsOf(result.Outcomes[0]); len(got) != 1 || got[0] != "cmd/main.go" {
-		t.Errorf("settled outcome paths = %v, want the event's own evidence", got)
-	}
-	if got := pathsOf(result.Outcomes[1]); len(got) != 1 || got[0] != "internal/app.go" {
-		t.Errorf("enriched outcome paths = %v, want the evidence acquired for it", got)
-	}
+	assertPaths(t, "the settled outcome", result.Outcomes[0], "cmd/main.go")
+	assertPaths(t, "the enriched outcome", result.Outcomes[1], "internal/app.go")
 }
 
 // TestCachedIdentityDoesNotStopLaterDispatch guards the NFR-002 rule that cache
@@ -132,12 +141,8 @@ func TestCachedIdentityDoesNotStopLaterDispatch(t *testing.T) {
 	if result.Ledger.CacheHits != 1 || result.Ledger.Requests != 1 {
 		t.Errorf("ledger = %+v, want one reused identity and one requested identity", result.Ledger)
 	}
-	if got := pathsOf(result.Outcomes[0]); len(got) != 1 || got[0] != "internal/cached.go" {
-		t.Errorf("reused outcome paths = %v, want the stored evidence", got)
-	}
-	if got := pathsOf(result.Outcomes[1]); len(got) != 1 || got[0] != "internal/fetched.go" {
-		t.Errorf("requested outcome paths = %v, want the evidence acquired for it", got)
-	}
+	assertPaths(t, "the reused outcome", result.Outcomes[0], "internal/cached.go")
+	assertPaths(t, "the requested outcome", result.Outcomes[1], "internal/fetched.go")
 }
 
 // TestEveryUnitBeyondTheRequestBudgetSettlesIncomplete guards the RG-009 rule
@@ -178,10 +183,7 @@ func TestPullRequestCompareIsDerivedAfterASettledIdentity(t *testing.T) {
 	}
 	store := newFakeCache()
 	metadata := pullRequestEvent(t, "b", 42)
-	derived, err := domain.NewCompareEvidence(repository(t), baseA, headB, domain.ProvenanceCurrentPR)
-	if err != nil {
-		t.Fatalf("building the derived compare failed: %v", err)
-	}
+	derived := derivedCompare(t, baseA, headB)
 	adapter.metadata[metadata.Evidence.Key()] = derived
 	adapter.changed[derived.Key()] = completeWith(t, domain.ProvenanceCurrentPR, "internal/derived.go")
 
@@ -193,9 +195,7 @@ func TestPullRequestCompareIsDerivedAfterASettledIdentity(t *testing.T) {
 	if result.Ledger.Requests != 3 {
 		t.Errorf("requests = %d, want the direct compare, the metadata, and its derived compare", result.Ledger.Requests)
 	}
-	if got := pathsOf(result.Outcomes[1]); len(got) != 1 || got[0] != "internal/derived.go" {
-		t.Errorf("pull request outcome paths = %v, want the derived compare's evidence", got)
-	}
+	assertPaths(t, "the pull request outcome", result.Outcomes[1], "internal/derived.go")
 }
 
 // TestRepeatedDerivedCompareStillEnrichesTheLaterOne guards the NFR-002
@@ -208,14 +208,8 @@ func TestRepeatedDerivedCompareStillEnrichesTheLaterOne(t *testing.T) {
 		metadata: map[string]domain.EvidenceDescriptor{},
 	}
 	store := newFakeCache()
-	shared, err := domain.NewCompareEvidence(repository(t), baseA, headA, domain.ProvenanceCurrentPR)
-	if err != nil {
-		t.Fatalf("building the shared compare failed: %v", err)
-	}
-	distinct, err := domain.NewCompareEvidence(repository(t), baseA, headB, domain.ProvenanceCurrentPR)
-	if err != nil {
-		t.Fatalf("building the distinct compare failed: %v", err)
-	}
+	shared := derivedCompare(t, baseA, headA)
+	distinct := derivedCompare(t, baseA, headB)
 	events := []domain.Event{
 		pullRequestEvent(t, "a", 1),
 		pullRequestEvent(t, "b", 2),
@@ -235,13 +229,9 @@ func TestRepeatedDerivedCompareStillEnrichesTheLaterOne(t *testing.T) {
 		t.Errorf("requests = %d, want three metadata reads and two distinct compares", result.Ledger.Requests)
 	}
 	for _, index := range []int{0, 1} {
-		if got := pathsOf(result.Outcomes[index]); len(got) != 1 || got[0] != "internal/shared.go" {
-			t.Errorf("outcome %d paths = %v, want the shared compare's evidence", index, got)
-		}
+		assertPaths(t, fmt.Sprintf("outcome %d", index), result.Outcomes[index], "internal/shared.go")
 	}
-	if got := pathsOf(result.Outcomes[2]); len(got) != 1 || got[0] != "internal/distinct.go" {
-		t.Errorf("last outcome paths = %v, want the compare derived for it", got)
-	}
+	assertPaths(t, "the last outcome", result.Outcomes[2], "internal/distinct.go")
 }
 
 // TestOrdinaryCacheMissesAreNotReportedAsDegradation guards the FR-011

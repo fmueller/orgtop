@@ -32,6 +32,26 @@ func scopeKinds(scopes domain.ScopeSet) []domain.ScopeKind {
 	return out
 }
 
+// repositoryArgs requests count distinct exact repositories, the selection the
+// RG-009 capacity vectors are built on.
+func repositoryArgs(count int) []string {
+	args := make([]string, 0, 2*count)
+	for i := range count {
+		args = append(args, "--repo", fmt.Sprintf("acme/repo%02d", i))
+	}
+	return args
+}
+
+// patternArgs requests count bare path patterns, each of which filters every
+// selected repository.
+func patternArgs(count int) []string {
+	args := make([]string, 0, 2*count)
+	for i := range count {
+		args = append(args, "--path", fmt.Sprintf("src%02d/**", i))
+	}
+	return args
+}
+
 func parseValid(t *testing.T, args []string) cli.Config {
 	t.Helper()
 	var output bytes.Buffer
@@ -374,21 +394,6 @@ func TestParseArgsReportsTheFirstMalformedArgument(t *testing.T) {
 // TestParseArgsEnforcesSelectionCapacity keeps the closed RG-009 selection
 // capacities deterministic and pre-startup: explicit intent is never truncated.
 func TestParseArgsEnforcesSelectionCapacity(t *testing.T) {
-	repositoryArgs := func(count int) []string {
-		args := make([]string, 0, 2*count)
-		for i := range count {
-			args = append(args, "--repo", fmt.Sprintf("acme/repo%02d", i))
-		}
-		return args
-	}
-	patternArgs := func(count int) []string {
-		args := make([]string, 0, 2*count)
-		for i := range count {
-			args = append(args, "--path", fmt.Sprintf("src%02d/**", i))
-		}
-		return args
-	}
-
 	t.Run("the maximum product is accepted", func(t *testing.T) {
 		args := append(repositoryArgs(domain.MaxSelectedRepositories), patternArgs(domain.MaxScopes/domain.MaxSelectedRepositories)...)
 		config := parseValid(t, args)
@@ -448,13 +453,8 @@ func TestCapacityDiagnosticsReportTheExpandedCount(t *testing.T) {
 // double counting a qualified Scope the bare expansion already produces, so a
 // selection at the capacity boundary is still accepted (RG-001, RG-009).
 func TestCapacityDiagnosticsCountQualifiedScopesOnce(t *testing.T) {
-	args := make([]string, 0)
-	for i := range domain.MaxSelectedRepositories {
-		args = append(args, "--repo", fmt.Sprintf("acme/repo%02d", i))
-	}
-	for i := range domain.MaxScopes / domain.MaxSelectedRepositories {
-		args = append(args, "--path", fmt.Sprintf("src%02d/**", i))
-	}
+	args := append(repositoryArgs(domain.MaxSelectedRepositories),
+		patternArgs(domain.MaxScopes/domain.MaxSelectedRepositories)...)
 	args = append(args, "--path", "acme/repo00:src00/**")
 
 	config := parseValid(t, args)

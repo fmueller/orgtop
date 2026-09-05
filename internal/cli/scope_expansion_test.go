@@ -19,20 +19,6 @@ import (
 // selector list, so the reported class is the Scope one and the reported count is
 // the number of Scopes the invocation actually requests (RG-009).
 func TestScopeCapacityOutranksSelectorCapacity(t *testing.T) {
-	repositoryArgs := func(count int) []string {
-		args := make([]string, 0, 2*count)
-		for i := range count {
-			args = append(args, "--repo", fmt.Sprintf("acme/repo%02d", i))
-		}
-		return args
-	}
-	selectorArgs := func(count int) []string {
-		args := make([]string, 0, 2*count)
-		for i := range count {
-			args = append(args, "--org", fmt.Sprintf("acme%02d", i))
-		}
-		return args
-	}
 	barePatterns := 1 + domain.MaxScopes/domain.MaxSelectedRepositories
 
 	tests := []struct {
@@ -42,13 +28,7 @@ func TestScopeCapacityOutranksSelectorCapacity(t *testing.T) {
 	}{
 		{
 			name: "bare patterns filter every exact repository",
-			args: func() []string {
-				args := repositoryArgs(domain.MaxSelectedRepositories)
-				for i := range barePatterns {
-					args = append(args, "--path", fmt.Sprintf("src%02d/**", i))
-				}
-				return args
-			}(),
+			args: append(repositoryArgs(domain.MaxSelectedRepositories), patternArgs(barePatterns)...),
 			want: domain.MaxSelectedRepositories * barePatterns,
 		},
 		{
@@ -64,13 +44,9 @@ func TestScopeCapacityOutranksSelectorCapacity(t *testing.T) {
 		},
 		{
 			name: "a qualified path the bare product does not cover counts once more",
-			args: func() []string {
-				args := repositoryArgs(domain.MaxSelectedRepositories)
-				for i := range domain.MaxScopes / domain.MaxSelectedRepositories {
-					args = append(args, "--path", fmt.Sprintf("src%02d/**", i))
-				}
-				return append(args, "--path", "acme/repo00:docs/**")
-			}(),
+			args: append(append(repositoryArgs(domain.MaxSelectedRepositories),
+				patternArgs(domain.MaxScopes/domain.MaxSelectedRepositories)...),
+				"--path", "acme/repo00:docs/**"),
 			want: domain.MaxScopes + 1,
 		},
 	}
