@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-updated_at: "2026-09-05T11:14:03Z"
+updated_at: "2026-09-05T12:06:04Z"
 active_spec_version: v0.2.0
 active_spec_path: specs/v0.2.0.md
 current_task: ""
@@ -8,7 +8,7 @@ current_task_title: ""
 status_summary: idle
 blockers: []
 next_action: Select the next eligible task
-last_verification_result: pass for T-091-kill-surviving-mutants-in-the-cache-and-tui-suites at 2026-09-05T11:13:59Z
+last_verification_result: pass for T-092-floor-mutation-efficacy-repo-wide at 2026-09-05T12:05:59Z
 relevant_artifacts: []
 continuation_notes:
     - This repository is using manual Taskrail-style workflow scaffolding until the product replaces more of the bootstrap steps.
@@ -34,7 +34,7 @@ continuation_notes:
 
 ## Last Verification
 
-- pass for T-091-kill-surviving-mutants-in-the-cache-and-tui-suites at 2026-09-05T11:13:59Z
+- pass for T-092-floor-mutation-efficacy-repo-wide at 2026-09-05T12:05:59Z
 
 ## Next Action
 
@@ -52,6 +52,6 @@ continuation_notes:
 
 - todo: 21
 - in_progress: 0
-- completed: 70
+- completed: 71
 - blocked: 0
 - cancelled: 0
