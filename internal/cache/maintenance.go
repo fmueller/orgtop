@@ -293,7 +293,7 @@ func (s *Store) Touch(ctx context.Context) error {
 	if len(s.touched) == 0 {
 		return nil
 	}
-	if err := s.lock.acquire(admissionRegion, true, busyWait); err != nil {
+	if err := s.lock.acquire(admissionRegion, true, lockWaits.busy); err != nil {
 		return err
 	}
 	defer s.lock.release(admissionRegion)
@@ -392,7 +392,7 @@ func (s *Store) Maintain(ctx context.Context) (Maintenance, error) {
 	if err := s.usable(); err != nil {
 		return Maintenance{}, err
 	}
-	if err := s.lock.acquire(admissionRegion, true, busyWait); err != nil {
+	if err := s.lock.acquire(admissionRegion, true, lockWaits.busy); err != nil {
 		return Maintenance{}, err
 	}
 	defer s.lock.release(admissionRegion)

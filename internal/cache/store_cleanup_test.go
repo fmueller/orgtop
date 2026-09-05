@@ -464,7 +464,7 @@ func TestAdmissionIsProvenUnderTheAdmissionRegion(t *testing.T) {
 		t.Fatalf("Open() error = %v", err)
 	}
 	t.Cleanup(func() { _ = holder.Close() })
-	if err := holder.lock.acquire(admissionRegion, true, busyWait); err != nil {
+	if err := holder.lock.acquire(admissionRegion, true, lockWaits.busy); err != nil {
 		t.Fatalf("acquire(admissionRegion) error = %v", err)
 	}
 	defer holder.lock.release(admissionRegion)

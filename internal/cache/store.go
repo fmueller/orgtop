@@ -101,7 +101,7 @@ func Open(location Location) (*Store, error) {
 	// Ordinary cache use holds shared lifecycle access, so concurrent launches
 	// do not exclude each other. Only creation, permission repair, and rebuild
 	// take the region exclusively.
-	if err := lock.acquire(lifecycleRegion, false, busyWait); err != nil {
+	if err := lock.acquire(lifecycleRegion, false, lockWaits.busy); err != nil {
 		_ = store.closeHandles()
 		return nil, err
 	}
@@ -167,13 +167,13 @@ func (s *Store) prepare() error {
 // every file unchanged.
 func (s *Store) underExclusiveLifecycle(step func() error) error {
 	s.lock.release(lifecycleRegion)
-	if err := s.lock.acquire(lifecycleRegion, true, busyWait); err != nil {
+	if err := s.lock.acquire(lifecycleRegion, true, lockWaits.busy); err != nil {
 		return err
 	}
 	if err := step(); err != nil {
 		return err
 	}
-	return s.lock.convert(lifecycleRegion, busyWait)
+	return s.lock.convert(lifecycleRegion, lockWaits.busy)
 }
 
 // openCanonical proves the canonical file is OrgTop's exact version 1 and opens
@@ -504,7 +504,7 @@ func verifyStructure(db *sql.DB) error {
 func functionalDataSource(path string) string {
 	return dataSource(path) +
 		"&_pragma=foreign_keys(1)" +
-		fmt.Sprintf("&_pragma=busy_timeout(%d)", busyWait.Milliseconds()) +
+		fmt.Sprintf("&_pragma=busy_timeout(%d)", lockWaits.busy.Milliseconds()) +
 		"&_pragma=synchronous(1)" +
 		fmt.Sprintf("&_pragma=wal_autocheckpoint(%d)", walAutocheckpointPages)
 }
@@ -611,7 +611,7 @@ func (s *Store) Lookup(ctx context.Context, key Key) (Entry, bool, error) {
 	if key.IsZero() {
 		return Entry{}, false, fmt.Errorf("%w: no typed key", ErrInvalidRecord)
 	}
-	if err := s.lock.acquire(admissionRegion, false, busyWait); err != nil {
+	if err := s.lock.acquire(admissionRegion, false, lockWaits.busy); err != nil {
 		return Entry{}, false, err
 	}
 	defer s.lock.release(admissionRegion)
@@ -758,7 +758,7 @@ func (s *Store) Save(ctx context.Context, entry Entry) error {
 	if err := entry.validate(now); err != nil {
 		return err
 	}
-	if err := s.lock.acquire(admissionRegion, true, busyWait); err != nil {
+	if err := s.lock.acquire(admissionRegion, true, lockWaits.busy); err != nil {
 		return err
 	}
 	defer s.lock.release(admissionRegion)

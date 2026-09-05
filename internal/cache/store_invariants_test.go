@@ -26,7 +26,7 @@ func TestClosingASecondHandleKeepsTheHeldRegion(t *testing.T) {
 		t.Fatalf("Open() error = %v", err)
 	}
 	defer func() { _ = store.Close() }()
-	if err := store.lock.acquire(admissionRegion, true, busyWait); err != nil {
+	if err := store.lock.acquire(admissionRegion, true, lockWaits.busy); err != nil {
 		t.Fatalf("acquire admission error = %v", err)
 	}
 	defer store.lock.release(admissionRegion)

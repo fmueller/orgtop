@@ -250,7 +250,7 @@ func stagedStore(t *testing.T, location Location) *Store {
 		t.Fatalf("openMaintenanceLock() error = %v", err)
 	}
 	store := &Store{location: location, root: root, lock: lock, limits: defaultBounds()}
-	if err := lock.acquire(lifecycleRegion, false, busyWait); err != nil {
+	if err := lock.acquire(lifecycleRegion, false, lockWaits.busy); err != nil {
 		t.Fatalf("acquire lifecycle error = %v", err)
 	}
 	t.Cleanup(func() { _ = store.closeHandles() })

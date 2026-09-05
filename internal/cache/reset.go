@@ -31,7 +31,7 @@ func Reset(location Location) error {
 
 	// An explicit reset waits longer than ordinary work, because the user asked
 	// for it and a launch that is still shutting down may still hold the region.
-	if err := lock.acquire(lifecycleRegion, true, resetWait); err != nil {
+	if err := lock.acquire(lifecycleRegion, true, lockWaits.reset); err != nil {
 		return err
 	}
 	// Path validation runs under the exclusive region, so a symlink or a

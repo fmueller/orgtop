@@ -13,14 +13,31 @@ import (
 // in a tight loop and never opens a second cache.
 var ErrContended = errors.New("enrichment cache is busy")
 
-// Lock waits. Normal work waits at most 250 ms for a busy region, matching the
-// SQLite busy limit; an explicit reset may wait two seconds.
-const (
-	busyWait  = 250 * time.Millisecond
-	resetWait = 2 * time.Second
-	// retryInterval polls a contended region without spinning.
-	retryInterval = 5 * time.Millisecond
-)
+// retryInterval polls a contended region without spinning.
+const retryInterval = 5 * time.Millisecond
+
+// waits are the lock wait bounds one process runs on. Normal work waits at
+// most 250 ms for a busy region, matching the SQLite busy limit; an explicit
+// reset may wait two seconds.
+type waits struct {
+	// busy bounds ordinary lifecycle and admission acquisition, and is the
+	// SQLite busy timeout the driver is opened with.
+	busy time.Duration
+	// reset bounds the explicit `--reset-cache` lifecycle acquisition, which
+	// waits longer because the user asked for it.
+	reset time.Duration
+}
+
+// defaultWaits are RG-005's closed production bounds.
+func defaultWaits() waits {
+	return waits{busy: 250 * time.Millisecond, reset: 2 * time.Second}
+}
+
+// lockWaits is the wait bound every cache lock acquisition in this process
+// uses. Production always runs on defaultWaits; the test binary replaces it
+// once, before any test runs, so a broken lock or budget fails fast instead of
+// holding a test open for the production bound.
+var lockWaits = defaultWaits()
 
 // The maintenance lock's two independent byte regions. The lifecycle region
 // coordinates setup, rebuild, and reset; the admission region serializes

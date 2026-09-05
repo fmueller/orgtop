@@ -20,6 +20,11 @@ const (
 // process. POSIX record locks are owned per process, so only a real second
 // process can prove that two OrgTop launches cannot both mutate the cache.
 func TestMain(m *testing.M) {
+	// The suite injects strictly shorter lock waits than production's, so a
+	// contended region resolves in milliseconds. The bound is replaced once,
+	// before any test runs, and the re-executed holder process inherits it
+	// through this same entry point.
+	lockWaits = testWaits()
 	if root := os.Getenv(holdEnvironment); root != "" {
 		os.Exit(holdExclusiveAdmission(root))
 	}
@@ -38,7 +43,7 @@ func holdExclusiveAdmission(root string) int {
 	}
 	defer func() { _ = store.Close() }()
 
-	if err := store.lock.acquire(admissionRegion, true, busyWait); err != nil {
+	if err := store.lock.acquire(admissionRegion, true, lockWaits.busy); err != nil {
 		return 3
 	}
 	defer store.lock.release(admissionRegion)
@@ -62,11 +67,17 @@ func TestConcurrentProcessesCannotBothMutate(t *testing.T) {
 	if err := holder.Start(); err != nil {
 		t.Fatalf("start holder error = %v", err)
 	}
+	var holderErr error
+	exited := make(chan struct{})
+	go func() {
+		holderErr = holder.Wait()
+		close(exited)
+	}()
 	t.Cleanup(func() {
 		_ = holder.Process.Kill()
-		_ = holder.Wait()
+		<-exited
 	})
-	waitForFile(t, root+"/holding")
+	awaitHolderReady(t, exited, &holderErr, root+"/holding")
 
 	store, err := Open(LocationIn(root))
 	if err != nil {
@@ -117,7 +128,7 @@ func TestContendedAdmissionMakesAReadAMiss(t *testing.T) {
 	}
 	defer func() { _ = other.Close() }()
 
-	if err := other.lock.acquire(admissionRegion, true, busyWait); err != nil {
+	if err := other.lock.acquire(admissionRegion, true, lockWaits.busy); err != nil {
 		t.Fatalf("acquire admission error = %v", err)
 	}
 	defer other.lock.release(admissionRegion)
@@ -224,17 +235,30 @@ func TestCloseWaitsForOperationsStillInFlight(t *testing.T) {
 	}
 }
 
-// waitForFile polls for the holder process's readiness marker a bounded number
-// of times, so the proof never reads the host clock to decide when to give up.
-func waitForFile(t *testing.T, path string) {
+// holderReadyWait bounds how long the proof waits for the second process to
+// signal that it holds the region. It is generous beside the injected lock
+// waits and still short enough that a holder which never reaches the region
+// fails the proof in under a second of its own.
+const holderReadyWait = 500 * time.Millisecond
+
+// awaitHolderReady waits for the holder process's readiness marker and gives up
+// the moment the holder exits without writing it. Polling blind would wait the
+// whole bound out whenever the second process cannot open the cache at all,
+// which is exactly the state a broken setup path leaves it in.
+func awaitHolderReady(t *testing.T, exited <-chan struct{}, holderErr *error, path string) {
 	t.Helper()
 
-	const attempts = 1000
-	for attempt := 0; attempt < attempts; attempt++ {
+	deadline := time.After(holderReadyWait)
+	for {
 		if _, err := os.Stat(path); err == nil {
 			return
 		}
-		time.Sleep(10 * time.Millisecond)
+		select {
+		case <-exited:
+			t.Fatalf("the holder process exited before signalling readiness at %q: %v", path, *holderErr)
+		case <-deadline:
+			t.Fatalf("the holder process never signalled readiness at %q", path)
+		case <-time.After(retryInterval):
+		}
 	}
-	t.Fatalf("the holder process never signalled readiness at %q", path)
 }
