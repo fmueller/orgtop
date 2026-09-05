@@ -1,11 +1,11 @@
 ---
 id: T-091-kill-surviving-mutants-in-the-cache-and-tui-suites
 title: Kill surviving mutants in the cache and TUI suites
-status: in_progress
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#nfr-006-verification-quality
 dependencies: []
-updated_at: "2026-09-05T09:32:00Z"
+updated_at: "2026-09-05T11:14:03Z"
 ---
 
 # T-091-kill-surviving-mutants-in-the-cache-and-tui-suites Kill surviving mutants in the cache and TUI suites
@@ -91,3 +91,4 @@ gate's runtime cost.
   bound its callers pass is the value tests need to be able to shrink.
 - Use `task test:mutate BASE=<ref>` while iterating — the differential lane is
   the cheap one and stays on the default mutator set.
+- 2026-09-05T11:13:59Z: verification pass
