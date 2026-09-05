@@ -3,8 +3,10 @@ package cache
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"testing"
 	"time"
 )
@@ -78,7 +80,9 @@ func TestConcurrentProcessesCannotBothMutate(t *testing.T) {
 		_ = holder.Process.Kill()
 		<-exited
 	})
-	awaitHolderReady(t, exited, root+"/holding")
+	if err := awaitHolderReady(exited, filepath.Join(root, "holding")); err != nil {
+		t.Fatal(err)
+	}
 
 	store, err := Open(LocationIn(root))
 	if err != nil {
@@ -236,29 +240,38 @@ func TestCloseWaitsForOperationsStillInFlight(t *testing.T) {
 	}
 }
 
-// holderReadyWait bounds how long the proof waits for the second process to
-// signal that it holds the region. It is generous beside the injected lock
-// waits and still short enough that a holder which never reaches the region
-// fails the proof in under a second of its own.
-const holderReadyWait = 500 * time.Millisecond
+// The two ways the second process can fail to signal that it holds the region.
+var (
+	// errHolderExited reports a holder that is gone. It is the state a broken
+	// setup path leaves the holder in, and the proof gives up at once.
+	errHolderExited = errors.New("the holder process exited before signalling readiness")
+	// errHolderSilent reports a holder still running that never signalled.
+	errHolderSilent = errors.New("the holder process never signalled readiness")
+)
+
+// holderReadyWait bounds how long the proof waits for a holder that is alive
+// but has not signalled yet. It only has to cover an honest start: spawning a
+// second test binary, opening the cache, and taking the region. That is
+// hundreds of milliseconds on a loaded Windows runner, so the bound is
+// deliberately generous — a holder that cannot get that far exits instead, and
+// awaitHolderReady catches that through the exit channel rather than by
+// waiting this out.
+const holderReadyWait = 5 * time.Second
 
 // awaitHolderReady waits for the holder process's readiness marker and gives up
 // the moment the holder exits without writing it. Polling blind would wait the
-// whole bound out whenever the second process cannot open the cache at all,
-// which is exactly the state a broken setup path leaves it in.
-func awaitHolderReady(t *testing.T, exited <-chan error, path string) {
-	t.Helper()
-
+// whole bound out whenever the second process cannot open the cache at all.
+func awaitHolderReady(exited <-chan error, path string) error {
 	deadline := time.After(holderReadyWait)
 	for {
 		if _, err := os.Stat(path); err == nil {
-			return
+			return nil
 		}
 		select {
 		case err := <-exited:
-			t.Fatalf("the holder process exited before signalling readiness at %q: %v", path, err)
+			return fmt.Errorf("%w at %q: %v", errHolderExited, path, err)
 		case <-deadline:
-			t.Fatalf("the holder process never signalled readiness at %q", path)
+			return fmt.Errorf("%w at %q", errHolderSilent, path)
 		case <-time.After(retryInterval):
 		}
 	}
