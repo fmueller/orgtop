@@ -417,3 +417,71 @@ func TestGremlinsIsInstalledOnDemand(t *testing.T) {
 		}
 	}
 }
+
+// TestMutationTiersSplitTheMutatorSet keeps the two mutation lanes distinct. The
+// weekly gate widens gremlins to every mutator it ships, while the differential
+// run developers repeat per change stays on the cheaper default set. Widening the
+// differential lane would quietly move roughly a quarter more mutants onto the
+// per-change loop, which is the cost the tier split exists to avoid.
+func TestMutationTiersSplitTheMutatorSet(t *testing.T) {
+	t.Parallel()
+
+	// The mutators gremlins v0.6.0 leaves disabled by default.
+	optional := []string{
+		"--invert-logical",
+		"--invert-loopctrl",
+		"--invert-assignments",
+		"--invert-bitwise",
+		"--invert-bwassign",
+		"--remove-self-assignments",
+	}
+
+	gate := mutationCommand(t, "test:mutate:gate")
+	differential := mutationCommand(t, "test:mutate")
+
+	for _, mutator := range optional {
+		if !strings.Contains(gate, mutator) {
+			t.Errorf("the weekly gate must enable %q; it is the lane that can afford every mutator", mutator)
+		}
+		if strings.Contains(differential, mutator) {
+			t.Errorf("the differential run must stay on the default mutators, but it enables %q", mutator)
+		}
+	}
+
+	if !strings.Contains(gate, "--threshold-efficacy") {
+		t.Error("the weekly gate must keep an efficacy threshold; without it the widened mutator set gates nothing")
+	}
+	if strings.Contains(differential, "--threshold-efficacy") {
+		t.Error("the differential run must report rather than gate; thresholds belong to the weekly lane")
+	}
+}
+
+// mutationCommand returns the gremlins invocation a mutation target runs, with
+// the target's own `vars` expanded so a flag list held in a variable reads the
+// same as one written inline.
+func mutationCommand(t *testing.T, target string) string {
+	t.Helper()
+
+	task := nodeAt(loadYAML(t, taskfile), "tasks", target)
+	cmds := child(task, "cmds")
+	if cmds == nil || len(cmds.Content) == 0 {
+		t.Fatalf("Taskfile.yml must declare a %q target", target)
+	}
+
+	vars := child(task, "vars")
+	for _, command := range cmds.Content {
+		if !strings.Contains(command.Value, "gremlins") {
+			continue
+		}
+
+		expanded := command.Value
+		for i := 0; vars != nil && i+1 < len(vars.Content); i += 2 {
+			reference := "{{." + vars.Content[i].Value + "}}"
+			expanded = strings.ReplaceAll(expanded, reference, vars.Content[i+1].Value)
+		}
+		return expanded
+	}
+
+	t.Fatalf("%q must invoke gremlins", target)
+	return ""
+}

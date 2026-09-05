@@ -46,6 +46,9 @@ tasks:
     cmds:
       - scripts/check-changelog-test.sh
 
+  # The differential run stays on the five mutators gremlins enables by default,
+  # so the per-change loop stays cheap. The weekly gate below widens the mutator
+  # set instead, where the extra runtime is affordable.
   test:mutate:
     desc: Run mutation tests for changes since BASE (default main)
     vars:
@@ -55,10 +58,17 @@ tasks:
       - go run github.com/go-gremlins/gremlins/cmd/gremlins@v0.6.0 unleash --diff '{{.BASE}}' --exclude-files 'cmd/.*' --output-statuses lt --workers 2
 
   test:mutate:gate:
-    desc: Run the full weekly mutation gate
+    desc: Run the full weekly mutation gate across every mutator
+    vars:
+      # The six mutators gremlins leaves off by default. Together they add about
+      # a quarter more mutants over the default set, which only the weekly gate
+      # pays for.
+      MUTATORS: >-
+        --invert-logical --invert-loopctrl --invert-assignments
+        --invert-bitwise --invert-bwassign --remove-self-assignments
     cmds:
       - go clean -testcache
-      - go run github.com/go-gremlins/gremlins/cmd/gremlins@v0.6.0 unleash --exclude-files 'cmd/.*' --output-statuses lt --workers 2 --threshold-efficacy 70
+      - go run github.com/go-gremlins/gremlins/cmd/gremlins@v0.6.0 unleash --exclude-files 'cmd/.*' {{.MUTATORS}} --output-statuses lt --workers 2 --threshold-efficacy 70
 
   run:smoke:
     desc: Start orgtop and require a clean exit (startup smoke)

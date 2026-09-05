@@ -70,8 +70,11 @@ Guidance for coding agents working in the OrgTop repository.
 - Release configuration: `task release:check`; local snapshot: `task release:dry`.
 - Install opt-in hooks: `task hooks-install`.
 - Differential mutation tests: `task test:mutate` (override with `BASE=<ref>`).
+  It stays on the five mutators gremlins enables by default so the per-change
+  loop stays cheap.
 - Full mutation gate: `task test:mutate:gate`; run it deliberately, while CI runs
-  it weekly and on manual dispatch.
+  it weekly and on manual dispatch. It widens gremlins to every mutator, which
+  costs about a quarter more mutants than the default set.
 - The flat legacy names (`format`, `format-check`, `taskrail-validate`,
   `release-check`) survive as aliases; prefer the `group:verb` names.
 

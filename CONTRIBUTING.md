@@ -75,6 +75,15 @@ Two lanes split the work by what changed:
 testing against `main` (`BASE=<ref>` overrides it). The full gate runs weekly
 and on manual dispatch in its own workflow, never on a pull request.
 
+The two lanes deliberately run different mutator sets. The differential run
+keeps the five mutators gremlins enables by default, because it is the lane
+repeated per change. The weekly gate adds the six gremlins ships disabled
+(`--invert-logical`, `--invert-loopctrl`, `--invert-assignments`,
+`--invert-bitwise`, `--invert-bwassign`, `--remove-self-assignments`), which
+finds inverted guards and loop-control mistakes the default set cannot reach.
+`TestMutationTiersSplitTheMutatorSet` fails if either lane drifts into the
+other's set.
+
 ## Tracked work
 
 Versioned product contracts live in `specs/`, and implementation tasks live in
