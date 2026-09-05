@@ -14,8 +14,11 @@ AI-generated and AI-assisted pull requests are welcome. Two rules apply:
 1. **You own the diff.** Whoever opens the pull request is accountable for every
    line, whether written by a human or a tool.
 2. **No bot attribution.** Do not add `Co-Authored-By: <bot>`, `Assisted-By:`,
-   `Generated with ...`, or 🤖 trailers. The `commit-msg` hook rejects them. The
-   AI is a tool, not a co-author.
+   `Generated with ...`, agent session or thread trailers such as
+   `Claude-Session:`/`Amp-Thread:`, links to an agent session, or 🤖 trailers.
+   The `commit-msg` hook rejects them and the `pre-push` hook rescans the
+   outgoing commits, so a message that skipped the first gate is still caught
+   before it reaches the remote. The AI is a tool, not a co-author.
 
 The same quality gate applies regardless of how the code was produced.
 

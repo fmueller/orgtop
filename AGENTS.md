@@ -110,6 +110,9 @@ Guidance for coding agents working in the OrgTop repository.
 - Coding agents must run `task hooks-install` before creating their first commit
   in a worktree; do not assume the local `commit-msg` hook is already installed.
 - Use Conventional Commits with imperative subjects.
+- Never add attribution trailers: no co-authorship line, no agent session or
+  thread trailer, and no session link. `scripts/check-attribution.sh` is the one
+  policy the `commit-msg` and `pre-push` hooks both apply.
 - Include a descriptive body after the subject, wrap body lines at 72 characters,
   and suffix tracked-task subjects with the short key, for example `(T-001)`.
 - Keep tracked tasks focused and include objective verification evidence.

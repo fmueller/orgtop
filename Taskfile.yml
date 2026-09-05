@@ -41,6 +41,11 @@ tasks:
     cmds:
       - scripts/check-commit-msg-test.sh
 
+  test:push-messages:
+    desc: Test the pre-push attribution guard
+    cmds:
+      - scripts/check-push-messages-test.sh
+
   test:changelog:
     desc: Test the changelog release guards
     cmds:
@@ -145,6 +150,8 @@ tasks:
       - task: vet
       - task: lint
       - task: test
+      - task: test-commit-msg
+      - task: test:push-messages
       - task: test:changelog
       - task: build
       - task: run:smoke

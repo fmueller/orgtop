@@ -74,6 +74,12 @@ jobs:
       - name: Validate release configuration
         run: task release:check
 
+      - name: Test the commit-message policy
+        run: task test-commit-msg
+
+      - name: Test the pre-push attribution guard
+        run: task test:push-messages
+
       - name: Test the changelog release guards
         run: task test:changelog
 

@@ -65,8 +65,9 @@ if [[ "$require_body" == true ]]; then
   fi
 fi
 
-if grep -qiE '^[[:space:]]*((co-authored-by|assisted-by):|generated with[[:space:]])' "$msg_file" \
-  || grep -qF '🤖' "$msg_file"; then
+# The attribution policy lives in one script, so the pre-push scan refuses
+# exactly what this hook refuses.
+if ! bash "$(dirname "${BASH_SOURCE[0]}")/check-attribution.sh" "$msg_file"; then
   echo "check-commit-msg: remove automated-attribution lines" >&2
   exit 1
 fi

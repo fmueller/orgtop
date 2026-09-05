@@ -60,5 +60,11 @@ assert_rejects slugged-task $'feat: add scope (T-001-scope)\n\nExplain the chang
 assert_rejects prefixed-task $'feat: T-001 add scope\n\nExplain the change.' 'task references'
 assert_rejects invalid-conventional $'add scope\n\nExplain the change.' 'Conventional Commit'
 assert_rejects attribution $'feat: add scope\n\nExplain it.\n\nCo-Authored-By: Bot <bot@example.com>' 'automated-attribution'
+assert_rejects agent-session-trailer $'feat: add scope\n\nExplain it.\n\nClaude-Session: https://claude.ai/code/session_01' 'automated-attribution'
+assert_rejects wrapped-session-link $'feat: add scope\n\nExplain it.\n\nClaude-Session:\nhttps://claude.ai/code/session_01' 'automated-attribution'
+assert_rejects thread-trailer $'feat: add scope\n\nExplain it.\n\nAmp-Thread: https://ampcode.com/threads/T-1' 'automated-attribution'
+assert_rejects thread-id-trailer $'feat: add scope\n\nExplain it.\n\nAmp-Thread-ID: T-01a0' 'automated-attribution'
+assert_rejects lowercase-coauthor $'feat: add scope\n\nExplain it.\n\nCo-authored-by: Someone <a@b.c>' 'automated-attribution'
+assert_accepts generated-in-prose $'docs: describe the generated fixtures\n\nThe fixtures are generated with the recorded payloads.'
 
 printf 'commit message checks passed\n'

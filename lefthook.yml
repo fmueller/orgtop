@@ -21,8 +21,11 @@ pre-commit:
       glob: "{planning/**,specs/**,.taskrail/**}"
       run: task workflow:validate
     commit-message-checker:
-      glob: "{lefthook.yml,Taskfile.yml,scripts/check-commit-msg.sh,scripts/check-commit-msg-test.sh}"
+      glob: "{lefthook.yml,Taskfile.yml,scripts/check-commit-msg.sh,scripts/check-attribution.sh,scripts/check-commit-msg-test.sh}"
       run: task test-commit-msg
+    push-message-checker:
+      glob: "{lefthook.yml,Taskfile.yml,scripts/check-push-messages.sh,scripts/check-attribution.sh,scripts/check-push-messages-test.sh}"
+      run: task test:push-messages
     changelog-guard-checker:
       glob: "{lefthook.yml,Taskfile.yml,scripts/check-changelog-version.sh,scripts/changelog-release-notes.sh,scripts/check-changelog-test.sh}"
       run: task test:changelog
@@ -34,5 +37,11 @@ commit-msg:
 
 pre-push:
   commands:
+    # The message guard runs before the suite: a push that has to be rewritten
+    # anyway should not first pay for the tests.
+    message-policy:
+      priority: 1
+      run: bash scripts/check-push-messages.sh
     tests:
+      priority: 2
       run: task test
