@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-updated_at: "2026-09-04T22:42:05Z"
+updated_at: "2026-09-05T07:49:26Z"
 active_spec_version: v0.2.0
 active_spec_path: specs/v0.2.0.md
 current_task: ""
@@ -8,7 +8,7 @@ current_task_title: ""
 status_summary: idle
 blockers: []
 next_action: Select the next eligible task
-last_verification_result: pass for T-062-render-and-navigate-the-rain-view at 2026-09-04T22:41:24Z
+last_verification_result: pass for T-063-select-bounded-interesting-now-entries at 2026-09-05T07:49:22Z
 relevant_artifacts: []
 continuation_notes:
     - This repository is using manual Taskrail-style workflow scaffolding until the product replaces more of the bootstrap steps.
@@ -34,7 +34,7 @@ continuation_notes:
 
 ## Last Verification
 
-- pass for T-062-render-and-navigate-the-rain-view at 2026-09-04T22:41:24Z
+- pass for T-063-select-bounded-interesting-now-entries at 2026-09-05T07:49:22Z
 
 ## Next Action
 
@@ -50,8 +50,8 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 22
+- todo: 21
 - in_progress: 0
-- completed: 68
+- completed: 69
 - blocked: 0
 - cancelled: 0

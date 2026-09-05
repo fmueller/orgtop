@@ -1,13 +1,13 @@
 ---
 id: T-063-select-bounded-interesting-now-entries
 title: Select bounded Interesting Now entries
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.2.0.md#interesting-now-strip
 dependencies:
     - T-054-implement-scoped-snapshots-and-direct-aggregation
     - T-060-implement-shared-discrete-recency-semantics
-updated_at: "2026-08-29T09:22:04Z"
+updated_at: "2026-09-05T07:49:26Z"
 ---
 
 # T-063-select-bounded-interesting-now-entries Select bounded Interesting Now entries
@@ -33,3 +33,4 @@ Implement deterministic Interesting Now eligibility, ordering, retention, and bo
 ## Implementation Notes
 
 - Keep selection outside Rain rendering and separate from the full Stream.
+- 2026-09-05T07:49:22Z: verification pass
