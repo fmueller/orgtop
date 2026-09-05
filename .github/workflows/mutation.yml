@@ -36,6 +36,9 @@ jobs:
 
       - name: Summarize mutation results
         if: always()
+        # Reporting must never mask the gate verdict; the enforce step below owns
+        # the pass/fail decision.
+        continue-on-error: true
         run: |
           if [ ! -f mutation-results.json ]; then
             printf '## Mutation testing\n\nNo JSON report was produced. See the job log.\n' >> "$GITHUB_STEP_SUMMARY"
@@ -45,7 +48,7 @@ jobs:
           {
             printf '## Mutation testing\n\n'
             printf '| Metric | Result |\n|---|---:|\n'
-            jq -r '"| Test efficacy | \(.test_efficacy * 100 | round / 100)% |", "| Mutator coverage | \(.mutations_coverage * 100 | round / 100)% |", "| Killed | \(.mutants_killed) |", "| Lived | \(.mutants_lived) |", "| Timed out | \([.files[].mutations[] | select(.status == \"TIMED OUT\")] | length) |", "| Not covered | \(.mutants_not_covered) |"' mutation-results.json
+            jq -r '"| Test efficacy | \(.test_efficacy * 100 | round / 100)% |", "| Mutator coverage | \(.mutations_coverage * 100 | round / 100)% |", "| Killed | \(.mutants_killed) |", "| Lived | \(.mutants_lived) |", "| Timed out | \([.files[].mutations[] | select(.status == "TIMED OUT")] | length) |", "| Not covered | \(.mutants_not_covered) |"' mutation-results.json
             printf '\nCommit: `%s`\n' "$GITHUB_SHA"
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -66,7 +69,7 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           title='Mutation testing gate failure'
-          issue_number=$(gh issue list --state open --label github_actions --json number,title --jq "map(select(.title == \"$title\"))[0].number // empty")
+          issue_number=$(gh issue list --state open --label github_actions --json number,title --jq "map(select(.title == \"$title\"))[0].number // empty" || true)
 
           if [ "$MUTATION_OUTCOME" = success ]; then
             if [ -n "$issue_number" ]; then
@@ -80,7 +83,7 @@ jobs:
             printf 'The weekly mutation gate failed for `%s`.\n\n' "$GITHUB_SHA"
             printf -- '- Workflow run: %s\n' "$RUN_URL"
             if [ -f mutation-results.json ]; then
-              jq -r '"- Test efficacy: \(.test_efficacy * 100 | round / 100)%", "- Mutator coverage: \(.mutations_coverage * 100 | round / 100)%", "- Killed: \(.mutants_killed)", "- Lived: \(.mutants_lived)", "- Timed out: \([.files[].mutations[] | select(.status == \"TIMED OUT\")] | length)", "- Not covered: \(.mutants_not_covered)"' mutation-results.json
+              jq -r '"- Test efficacy: \(.test_efficacy * 100 | round / 100)%", "- Mutator coverage: \(.mutations_coverage * 100 | round / 100)%", "- Killed: \(.mutants_killed)", "- Lived: \(.mutants_lived)", "- Timed out: \([.files[].mutations[] | select(.status == "TIMED OUT")] | length)", "- Not covered: \(.mutants_not_covered)"' mutation-results.json
               printf '\n### Lived mutants\n\n'
               jq -r '.files[] | .file_name as $file | .mutations[] | select(.status == "LIVED") | "- `\($file):\(.line):\(.column)` \(.type)"' mutation-results.json
             else
