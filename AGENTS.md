@@ -73,8 +73,9 @@ Guidance for coding agents working in the OrgTop repository.
   It stays on the five mutators gremlins enables by default so the per-change
   loop stays cheap.
 - Full mutation gate: `task test:mutate:gate`; run it deliberately, while CI runs
-  it weekly and on manual dispatch. It widens gremlins to every mutator, which
-  costs about a quarter more mutants than the default set.
+  it weekly and on manual dispatch. It widens gremlins to every mutator and
+  raises the per-mutant timeout, which together cost roughly three times the
+  wall clock of the default configuration.
 - The flat legacy names (`format`, `format-check`, `taskrail-validate`,
   `release-check`) survive as aliases; prefer the `group:verb` names.
 

@@ -84,6 +84,12 @@ finds inverted guards and loop-control mistakes the default set cannot reach.
 `TestMutationTiersSplitTheMutatorSet` fails if either lane drifts into the
 other's set.
 
+The gate also runs with `--timeout-coefficient 20`. The cache suite waits out
+its retry bounds under mutation, and at the default coefficient 280 of its 293
+mutants time out. Timeouts count toward neither side of the efficacy ratio, so
+the package reports a perfect score off the 13 mutants that did return a
+verdict.
+
 ## Tracked work
 
 Versioned product contracts live in `specs/`, and implementation tasks live in

@@ -451,6 +451,16 @@ func TestMutationTiersSplitTheMutatorSet(t *testing.T) {
 	if !strings.Contains(gate, "--threshold-efficacy") {
 		t.Error("the weekly gate must keep an efficacy threshold; without it the widened mutator set gates nothing")
 	}
+	// The cache suite waits out its retry bounds under mutation. At the default
+	// coefficient nearly every cache mutant times out, and timeouts count toward
+	// neither side of the efficacy ratio, so the package reports a perfect score
+	// off a handful of verdicts.
+	if !strings.Contains(gate, "--timeout-coefficient") {
+		t.Error("the weekly gate must widen the per-mutant timeout; without it slow packages report efficacy off a fraction of their mutants")
+	}
+	if strings.Contains(differential, "--timeout-coefficient") {
+		t.Error("the differential run must stay on the default timeout; the widened bound belongs to the weekly lane")
+	}
 	if strings.Contains(differential, "--threshold-efficacy") {
 		t.Error("the differential run must report rather than gate; thresholds belong to the weekly lane")
 	}

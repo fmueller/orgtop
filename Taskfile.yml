@@ -62,13 +62,16 @@ tasks:
     vars:
       # The six mutators gremlins leaves off by default. Together they add about
       # a quarter more mutants over the default set, which only the weekly gate
-      # pays for.
+      # pays for. The gate also widens the per-mutant timeout: the cache suite
+      # waits out its retry bounds under mutation, and at the default coefficient
+      # 280 of its 293 mutants time out instead of returning a verdict, which
+      # reports a fabricated 100% efficacy for the package.
       MUTATORS: >-
         --invert-logical --invert-loopctrl --invert-assignments
         --invert-bitwise --invert-bwassign --remove-self-assignments
     cmds:
       - go clean -testcache
-      - go run github.com/go-gremlins/gremlins/cmd/gremlins@v0.6.0 unleash --exclude-files 'cmd/.*' {{.MUTATORS}} --output-statuses lt --workers 2 --threshold-efficacy 70
+      - go run github.com/go-gremlins/gremlins/cmd/gremlins@v0.6.0 unleash --exclude-files 'cmd/.*' {{.MUTATORS}} --output-statuses lt --workers 2 --timeout-coefficient 20 --threshold-efficacy 70
 
   run:smoke:
     desc: Start orgtop and require a clean exit (startup smoke)

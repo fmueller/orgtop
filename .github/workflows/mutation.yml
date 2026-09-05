@@ -19,7 +19,9 @@ permissions:
 jobs:
   mutation-tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # The widened mutator set and the timeout coefficient the cache suite needs
+    # put a full run near 40 minutes on a four-core runner.
+    timeout-minutes: 90
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
