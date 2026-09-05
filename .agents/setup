@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+step() {
+	local label="$1"
+	shift
+	local started=$SECONDS
+	printf '==> %s\n' "$label"
+	"$@"
+	printf '    completed in %ss\n' "$((SECONDS - started))"
+}
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+mise_bin="$HOME/.local/bin/mise"
+mise_version="2026.9.0"
+
+missing_packages=()
+for package in ca-certificates curl git; do
+	if ! dpkg-query -W -f='${Status}' "$package" 2>/dev/null | grep -Fqx 'install ok installed'; then
+		missing_packages+=("$package")
+	fi
+done
+
+if ((${#missing_packages[@]})); then
+	step "refresh apt metadata" sudo apt-get update
+	step "install system prerequisites" sudo apt-get install -y --no-install-recommends "${missing_packages[@]}"
+fi
+
+installed_mise_version=""
+if [[ -x "$mise_bin" ]]; then
+	installed_mise_version="$($mise_bin --version | awk '{print $1}')"
+fi
+if [[ "$installed_mise_version" != "$mise_version" ]]; then
+	printf '==> install mise %s\n' "$mise_version"
+	started=$SECONDS
+	curl -fsSL https://mise.run | MISE_VERSION="v$mise_version" MISE_INSTALL_PATH="$mise_bin" sh
+	printf '    completed in %ss\n' "$((SECONDS - started))"
+fi
+
+export PATH="$HOME/.local/bin:$PATH"
+cd "$repo_root"
+
+step "install pinned toolchain" "$mise_bin" install --yes
+
+# Make the complete mise environment available to this setup process.
+eval "$("$mise_bin" env -s bash)"
+export CGO_ENABLED=0
+
+step "download Go modules" go mod download
+step "warm the Go build cache" go build -trimpath -o bin/orgtop ./cmd/orgtop
+
+# Amp and supervised services start in clean non-interactive login shells.
+# Activate this repository's tools and mise.toml environment in those shells.
+profile_marker="# orgtop mise environment"
+if ! grep -Fqx "$profile_marker" "$HOME/.bash_profile" 2>/dev/null; then
+	cat >>"$HOME/.bash_profile" <<EOF
+
+$profile_marker
+if [[ \${PWD:-} == "$repo_root" && -z \${ORGTOP_MISE_ACTIVE:-} ]]; then
+	export ORGTOP_MISE_ACTIVE=1
+	eval "\$("$mise_bin" env -s bash)"
+fi
+EOF
+fi
+
+printf 'Orb setup complete in %ss.\n' "$SECONDS"

@@ -33,5 +33,6 @@ go.work.sum
 
 # Local agent settings and workflow artifacts
 .claude/settings.local.json
+.amp/portals/*
 planning/artifacts/
 mutation-results.json
