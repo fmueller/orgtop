@@ -1,11 +1,11 @@
 ---
 id: T-091-kill-surviving-mutants-in-the-cache-and-tui-suites
 title: Kill surviving mutants in the cache and TUI suites
-status: todo
+status: in_progress
 priority: high
 spec_ref: specs/v0.2.0.md#nfr-006-verification-quality
 dependencies: []
-updated_at: "2026-09-05T09:26:05Z"
+updated_at: "2026-09-05T09:32:00Z"
 ---
 
 # T-091-kill-surviving-mutants-in-the-cache-and-tui-suites Kill surviving mutants in the cache and TUI suites
@@ -63,7 +63,24 @@ gate's runtime cost.
 
 - Record the `mutation-results.json` efficacy and per-package survivor counts
   before and after, from `task test:mutate:gate`.
-- TODO: record verification evidence paths.
+- `task test:mutate:gate` before (2026-09-05, commit 804e217): 1657 runnable,
+  1324 killed, 253 lived, 80 timed out, 83.96% efficacy, 91.37% mutant
+  coverage. `internal/cache` 250/71/58 at 77.9%; `internal/tui` 402/119/9 at
+  77.2%.
+- `task test:mutate:gate` after (commit e8fa22b): 1661 runnable, 1537 killed,
+  98 lived, 26 timed out, 94.01% efficacy, 91.85% mutant coverage.
+  `internal/cache` 367/11/4 at 97.1%; `internal/tui` 498/24/9 at 95.4%. Every
+  other package is unchanged.
+- Default gremlins timeout coefficient, `internal/cache` only: 188 timed out
+  before the injectable waits, 58 after `lockWaits` alone, 4 after the bounded
+  cross-process readiness wait. Package wall clock 1.685s before, 0.700s after.
+- Surviving mutants in the NFR-006 named files after the change:
+  `cache/maintenance.go` 45 to 3, `tui/rain_render.go` 27 to 4, `tui/rain.go`
+  20 to 4, `tui/rain_columns.go` 11 to 4, `tui/rain_field.go` 9 to 1. Each
+  remaining survivor is an equivalent mutant: a `make()` capacity hint, or a
+  boundary whose two forms agree on every reachable input.
+- Evidence: `git log 804e217..e8fa22b`; commits `39e9ff5` (injectable waits),
+  `fe77161` (behavior tests), `e8fa22b` (shared fixtures).
 
 ## Implementation Notes
 
