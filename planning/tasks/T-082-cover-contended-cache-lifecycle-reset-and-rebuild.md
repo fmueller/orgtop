@@ -1,12 +1,12 @@
 ---
 id: T-082-cover-contended-cache-lifecycle-reset-and-rebuild
 title: Cover contended cache lifecycle reset and rebuild
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.2.0.md#bounded-sqlite-cache
 dependencies:
     - T-055-implement-safe-cache-failure-and-recovery
-updated_at: "2026-09-03T12:19:14Z"
+updated_at: "2026-09-07T12:04:28Z"
 ---
 
 # T-082-cover-contended-cache-lifecycle-reset-and-rebuild Cover contended cache lifecycle reset and rebuild
@@ -41,3 +41,4 @@ Follow-up derived from T-055-implement-safe-cache-failure-and-recovery's verific
 
 - The lock mechanics are unchanged by T-055; this is test coverage, not new
   lifecycle behavior.
+- 2026-09-07T12:04:23Z: verification pass

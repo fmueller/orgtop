@@ -15,7 +15,14 @@ import (
 // into the second process of the cross-process locking proof.
 const (
 	holdEnvironment = "ORGTOP_CACHE_LOCK_HOLDER"
-	holdDuration    = 2 * time.Second
+	// holdDuration is how long a holder keeps its region. Every proof has to
+	// resolve inside half of it, so it is set from the longest injected wait
+	// rather than from how long a holder is convenient to keep: the explicit
+	// reset waits lockWaits.reset, and an order of magnitude of headroom above
+	// that is what keeps a fifty-times-slower runner from reporting a hang
+	// where the bound was simply met late. Nothing waits it out on a passing
+	// run — the holder is killed when the test ends — so the length is free.
+	holdDuration = 8 * time.Second
 )
 
 // TestMain lets the concurrency proof re-execute this binary as an independent
@@ -29,6 +36,9 @@ func TestMain(m *testing.M) {
 	lockWaits = testWaits()
 	if root := os.Getenv(holdEnvironment); root != "" {
 		os.Exit(holdExclusiveAdmission(root))
+	}
+	if root := os.Getenv(lifecycleEnvironment); root != "" {
+		os.Exit(holdSharedLifecycle(root))
 	}
 	if root := os.Getenv(contendEnvironment); root != "" {
 		os.Exit(attemptMutation(root))
@@ -50,22 +60,33 @@ func holdExclusiveAdmission(root string) int {
 	}
 	defer store.lock.release(admissionRegion)
 
-	// Signal readiness by creating a marker the parent polls for.
-	if err := os.WriteFile(root+"/holding", nil, 0o600); err != nil {
+	if err := signalHolderReady(root); err != nil {
 		return 4
 	}
 	time.Sleep(holdDuration)
 	return 0
 }
 
-// TestConcurrentProcessesCannotBothMutate proves the exclusive admission region
-// serializes mutating transactions across processes: the second process is
-// contended, stays interactive, and never opens a second cache.
-func TestConcurrentProcessesCannotBothMutate(t *testing.T) {
-	root := t.TempDir()
+// readinessMarker is the file a holder process creates once it really occupies
+// its region. The parent polls for that file rather than guessing at a start
+// delay, so the proof never runs against a holder that is not holding yet.
+func readinessMarker(root string) string { return filepath.Join(root, "holding") }
+
+// signalHolderReady creates the marker the parent polls for.
+func signalHolderReady(root string) error {
+	return os.WriteFile(readinessMarker(root), nil, 0o600)
+}
+
+// startHolder re-executes this binary as an independent process that takes one
+// lock region at root, and returns only once that process really holds it. A
+// second process is what makes the contention genuine: POSIX record locks are
+// owned per process, so a same-process guard would prove nothing. The holder is
+// killed and reaped when the test ends.
+func startHolder(t *testing.T, environment, root string) {
+	t.Helper()
 
 	holder := exec.Command(os.Args[0], "-test.run", "TestMain")
-	holder.Env = append(os.Environ(), holdEnvironment+"="+root)
+	holder.Env = append(os.Environ(), environment+"="+root)
 	if err := holder.Start(); err != nil {
 		t.Fatalf("start holder error = %v", err)
 	}
@@ -80,9 +101,18 @@ func TestConcurrentProcessesCannotBothMutate(t *testing.T) {
 		_ = holder.Process.Kill()
 		<-exited
 	})
-	if err := awaitHolderReady(exited, filepath.Join(root, "holding")); err != nil {
+	if err := awaitHolderReady(exited, readinessMarker(root)); err != nil {
 		t.Fatal(err)
 	}
+}
+
+// TestConcurrentProcessesCannotBothMutate proves the exclusive admission region
+// serializes mutating transactions across processes: the second process is
+// contended, stays interactive, and never opens a second cache.
+func TestConcurrentProcessesCannotBothMutate(t *testing.T) {
+	root := t.TempDir()
+
+	startHolder(t, holdEnvironment, root)
 
 	store, err := Open(LocationIn(root))
 	if err != nil {
@@ -100,7 +130,9 @@ func TestConcurrentProcessesCannotBothMutate(t *testing.T) {
 
 // awaitBounded runs one cache operation and fails the test unless it returns
 // well inside the interval the holder keeps the region. It measures nothing, so
-// the proof does not depend on how fast the host runs.
+// the proof does not depend on how fast the host runs: what it excludes is an
+// operation that waits the holder out or hangs on the region instead of
+// reporting contention.
 func awaitBounded(t *testing.T, operation func() error) error {
 	t.Helper()
 
@@ -110,7 +142,7 @@ func awaitBounded(t *testing.T, operation func() error) error {
 	case err := <-done:
 		return err
 	case <-time.After(holdDuration / 2):
-		t.Fatal("the cache operation did not give up within its busy bound")
+		t.Fatal("the cache operation did not give up within its wait bound")
 		return nil
 	}
 }
