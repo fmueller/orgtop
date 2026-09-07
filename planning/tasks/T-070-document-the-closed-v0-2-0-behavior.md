@@ -8,6 +8,13 @@ dependencies:
     - T-030-decouple-readme-structure-from-doc-tests
     - T-069-integrate-the-closed-v0-2-0-binary-flow
     - T-068-verify-distribution-channel-parity
+    - T-084-keep-repository-membership-through-canceled
+    - T-085-implement-cell-safe-scope-label-shortening
+    - T-086-implement-bounded-stream-event-detail
+    - T-087-report-mixed-scope-context-in-the-shared-header
+    - T-088-match-deferred-claim-spelling-variants
+    - T-089-resolve-terminal-capability-and-charset-at-launch
+    - T-090-move-rain-page-range-and-hidden-counts-into-the
 updated_at: "2026-08-29T09:22:04Z"
 ---
 

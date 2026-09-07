@@ -7,6 +7,9 @@ spec_ref: specs/v0.2.0.md#integration-documentation-and-release-readiness
 dependencies:
     - T-070-document-the-closed-v0-2-0-behavior
     - T-068-verify-distribution-channel-parity
+    - T-082-cover-contended-cache-lifecycle-reset-and-rebuild
+    - T-093-enforce-per-package-efficacy-floor
+    - T-094-harden-cache-timing-assertions
 updated_at: "2026-08-29T09:22:04Z"
 ---
 

@@ -1,13 +1,14 @@
 ---
 schema_version: 1
-updated_at: "2026-09-07T10:52:46Z"
+updated_at: "2026-09-07T11:47:18Z"
 active_spec_version: v0.2.0
 active_spec_path: specs/v0.2.0.md
 current_task: ""
 current_task_title: ""
-status_summary: idle
-blockers: []
-next_action: Select the next eligible task
+status_summary: blocked
+blockers:
+    - 'T-074-provision-and-validate-distribution-repositories: External authorization missing. fmueller/gh-orgtop now exists with the gh-extension topic and fmueller/homebrew-tap exists, but the distribution GitHub App is not created and gh secret list -R fmueller/orgtop returns no secrets, so DISTRIBUTION_APP_ID and DISTRIBUTION_APP_PRIVATE_KEY are unconfigured (release.yml:112-113, :527-528). App creation is a browser-only flow no agent can perform, and the draft-release rehearsal needs its installation token. RG-011 requires this to stay an explicit release blocker rather than be approximated by local dry runs. Setup steps recorded at ~/Downloads/orgtop_gh_setup_T074.md.'
+next_action: 'Start task T-082-cover-contended-cache-lifecycle-reset-and-rebuild: Cover contended cache lifecycle reset and rebuild'
 last_verification_result: pass for T-078-verify-windows-cache-ownership-and-acl-enforcement at 2026-09-07T10:52:15Z
 relevant_artifacts: []
 continuation_notes:
@@ -26,11 +27,11 @@ continuation_notes:
 
 ## Status
 
-- idle
+- blocked
 
 ## Blockers
 
-- None
+- T-074-provision-and-validate-distribution-repositories: External authorization missing. fmueller/gh-orgtop now exists with the gh-extension topic and fmueller/homebrew-tap exists, but the distribution GitHub App is not created and gh secret list -R fmueller/orgtop returns no secrets, so DISTRIBUTION_APP_ID and DISTRIBUTION_APP_PRIVATE_KEY are unconfigured (release.yml:112-113, :527-528). App creation is a browser-only flow no agent can perform, and the draft-release rehearsal needs its installation token. RG-011 requires this to stay an explicit release blocker rather than be approximated by local dry runs. Setup steps recorded at ~/Downloads/orgtop_gh_setup_T074.md.
 
 ## Last Verification
 
@@ -38,7 +39,7 @@ continuation_notes:
 
 ## Next Action
 
-- Select the next eligible task
+- Start task T-082-cover-contended-cache-lifecycle-reset-and-rebuild: Cover contended cache lifecycle reset and rebuild
 
 ## Relevant Artifacts
 
@@ -50,8 +51,8 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 18
+- todo: 17
 - in_progress: 0
 - completed: 78
-- blocked: 0
+- blocked: 1
 - cancelled: 0
