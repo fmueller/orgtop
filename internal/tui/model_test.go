@@ -524,6 +524,12 @@ func TestOverflowRangeUsesClosedFullCompactAndMinimumForms(t *testing.T) {
 	if got := zero.forms(); !reflect.DeepEqual(got, want) {
 		t.Errorf("zero-row overflow forms are %q, want %q", got, want)
 	}
+
+	oneOverviewScope := overflowRange{kind: "scopes", first: 8, last: 8, total: 20}
+	want = []string{"scopes 8-8 of 20", "8-8/20", "+19"}
+	if got := oneOverviewScope.forms(); !reflect.DeepEqual(got, want) {
+		t.Errorf("one-row Overview overflow forms are %q, want %q", got, want)
+	}
 }
 
 func TestSmallPositiveSizesRenderWithinBounds(t *testing.T) {

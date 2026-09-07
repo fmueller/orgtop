@@ -255,21 +255,18 @@ func rainContextCandidates(field rainField, capability colorCapability, legendHi
 	return candidates
 }
 
-// rainContextSegments returns the context segments in priority order, in their
-// full or their compact spelling. The disjoint RG-006 counters keep their own
-// words, so a hidden Scope, a hidden item, a capacity omission, a grouped
-// collision, and a clipped qualification are never merged or substituted for
-// one another. The selected window keeps its full spelling in both, because it
-// is already short and names the lifetime every other count is measured under.
+// rainContextSegments returns the view-local context segments in priority
+// order, in their full or compact spelling. Page range and hidden Scope/item
+// accounting belong to the shared header; the remaining disjoint RG-006
+// counters keep their own words and are never merged or substituted. The
+// selected window keeps its full spelling in both, because it is already short
+// and names the lifetime every other count is measured under.
 func rainContextSegments(field rainField, capability colorCapability, legendHidden, shortened bool) []string {
-	segments := make([]string, 0, 9)
+	segments := make([]string, 0, 6)
 	if field.paused {
 		segments = append(segments, pausedContext)
 	}
 	segments = append(segments, rainWindowContext(field.window))
-	if field.scopes > 0 {
-		segments = append(segments, rainScopeRange(field, shortened))
-	}
 	if legendHidden {
 		segments = append(segments, pick(shortened, "no legend", legendHiddenContext))
 	}
@@ -295,8 +292,6 @@ type rainDisjointCount struct {
 // rainDisjointCounts returns the page's counters in their fixed priority order.
 func rainDisjointCounts(field rainField) []rainDisjointCount {
 	return []rainDisjointCount{
-		{count: field.hiddenScopes, text: "scopes hidden", mark: "s"},
-		{count: field.hiddenItems, text: "items hidden", mark: "i"},
 		{count: rainOmitted(field.counts), text: "omitted", mark: "o"},
 		{count: field.collisions, text: "collisions", mark: "c"},
 		{count: field.clipped, text: "clipped", mark: "q"},
@@ -314,21 +309,6 @@ func pick(shortened bool, compact, full string) string {
 // rainWindowContext spells the selected recency window, which survives view
 // changes and resize and is not persisted after exit (RG-006).
 func rainWindowContext(window rainWindow) string { return "window " + window.String() }
-
-// rainScopeRange states which Scopes of the selection the fixed page holds, in
-// one-based inclusive positions, in its full or its compact spelling.
-func rainScopeRange(field rainField, shortened bool) string {
-	if shortened {
-		if field.first == field.last {
-			return fmt.Sprintf("%d/%d", field.first, field.scopes)
-		}
-		return fmt.Sprintf("%d-%d/%d", field.first, field.last, field.scopes)
-	}
-	if field.first == field.last {
-		return fmt.Sprintf("scope %d of %d", field.first, field.scopes)
-	}
-	return fmt.Sprintf("scopes %d-%d of %d", field.first, field.last, field.scopes)
-}
 
 // rainRecencyContext spells the visible page's discrete recency totals, which
 // RG-008 requires whenever the effective profile cannot separate the states by

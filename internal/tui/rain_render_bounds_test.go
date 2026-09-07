@@ -243,28 +243,77 @@ func TestRainContextOmitsTheScopeRangeWithoutScopes(t *testing.T) {
 	}
 }
 
-// TestRainScopeRangeStatesSingleAndSpannedPages guards RG-006's one-based
-// inclusive page positions: a page holding one Scope names that Scope and a
-// page spanning several names its inclusive range, in both spellings.
-func TestRainScopeRangeStatesSingleAndSpannedPages(t *testing.T) {
+// TestRainHeaderRangeFormsKeepDisjointPageAccounting guards RG-006's one-based
+// positions and T-090's use of the shared full/compact/minimum header ladder.
+// The minimum range is itself the hidden-Scope count, so only the hidden-item
+// count is appended there rather than stating the Scope count twice.
+func TestRainHeaderRangeFormsKeepDisjointPageAccounting(t *testing.T) {
 	cases := []struct {
-		name                string
-		first, last, scopes int
-		wantFull, wantShort string
+		name                       string
+		first, last, scopes, items int
+		want                       []string
 	}{
-		{name: "one Scope", first: 2, last: 2, scopes: 5, wantFull: "scope 2 of 5", wantShort: "2/5"},
-		{name: "a spanned page", first: 1, last: 3, scopes: 5, wantFull: "scopes 1-3 of 5", wantShort: "1-3/5"},
+		{
+			name: "one Scope on a multi-page selection", first: 2, last: 2, scopes: 5, items: 4,
+			want: []string{"scope 2 of 5 · +4 scopes hidden · +4 items hidden", "2/5 · +4s · +4i", "+4 · +4i"},
+		},
+		{
+			name: "spanned page", first: 1, last: 3, scopes: 5, items: 2,
+			want: []string{"scopes 1-3 of 5 · +2 scopes hidden · +2 items hidden", "1-3/5 · +2s · +2i", "+2 · +2i"},
+		},
+		{
+			name: "single-Scope selection", first: 1, last: 1, scopes: 1,
+			want: []string{"scope 1 of 1", "1/1", "+0"},
+		},
+		{
+			name: "multi-Scope single page", first: 1, last: 3, scopes: 3,
+			want: []string{"scopes 1-3 of 3", "1-3/3", "+0"},
+		},
 	}
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
-			field := rainField{first: testCase.first, last: testCase.last, scopes: testCase.scopes}
-			if got := rainScopeRange(field, false); got != testCase.wantFull {
-				t.Errorf("the full spelling is %q, want %q", got, testCase.wantFull)
+			rangeForms := (overflowRange{
+				kind: "scopes", first: testCase.first, last: testCase.last,
+				total: testCase.scopes, hiddenItems: testCase.items,
+				discloseHidden: true, singularScope: true,
+			}).forms()
+			if len(rangeForms) != len(testCase.want) {
+				t.Fatalf("the header prepared %d forms, want %d: %q", len(rangeForms), len(testCase.want), rangeForms)
 			}
-			if got := rainScopeRange(field, true); got != testCase.wantShort {
-				t.Errorf("the compact spelling is %q, want %q", got, testCase.wantShort)
+			for index, want := range testCase.want {
+				if rangeForms[index] != want {
+					t.Errorf("header form %d is %q, want %q", index, rangeForms[index], want)
+				}
 			}
 		})
+	}
+}
+
+// TestRainHeaderSelectsEveryPageAccountingRung proves the shared composition
+// reaches each prepared form as width tightens, rather than keeping Rain's full
+// accounting until truncation or dropping a disjoint count outside the ladder.
+func TestRainHeaderSelectsEveryPageAccountingRung(t *testing.T) {
+	accounting := overflowRange{
+		kind: "scopes", first: 1, last: 3, total: 5,
+		hiddenItems: 2, discloseHidden: true, singularScope: true,
+	}
+	forms := accounting.forms()
+	seen := make([]bool, len(forms))
+	state := State{Freshness: FreshnessCurrent}
+
+	for width := 1; width <= 120; width++ {
+		header := renderHeader(state, ModeRain, width, accounting)
+		if lipgloss.Width(header) > width {
+			t.Fatalf("the Rain header is %d cells wide at width %d: %q", lipgloss.Width(header), width, header)
+		}
+		for index, form := range forms {
+			seen[index] = seen[index] || strings.Contains(header, form)
+		}
+	}
+	for index, form := range forms {
+		if !seen[index] {
+			t.Errorf("no width selected Rain header form %d %q", index, form)
+		}
 	}
 }
 

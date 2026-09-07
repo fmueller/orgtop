@@ -346,8 +346,8 @@ func contentHeight(height int) int {
 	return max(height-chromeLines, 0)
 }
 
-// overflow returns the active scrolling view's hidden-row accounting. Rain
-// owns its separate fixed-page, item, and strip accounting in its body/footer.
+// overflow returns the active view's header accounting. Scrolling views report
+// hidden rows; Rain reports its prepared fixed page and disjoint hidden items.
 func (m Model) overflow(width, height int) overflowRange {
 	switch m.mode {
 	case ModeOverview:
@@ -367,6 +367,20 @@ func (m Model) overflow(width, height int) overflowRange {
 			return overflowRange{}
 		}
 		return visibleRange("events", m.stream.offset, len(lines), rowHeight)
+	case ModeRain:
+		field := m.rain.field()
+		if field.scopes == 0 {
+			return overflowRange{}
+		}
+		return overflowRange{
+			kind:           "scopes",
+			first:          field.first,
+			last:           field.last,
+			total:          field.scopes,
+			hiddenItems:    field.hiddenItems,
+			discloseHidden: true,
+			singularScope:  true,
+		}
 	default:
 		return overflowRange{}
 	}

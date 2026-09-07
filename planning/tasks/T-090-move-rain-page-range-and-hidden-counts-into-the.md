@@ -1,13 +1,13 @@
 ---
 id: T-090-move-rain-page-range-and-hidden-counts-into-the
 title: Move Rain page range and hidden counts into the shared header
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.2.0.md#ambient-rain-view
 dependencies:
     - T-065-implement-deterministic-responsive-overflow
     - T-062-render-and-navigate-the-rain-view
-updated_at: "2026-09-04T22:41:45Z"
+updated_at: "2026-09-07T22:54:36Z"
 ---
 
 # T-090-move-rain-page-range-and-hidden-counts-into-the Move Rain page range and hidden counts into the shared header
@@ -56,3 +56,4 @@ Follow-up derived from T-062-render-and-navigate-the-rain-view's verification or
   `rainDisjointCounts` are the parts that move.
 - Rain is not a viewport view, so its range comes from the prepared fixed page in
   `rainField`, not from a scroll offset.
+- 2026-09-07T22:54:27Z: verification pass

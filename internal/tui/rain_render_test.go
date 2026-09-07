@@ -183,6 +183,44 @@ func TestRainRendersMixedScopeColumnsAndGlyphs(t *testing.T) {
 	}
 }
 
+// TestRainHeaderOwnsPageAccounting guards T-090: the shared header carries
+// Rain's fixed-page range and disjoint hidden Scope/item counts, while the body
+// context keeps view-local state without repeating any of that accounting.
+func TestRainHeaderOwnsPageAccounting(t *testing.T) {
+	tests := []struct {
+		name  string
+		count int
+		width int
+		want  []string
+	}{
+		{name: "single Scope", count: 1, width: 120, want: []string{"scope 1 of 1"}},
+		{name: "single-page selection", count: 3, width: 120, want: []string{"scopes 1-3 of 3"}},
+		{name: "multi-page selection", count: 8, width: 40, want: []string{"+5", "+5i"}},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			selected := rainScopes(t, test.count)
+			scopes := scopeSet(t, selected...)
+			model := rainModel(t, scopes, oneItemPerScope(t, selected), test.width, 12)
+			lines := strings.Split(model.View().Content, "\n")
+			header := lines[0]
+			for _, want := range test.want {
+				if !strings.Contains(header, want) {
+					t.Errorf("the Rain header %q does not contain %q", header, want)
+				}
+			}
+			for _, line := range rainBodyLines(model.View().Content) {
+				for _, moved := range []string{"scope 1 of", "scopes 1-", "+5 scopes hidden", "+5s", "+5 items hidden", "+5i"} {
+					if strings.Contains(line, moved) {
+						t.Errorf("the Rain body context still contains moved page accounting %q: %q", moved, line)
+					}
+				}
+			}
+		})
+	}
+}
+
 // TestRainLegendRendersWhenDimensionsPermit guards RG-008: a Rain wide enough
 // exposes the complete glyph-to-text legend.
 func TestRainLegendRendersWhenDimensionsPermit(t *testing.T) {
@@ -214,7 +252,7 @@ func TestConstrainedRainReportsItsHiddenLegend(t *testing.T) {
 		want  string
 	}{
 		{name: "full spelling", width: 47, want: legendHiddenContext},
-		{name: "compact spelling", width: narrowWidth, want: "no legend"},
+		{name: "compact spelling", width: 25, want: "no legend"},
 	}
 
 	for _, testCase := range cases {

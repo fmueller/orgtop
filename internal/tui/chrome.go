@@ -35,10 +35,16 @@ type field struct {
 type overflowRange struct {
 	kind               string
 	first, last, total int
+	hiddenItems        int
+	discloseHidden     bool
+	singularScope      bool
 }
 
 // forms returns RG-012's range ladder from full to minimum. The minimum counts
-// everything outside the visible range, both above and below it.
+// everything outside the visible range, both above and below it. Rain adds its
+// disjoint hidden Scope/item accounting to the same required segment: the
+// minimum range already is the hidden-Scope count, so that rung does not repeat
+// the count with a second label.
 func (r overflowRange) forms() []string {
 	if r.total <= 0 {
 		return nil
@@ -51,11 +57,29 @@ func (r overflowRange) forms() []string {
 		}
 	}
 	hidden := r.total - (r.last - r.first + 1)
-	return []string{
-		fmt.Sprintf("%s %d-%d of %d", r.kind, r.first, r.last, r.total),
-		fmt.Sprintf("%d-%d/%d", r.first, r.last, r.total),
+	full := fmt.Sprintf("%s %d-%d of %d", r.kind, r.first, r.last, r.total)
+	if r.singularScope && r.first == r.last {
+		full = fmt.Sprintf("scope %d of %d", r.first, r.total)
+	}
+	compact := fmt.Sprintf("%d-%d/%d", r.first, r.last, r.total)
+	if r.singularScope && r.first == r.last {
+		compact = fmt.Sprintf("%d/%d", r.first, r.total)
+	}
+	forms := []string{
+		full,
+		compact,
 		fmt.Sprintf("+%d", hidden),
 	}
+	if r.discloseHidden && hidden > 0 {
+		forms[0] += fmt.Sprintf("%s+%d scopes hidden", separator, hidden)
+		forms[1] += fmt.Sprintf("%s+%ds", separator, hidden)
+	}
+	if r.discloseHidden && r.hiddenItems > 0 {
+		forms[0] += fmt.Sprintf("%s+%d items hidden", separator, r.hiddenItems)
+		forms[1] += fmt.Sprintf("%s+%di", separator, r.hiddenItems)
+		forms[2] += fmt.Sprintf("%s+%di", separator, r.hiddenItems)
+	}
+	return forms
 }
 
 // renderHeader renders the widest header that fits the width. The active view,

@@ -81,6 +81,8 @@ workflow refuses to publish otherwise.
 
 ### Changed
 
+- Rain now reports its visible Scope range and disjoint hidden Scope/item
+  counts in the shared header instead of repeating them in the body context.
 - Overview and Stream now report the visible row range when terminal height
   hides content. Stream navigation tracks a focused event and scrolls only when
   that focus crosses the viewport, preserving it across resize and refresh.
