@@ -1,12 +1,12 @@
 ---
 id: T-086-implement-bounded-stream-event-detail
 title: Implement bounded Stream event detail
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.2.0.md#scope-aware-overview-and-stream
 dependencies:
     - T-058-render-scope-context-in-stream
-updated_at: "2026-09-03T22:25:07Z"
+updated_at: "2026-09-07T13:34:38Z"
 ---
 
 # T-086-implement-bounded-stream-event-detail Implement bounded Stream event detail
@@ -60,3 +60,4 @@ Follow-up derived from T-058-render-scope-context-in-stream's verification or di
   RG-008's shared `pull`/`review`/`comment`/`other` text, so budget the detail
   column against the current width rather than the old one
   (found while completing T-059).
+- 2026-09-07T13:34:12Z: verification pass

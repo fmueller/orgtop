@@ -210,8 +210,8 @@ func selectionMinimum(omitted int, more bool) string {
 // renderFooter renders the widest control hint that fits the width. The quit
 // hint is retained at every size, and the active view decides which controls
 // are advertised, because Rain's own keys act in Rain alone.
-func renderFooter(mode Mode, width int) string {
-	candidates := footerCandidates(mode)
+func renderFooter(mode Mode, detail bool, width int) string {
+	candidates := footerCandidates(mode, detail)
 	for _, candidate := range candidates {
 		if fits(lipgloss.Width(candidate), width) {
 			return footerStyle.Render(candidate)
@@ -221,9 +221,16 @@ func renderFooter(mode Mode, width int) string {
 }
 
 // footerCandidates advertises only the controls the active view implements.
-func footerCandidates(mode Mode) []string {
-	if mode == ModeRain {
+// Stream's open detail is its own control surface: it scrolls its wrapped lines
+// and returns with `esc`, and it opens nothing further.
+func footerCandidates(mode Mode, detail bool) []string {
+	switch {
+	case mode == ModeRain:
 		return rainFooterCandidates
+	case mode == ModeStream && detail:
+		return detailFooterCandidates
+	case mode == ModeStream:
+		return streamFooterCandidates
 	}
 	return scrollFooterCandidates
 }
@@ -239,6 +246,21 @@ var (
 var scrollFooterCandidates = footerLadder(
 	[]string{"up/down scroll", "pgup/pgdn page"},
 	[]string{"up/down scroll"},
+)
+
+// streamFooterCandidates advertises Stream's own controls: the scrolling both
+// list views share, and the bounded event detail `enter` opens over the focused
+// event.
+var streamFooterCandidates = footerLadder(
+	[]string{"up/down scroll", "pgup/pgdn page", "enter detail"},
+	[]string{"up/down scroll", "enter detail"},
+)
+
+// detailFooterCandidates advertises the open detail's own controls: it scrolls
+// its wrapped lines and `esc` returns to the focused event it was opened from.
+var detailFooterCandidates = footerLadder(
+	[]string{"up/down scroll", "pgup/pgdn page", "esc back"},
+	[]string{"up/down scroll", "esc back"},
 )
 
 // rainFooterCandidates advertises Rain's own controls: it neither scrolls nor

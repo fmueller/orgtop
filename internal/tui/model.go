@@ -195,6 +195,10 @@ func (m Model) handleKey(message tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.mode = m.mode.toggled()
 	case "up", "down", "pgup", "pgdown":
 		m = m.scroll(keystroke)
+	case "enter":
+		m = m.openedDetail()
+	case "esc":
+		m = m.closedDetail()
 	default:
 		m = m.handleRainKey(keystroke)
 	}
@@ -258,8 +262,35 @@ func (m Model) clampedViews() Model {
 	} else {
 		m.overview.offset = m.overview.clamped(overviewLines, bodyHeight)
 	}
+	// The open detail follows its stable source event ID before focus is
+	// clamped, so the clamp reconciles the index the detail moved to rather
+	// than the one the previous snapshot left behind.
+	m.stream = m.stream.followedDetail(m.state, width, bodyHeight)
 	_, lines, rowHeight := streamContent(m.state, width, bodyHeight)
 	m.stream = m.stream.contained(len(lines), rowHeight)
+	return m
+}
+
+// openedDetail opens RG-012's bounded event detail over Stream's focused event.
+// Another view has no focused event, so `enter` there opens nothing.
+func (m Model) openedDetail() Model {
+	if m.mode != ModeStream {
+		return m
+	}
+	m.stream = m.stream.openedDetail(m.state)
+	return m
+}
+
+// closedDetail returns Stream from an open detail to its unchanged focused
+// event and viewport. Only Stream shows a detail, so `esc` reaches it only from
+// Stream: a keystroke never acts on a view the operator is not looking at, the
+// same rule Rain's own controls follow. Switching away and back therefore
+// returns to the detail the operator left.
+func (m Model) closedDetail() Model {
+	if m.mode != ModeStream {
+		return m
+	}
+	m.stream = m.stream.closedDetail()
 	return m
 }
 
@@ -326,6 +357,11 @@ func (m Model) overflow(width, height int) overflowRange {
 		}
 		return visibleRange("scopes", m.overview.offset, len(aggregates), height)
 	case ModeStream:
+		// Open detail scrolls its own wrapped lines, so the header accounts for
+		// the lines it hides rather than for the events behind it.
+		if lines, open := detailContent(m.state, m.stream.detail, width); open {
+			return visibleRange(detailRange, m.stream.detail.offset, len(lines), height)
+		}
 		_, lines, rowHeight := streamContent(m.state, width, height)
 		if streamStateLine(m.state.Freshness, len(m.state.Scoped.StreamEvents())) != "" {
 			return overflowRange{}
@@ -372,11 +408,11 @@ func visibleRange(kind string, offset, total, height int) overflowRange {
 // quit hint; every other view and size renders the shared footer unchanged.
 func (m Model) footer(width, bodyHeight int) string {
 	if m.mode != ModeRain {
-		return renderFooter(m.mode, width)
+		return renderFooter(m.mode, m.stream.detail.open, width)
 	}
 	accounting, owed := m.interesting.footerAccounting(m.rain.stripBudget(m.charset, width, bodyHeight))
 	if !owed {
-		return renderFooter(m.mode, width)
+		return renderFooter(m.mode, false, width)
 	}
 	return renderStripFooter(accounting, width)
 }

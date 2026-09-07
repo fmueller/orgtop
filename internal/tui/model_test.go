@@ -56,6 +56,10 @@ func press(keystroke string) tea.KeyPressMsg {
 		return tea.KeyPressMsg{Code: tea.KeyTab}
 	case "ctrl+c":
 		return tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl}
+	case "enter":
+		return tea.KeyPressMsg{Code: tea.KeyEnter}
+	case "esc":
+		return tea.KeyPressMsg{Code: tea.KeyEsc}
 	default:
 		return tea.KeyPressMsg{Code: []rune(keystroke)[0], Text: keystroke}
 	}

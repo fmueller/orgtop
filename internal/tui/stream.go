@@ -44,11 +44,20 @@ type stream struct {
 	// independently from the first visible row so movement within a window does
 	// not needlessly scroll it.
 	focus int
+	// detail is the bounded event detail `enter` opens over the focused event.
+	// It is Stream's own state, so the focused event and the row viewport it
+	// returns to are untouched while it is open.
+	detail streamDetail
 }
 
 // render returns the Stream body for the shared content area: the sticky chrome
-// lines the view reserves, above the windowed event rows.
+// lines the view reserves, above the windowed event rows. Open detail replaces
+// both, because it is a bounded reading of one event rather than a pane beside
+// the list it was opened from.
 func (s stream) render(state State, width, height int) string {
+	if lines, open := detailContent(state, s.detail, width); open {
+		return renderBody(lines, s.detail.viewport, width, height)
+	}
 	chrome, lines, rowHeight := streamContent(state, width, height)
 	rendered := make([]string, 0, len(chrome)+1)
 	for _, line := range chrome {
@@ -61,6 +70,12 @@ func (s stream) render(state State, width, height int) string {
 // scrolled returns the view moved by one scrolling keystroke over the rows that
 // remain once Stream's own chrome has taken its lines.
 func (s stream) scrolled(keystroke string, state State, width, height int) stream {
+	if lines, open := detailContent(state, s.detail, width); open {
+		// Detail has no focused line, so its offset moves directly by one row
+		// or by the detail rows the body holds, and clamps against them alone.
+		s.detail.viewport = s.detail.scrolled(keystroke, len(lines), height)
+		return s
+	}
 	_, lines, rowHeight := streamContent(state, width, height)
 	s = s.contained(len(lines), rowHeight)
 	step := max(rowHeight, 1)
@@ -277,7 +292,7 @@ func layoutStream(events []domain.ScopedEvent, tokens map[domain.ScopeIdentity]s
 		ages = append(ages, eventAge(scoped.Event.OccurredAt, lastSuccess))
 		identities = append(identities, scoped.Event.Repository.String())
 		categories = append(categories, layout.name(scoped.Event.Category))
-		details = append(details, streamDetail(scoped.Event))
+		details = append(details, rowDetail(scoped.Event))
 		contexts = append(contexts, newScopeContext(scoped.Memberships, tokens))
 	}
 	ageWidth, identityWidth, categoryWidth := widestWidth(ages), widestWidth(identities), widestWidth(categories)
@@ -329,9 +344,9 @@ func scopeColumn(contexts []scopeContext, heading string, budget int) []string {
 	return rendered
 }
 
-// streamDetail joins the optional actor and description of one event, so an
+// rowDetail joins the optional actor and description of one event, so an
 // event without either keeps a row rather than an empty field.
-func streamDetail(event domain.Event) string {
+func rowDetail(event domain.Event) string {
 	present := make([]string, 0, 2)
 	for _, field := range []string{event.Actor, event.Description} {
 		if field != "" {
@@ -339,4 +354,50 @@ func streamDetail(event domain.Event) string {
 		}
 	}
 	return strings.Join(present, separator)
+}
+
+// openedDetail opens bounded detail over the focused prepared event. A Stream
+// showing an explicit state line has no focused event to read, so `enter` there
+// opens nothing rather than a detail with no facts behind it.
+func (s stream) openedDetail(state State) stream {
+	events := state.Scoped.StreamEvents()
+	if streamStateLine(state.Freshness, len(events)) != "" || s.focus < 0 || s.focus >= len(events) {
+		return s
+	}
+	s.detail = s.detail.opened(events[s.focus].Event.ID)
+	return s
+}
+
+// closedDetail returns to the unchanged focused event and Stream viewport,
+// neither of which detail ever moved.
+func (s stream) closedDetail() stream {
+	s.detail = streamDetail{}
+	return s
+}
+
+// followedDetail moves the open detail with its stable source event ID through
+// a refresh or a resize: a retained event moves Stream focus to its new index
+// and clamps the detail's own offset against the republished lines, and a
+// removed one closes detail and leaves the prior focus for the caller's clamp
+// to reconcile.
+//
+// A body with no rows keeps the furthest valid line rather than the first, so
+// restoring a positive height clamps a retained position instead of having
+// already lost it.
+func (s stream) followedDetail(state State, width, height int) stream {
+	if !s.detail.open {
+		return s
+	}
+	lines, open := detailContent(state, s.detail, width)
+	if !open {
+		return s.closedDetail()
+	}
+	index, _ := eventIndex(state.Scoped.StreamEvents(), s.detail.eventID)
+	s.focus = index
+	if height == 0 {
+		s.detail.offset = s.detail.retained(len(lines))
+	} else {
+		s.detail.offset = s.detail.clamped(len(lines), height)
+	}
+	return s
 }
