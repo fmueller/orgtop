@@ -7,6 +7,8 @@ import (
 
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
+
+	"github.com/fmueller/orgtop/internal/domain"
 )
 
 // expanded returns the published selection of an organization expansion that
@@ -179,5 +181,93 @@ func TestHeaderMarksAStaleSelectionBesideThePrimaryState(t *testing.T) {
 	}
 	if !slices.Contains(currentFields, "STALE") {
 		t.Errorf("the header states %q, want the primary stale state retained on its own", currentFields)
+	}
+}
+
+// mixedScopes is the selection that motivated T-087: two repositories, one of
+// them carrying two path Scopes of its own, so the Scope count and the
+// repository count differ.
+func mixedScopes(t *testing.T) domain.ScopeSet {
+	t.Helper()
+	return scopeSet(t,
+		domain.NewRepositoryScope(testRepository(t, "acme/backend")),
+		pathScope(t, "acme/backend", "api"),
+		pathScope(t, "acme/backend", "cmd"),
+		domain.NewRepositoryScope(testRepository(t, "acme/frontend")),
+	)
+}
+
+// TestScopeContextFormsCountRepositoriesAndScopesSeparately pins RG-012's
+// Scope-context ladder. The segment reports distinct repositories and Scopes as
+// their own counts, so a mixed selection never spells its Scope count as a
+// repository count.
+func TestScopeContextFormsCountRepositoriesAndScopesSeparately(t *testing.T) {
+	tests := map[string]struct {
+		scopes domain.ScopeSet
+		want   []string
+	}{
+		"repository only": {
+			scopes: testScope(t, "acme/backend", "acme/frontend"),
+			want:   []string{"2 repos · 2 scopes", "2 scopes", "2S"},
+		},
+		"one repository": {
+			scopes: testScope(t, "acme/backend"),
+			want:   []string{"1 repos · 1 scopes", "1 scopes", "1S"},
+		},
+		"mixed repository and path": {
+			scopes: mixedScopes(t),
+			want:   []string{"2 repos · 4 scopes", "4 scopes", "4S"},
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			forms := scopeContextForms(test.scopes)
+			if !slices.Equal(forms, test.want) {
+				t.Errorf("scope context forms are %q, want %q", forms, test.want)
+			}
+		})
+	}
+}
+
+// TestScopeContextFormsAreEmptyWithoutASelection keeps an unselected State from
+// claiming header space with a zero-count summary.
+func TestScopeContextFormsAreEmptyWithoutASelection(t *testing.T) {
+	if forms := scopeContextForms(domain.ScopeSet{}); len(forms) != 0 {
+		t.Errorf("an empty selection reports the scope context forms %q, want none", forms)
+	}
+}
+
+// TestHeaderRendersEveryScopeContextRung walks the widths of a mixed selection
+// and pins that every rung of the ladder is reachable, that no rung outruns its
+// width, and that no width labels the three Scopes as three repositories.
+func TestHeaderRendersEveryScopeContextRung(t *testing.T) {
+	scopes := mixedScopes(t)
+	state := State{Scopes: scopes, Freshness: FreshnessCurrent, Selection: exactSelection(scopes)}
+	forms := scopeContextForms(scopes)
+
+	seen := make(map[string]bool, len(forms))
+	for width := 1; width <= 200; width++ {
+		header := ansi.Strip(renderHeader(state, ModeOverview, width))
+		if lipgloss.Width(header) > width {
+			t.Fatalf("the header is %d cells wide at width %d:\n%s", lipgloss.Width(header), width, header)
+		}
+		if strings.Contains(header, "repositories") || strings.Contains(header, "4 repos") {
+			t.Fatalf("the header labels the Scope count as a repository count at width %d:\n%s", width, header)
+		}
+		// The ladder is checked from full to minimum, because every shorter
+		// rung is contained in the one above it.
+		for _, form := range forms {
+			if strings.Contains(header, form) {
+				seen[form] = true
+				break
+			}
+		}
+	}
+
+	for _, form := range forms {
+		if !seen[form] {
+			t.Errorf("no width between 1 and 200 rendered the scope context rung %q", form)
+		}
 	}
 }

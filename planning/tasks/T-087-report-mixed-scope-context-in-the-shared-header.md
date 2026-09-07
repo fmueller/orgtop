@@ -1,12 +1,12 @@
 ---
 id: T-087-report-mixed-scope-context-in-the-shared-header
 title: Report mixed Scope context in the shared header
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.2.0.md#scope-aware-overview-and-stream
 dependencies:
     - T-058-render-scope-context-in-stream
-updated_at: "2026-09-03T22:25:12Z"
+updated_at: "2026-09-07T14:25:05Z"
 ---
 
 # T-087-report-mixed-scope-context-in-the-shared-header Report mixed Scope context in the shared header
@@ -46,3 +46,4 @@ Follow-up derived from T-058-render-scope-context-in-stream's verification or di
 - The full header segment ladder is closed under RG-012 and shared with
   T-065-implement-deterministic-responsive-overflow; keep this change to the
   Scope-context segment itself.
+- 2026-09-07T14:24:34Z: verification pass

@@ -86,10 +86,13 @@ func headerCandidates(state State, mode Mode, overflow ...overflowRange) [][]fie
 	if state.SelectionCause != "" {
 		cause = append(cause, field{text: state.SelectionCause, style: causeStyle})
 	}
-	var listed, counted []field
+	var listed []field
 	if state.Scopes.Len() > 0 {
 		listed = []field{{text: scopeList(state.Scopes), style: contextStyle}}
-		counted = []field{{text: scopeCount(state.Scopes), style: contextStyle}}
+	}
+	counted := make([][]field, 0, 3)
+	for _, form := range scopeContextForms(state.Scopes) {
+		counted = append(counted, []field{{text: form, style: contextStyle}})
 	}
 	var updated []field
 	if !state.LastSuccess.IsZero() {
@@ -99,10 +102,16 @@ func headerCandidates(state State, mode Mode, overflow ...overflowRange) [][]fie
 	// context is the last context field a tightening header keeps. A stale
 	// header must report the last-success time beside its cause (FR-008), so
 	// there the scope summary gives way first; every other state keeps the
-	// scope context the operator selected (FR-002).
+	// scope context the operator selected (FR-002), shortening it along its own
+	// ladder before the field is dropped.
 	context := counted
 	if state.Freshness == FreshnessStale {
-		context = updated
+		context = [][]field{updated}
+	}
+	if len(context) == 0 {
+		// A State without a context field still needs the rungs that carry
+		// none, so the ladder keeps a single empty rung to render them.
+		context = [][]field{nil}
 	}
 
 	forms := []string{""}
@@ -114,7 +123,16 @@ func headerCandidates(state State, mode Mode, overflow ...overflowRange) [][]fie
 	// The badge ladder is the outermost dimension, so every other field gives
 	// way before a secondary condition is collapsed into its status count.
 	badged := badgeForms(secondaryBadges(state))
-	layouts := make([][]field, 0, len(badged)*len(forms)*7)
+	perForm := 3 + len(counted) + 3*len(context)
+	layouts := make([][]field, 0, len(badged)*len(forms)*perForm)
+	// rungs appends the prefix once per rung of the surviving context ladder,
+	// so the header shortens its context field before dropping it.
+	rungs := func(prefix ...[]field) {
+		head := slices.Concat(prefix...)
+		for _, summary := range context {
+			layouts = append(layouts, slices.Concat(head, summary))
+		}
+	}
 	for _, badges := range badged {
 		primary := slices.Concat(core, badges)
 		for _, form := range forms {
@@ -122,15 +140,15 @@ func headerCandidates(state State, mode Mode, overflow ...overflowRange) [][]fie
 			if form != "" {
 				required = append(required, field{text: form, style: contextStyle})
 			}
-			layouts = append(layouts,
-				slices.Concat(title, required, cause, listed, updated),
-				slices.Concat(title, required, cause, counted, updated),
-				slices.Concat(title, required, cause, context),
-				slices.Concat(required, cause, context),
-				slices.Concat(required, cause),
-				slices.Concat(required, context),
-				required,
-			)
+			layouts = append(layouts, slices.Concat(title, required, cause, listed, updated))
+			for _, summary := range counted {
+				layouts = append(layouts, slices.Concat(title, required, cause, summary, updated))
+			}
+			rungs(title, required, cause)
+			rungs(required, cause)
+			layouts = append(layouts, slices.Concat(required, cause))
+			rungs(required)
+			layouts = append(layouts, required)
 		}
 	}
 	return withSelection(layouts, selectionForms(state.Selection))
@@ -332,12 +350,22 @@ func scopeList(scopes domain.ScopeSet) string {
 	return strings.Join(names, ", ")
 }
 
-// scopeCount summarizes the scope when the full list does not fit (FR-002).
-func scopeCount(scopes domain.ScopeSet) string {
-	if scopes.Len() == 1 {
-		return "1 repository"
+// scopeContextForms summarizes the selection when the full list does not fit
+// (FR-002), as RG-012's ladder from `<R> repos · <S> scopes` to `<S> scopes`
+// and then `<S>S`. The repository count and the Scope count are separate,
+// because a mixed selection holds more Scopes than repositories and a Scope
+// count is never a repository count.
+func scopeContextForms(scopes domain.ScopeSet) []string {
+	if scopes.Len() == 0 {
+		return nil
 	}
-	return fmt.Sprintf("%d repositories", scopes.Len())
+	repositories := len(scopes.Repositories())
+	total := scopes.Len()
+	return []string{
+		fmt.Sprintf("%d repos%s%d scopes", repositories, separator, total),
+		fmt.Sprintf("%d scopes", total),
+		fmt.Sprintf("%dS", total),
+	}
 }
 
 // joinFields renders the fields with their semantic styles.

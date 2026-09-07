@@ -337,7 +337,7 @@ func TestHeaderKeepsScopeContextAndLastSuccess(t *testing.T) {
 	narrow, _ := apply(t, model, tea.WindowSizeMsg{Width: narrowWidth, Height: narrowHeight})
 	content = narrow.View().Content
 	assertFits(t, content, narrowWidth, narrowHeight)
-	if !strings.Contains(content, "2 repositories") {
+	if !strings.Contains(content, "2 scopes") {
 		t.Errorf("narrow header does not summarize the scope as a count:\n%s", content)
 	}
 	if strings.Contains(content, "acme/frontend") {
@@ -624,7 +624,7 @@ func TestHeaderOmitsScopeContextForAnEmptySelection(t *testing.T) {
 
 	for _, candidate := range headerCandidates(state, ModeOverview) {
 		rendered := plainFields(candidate)
-		for _, unwanted := range []string{"repository", "repositories"} {
+		for _, unwanted := range []string{"repository", "repositories", "repos", "scopes"} {
 			if strings.Contains(rendered, unwanted) {
 				t.Errorf("header candidate %q contains scope context %q for an empty selection", rendered, unwanted)
 			}
