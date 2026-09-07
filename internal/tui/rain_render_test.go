@@ -21,9 +21,9 @@ var colorEscape = regexp.MustCompile(`\x1b\[[0-9;]*(3[0-9]|4[0-9]|9[0-9]|10[0-7]
 
 // rainModel builds a shell already in Rain over a started field, published
 // exactly as one successful refresh publishes it and sized to the terminal.
-func rainModel(t *testing.T, scopes domain.ScopeSet, retained []domain.EventEvidence, width, height int) Model {
+func rainModel(t *testing.T, scopes domain.ScopeSet, retained []domain.EventEvidence, width, height int, options ...Option) Model {
 	t.Helper()
-	model, err := New(context.Background(), scopes, &fakeSource{})
+	model, err := New(context.Background(), scopes, &fakeSource{}, options...)
 	if err != nil {
 		t.Fatalf("building the Rain test model failed: %v", err)
 	}

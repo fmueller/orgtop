@@ -1,13 +1,13 @@
 ---
 id: T-089-resolve-terminal-capability-and-charset-at-launch
 title: Resolve terminal capability and charset at launch
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.2.0.md#shared-glyph-and-recency-semantics
 dependencies:
     - T-059-implement-shared-event-category-semantics
     - T-060-implement-shared-discrete-recency-semantics
-updated_at: "2026-09-04T11:23:15Z"
+updated_at: "2026-09-07T15:00:38Z"
 ---
 
 # T-089-resolve-terminal-capability-and-charset-at-launch Resolve terminal capability and charset at launch
@@ -53,3 +53,4 @@ always falling back.
 - `github.com/charmbracelet/colorprofile` is presently an indirect dependency;
   promoting it to direct is expected here and must keep the T-043 toolchain and
   license guards green.
+- 2026-09-07T15:00:34Z: verification pass

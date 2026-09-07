@@ -18,6 +18,16 @@ const (
 	charsetUTF8
 )
 
+// charsetNames spells the repertoires as RG-008 names them.
+var charsetNames = map[charset]string{
+	charsetASCII: "ascii",
+	charsetUTF8:  "utf-8",
+}
+
+// String returns the shared name of the repertoire, so a diagnostic and a test
+// state one shared word for each.
+func (c charset) String() string { return charsetNames[c] }
+
 // categoryRegister names how much room a view has for the category text. Both
 // registers spell every category; the compact one only spends fewer cells.
 type categoryRegister int

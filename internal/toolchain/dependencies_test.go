@@ -45,9 +45,16 @@ var goModule = filepath.Join(repoRoot, "go.mod")
 // requires it, so promoting it adds no module, no license, and no byte to any
 // published artifact; re-implementing cluster-aware cutting locally would fork
 // the very behavior the normative width vectors pin.
+// github.com/charmbracelet/colorprofile is the fourth. RG-008 names the Charm
+// color-profile stack as the pinned resolution of the launch's color
+// capability, and the launch resolves it there once instead of re-deriving a
+// profile from TERM and COLORTERM by hand. Both bubbletea and lipgloss already
+// require it, so promoting it adds no module, no license, and no byte to any
+// published artifact.
 var v020Dependencies = []string{
 	"charm.land/bubbletea/v2",
 	"charm.land/lipgloss/v2",
+	"github.com/charmbracelet/colorprofile",
 	"github.com/charmbracelet/x/ansi",
 	"golang.org/x/sys",
 	"gopkg.in/yaml.v3",

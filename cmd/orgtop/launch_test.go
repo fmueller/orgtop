@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"strings"
 	"testing"
 	"time"
 
@@ -83,7 +84,7 @@ func awaitCancellation(t *testing.T, source blockingSource) {
 }
 
 func TestLaunchWithoutASourceFailsBeforeTakingTheTerminal(t *testing.T) {
-	err := launchProgram(context.Background(), mustScope(t, "acme/backend"), nil, nil, nil)
+	err := launchProgram(context.Background(), mustScope(t, "acme/backend"), nil, nil, nil, tui.Capabilities{})
 
 	if !errors.Is(err, tui.ErrNoSource) {
 		t.Fatalf("launchProgram without a source returned %v, want tui.ErrNoSource", err)
@@ -97,7 +98,7 @@ func TestQuitKeystrokeExitsCleanlyAndCancelsInFlightSourceWork(t *testing.T) {
 
 	exit := make(chan error, 1)
 	go func() {
-		exit <- launchProgram(context.Background(), mustScope(t, "acme/backend"), source, nil, nil, headless(input)...)
+		exit <- launchProgram(context.Background(), mustScope(t, "acme/backend"), source, nil, nil, tui.Capabilities{}, headless(input)...)
 	}()
 
 	awaitRefresh(t, source)
@@ -125,7 +126,7 @@ func TestProcessCancellationExitsCleanlyAndCancelsInFlightSourceWork(t *testing.
 	ctx, cancel := context.WithCancel(context.Background())
 	exit := make(chan error, 1)
 	go func() {
-		exit <- launchProgram(ctx, mustScope(t, "acme/backend"), source, nil, nil, headless(input)...)
+		exit <- launchProgram(ctx, mustScope(t, "acme/backend"), source, nil, nil, tui.Capabilities{}, headless(input)...)
 	}()
 
 	awaitRefresh(t, source)
@@ -168,7 +169,7 @@ func TestOrganizationOnlyLaunchExpandsBeforeItPollsAndCancelsThatWork(t *testing
 
 	exit := make(chan error, 1)
 	go func() {
-		exit <- launchProgram(context.Background(), domain.ScopeSet{}, source, expander, nil, headless(input)...)
+		exit <- launchProgram(context.Background(), domain.ScopeSet{}, source, expander, nil, tui.Capabilities{}, headless(input)...)
 	}()
 
 	select {
@@ -218,5 +219,110 @@ func TestLaunchBindsAnExpanderOnlyForAnOrganizationSelection(t *testing.T) {
 	}
 	if got := expanderFor(auth.Credential{}, exact); got != nil {
 		t.Errorf("an exact selection got expander %v, want none so it polls the selection it was given", got)
+	}
+}
+
+// launchEnvironment is the set of variables the rendering capability
+// resolution reads. Every one is pinned per fixture, so an inherited value of
+// the developer's own terminal never decides a launch test. WT_SESSION and
+// GOOGLE_CLOUD_SHELL belong to the set because the profile stack forces
+// truecolor on either one without consulting TERM at all, so a run under
+// Windows Terminal or Cloud Shell would otherwise resolve a colour the fixture
+// never asked for.
+var launchEnvironment = []string{
+	"TERM", "COLORTERM", "NO_COLOR", "CLICOLOR", "CLICOLOR_FORCE", "TTY_FORCE",
+	"LANG", "LC_ALL", "LC_CTYPE", "WT_SESSION", "GOOGLE_CLOUD_SHELL",
+}
+
+// pinEnvironment clears the launch environment and applies the fixture's own
+// values for the duration of the test.
+func pinEnvironment(t *testing.T, values map[string]string) {
+	t.Helper()
+
+	for _, name := range launchEnvironment {
+		t.Setenv(name, "")
+	}
+	for name, value := range values {
+		t.Setenv(name, value)
+	}
+}
+
+func TestLaunchResolvesRenderingCapabilitiesFromTheProcessEnvironment(t *testing.T) {
+	cases := []struct {
+		name   string
+		values map[string]string
+		want   string
+	}{
+		{
+			name:   "utf-8 truecolor",
+			values: map[string]string{"LANG": "en_US.UTF-8", "TERM": "xterm", "COLORTERM": "truecolor", "CLICOLOR_FORCE": "1"},
+			want:   "utf-8/truecolor",
+		},
+		{
+			name:   "utf-8 ansi",
+			values: map[string]string{"LC_ALL": "C.UTF-8", "TERM": "xterm", "CLICOLOR_FORCE": "1"},
+			want:   "utf-8/ansi",
+		},
+		{
+			name:   "non-utf-8 locale keeps colour",
+			values: map[string]string{"LANG": "en_US.ISO-8859-1", "TERM": "xterm", "COLORTERM": "truecolor", "CLICOLOR_FORCE": "1"},
+			want:   "ascii/truecolor",
+		},
+		{
+			name:   "dumb terminal",
+			values: map[string]string{"LANG": "en_US.UTF-8", "TERM": "dumb", "COLORTERM": "truecolor", "CLICOLOR_FORCE": "1"},
+			want:   "ascii/no-color",
+		},
+		{
+			name:   "NO_COLOR changes colour only",
+			values: map[string]string{"LANG": "en_US.UTF-8", "TERM": "xterm", "COLORTERM": "truecolor", "CLICOLOR_FORCE": "1", "NO_COLOR": "x"},
+			want:   "utf-8/no-color",
+		},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			pinEnvironment(t, testCase.values)
+
+			if got := resolveCapabilities(io.Discard).String(); got != testCase.want {
+				t.Errorf("the launch resolved %q for %v, want %q", got, testCase.values, testCase.want)
+			}
+		})
+	}
+}
+
+func TestLaunchModelRendersAtTheResolvedCapabilities(t *testing.T) {
+	cases := []struct {
+		name   string
+		values map[string]string
+		want   string
+	}{
+		{
+			name:   "a utf-8 terminal draws the shared glyph",
+			values: map[string]string{"LANG": "en_US.UTF-8", "TERM": "xterm", "COLORTERM": "truecolor", "CLICOLOR_FORCE": "1"},
+			want:   "↑ push",
+		},
+		{
+			name:   "a dumb terminal falls back to ascii",
+			values: map[string]string{"LANG": "en_US.UTF-8", "TERM": "dumb", "CLICOLOR_FORCE": "1"},
+			want:   "P push",
+		},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			pinEnvironment(t, testCase.values)
+
+			model, err := launchModel(t.Context(), mustScope(t, "acme/backend"), newBlockingSource(), nil, nil, resolveCapabilities(io.Discard))
+			if err != nil {
+				t.Fatalf("building the launch model failed: %v", err)
+			}
+			sized, _ := model.Update(tea.WindowSizeMsg{Width: 120, Height: 20})
+			rain, _ := sized.Update(tea.KeyPressMsg{Code: '3', Text: "3"})
+
+			if content := rain.View().Content; !strings.Contains(content, testCase.want) {
+				t.Errorf("the launched Rain legend omits %q:\n%s", testCase.want, content)
+			}
+		})
 	}
 }

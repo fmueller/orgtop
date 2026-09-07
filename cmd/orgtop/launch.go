@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"os"
 
 	tea "charm.land/bubbletea/v2"
 
@@ -18,7 +20,16 @@ import (
 func launch(ctx context.Context, config cli.Config, credential auth.Credential) error {
 	enricher, releaseCache := enricherFor(credential, config, openEnrichmentCache)
 	defer releaseCache()
-	return launchProgram(ctx, config.Scopes, newSourceAdapter(credential), expanderFor(credential, config), enricher)
+	return launchProgram(ctx, config.Scopes, newSourceAdapter(credential), expanderFor(credential, config), enricher, resolveCapabilities(os.Stdout))
+}
+
+// resolveCapabilities resolves RG-008's rendering capabilities once, at launch,
+// from the real process environment and the stream the program renders to. It
+// is the process seam that keeps the resolution testable without a live
+// terminal, and it is the only place the environment is read: the model carries
+// the result as prepared state and no view resolves anything of its own.
+func resolveCapabilities(output io.Writer) tui.Capabilities {
+	return tui.ResolveCapabilities(os.Environ(), output)
 }
 
 // openEnrichmentCache opens the store at the fixed RG-005 default location.
@@ -73,13 +84,13 @@ func expanderFor(credential auth.Credential, config cli.Config) tui.Expander {
 // and every refresh it starts share one context, so a canceled process context
 // ends both, and returning cancels whatever source work is still in flight no
 // matter which path ended the program (NFR-001).
-func launchProgram(ctx context.Context, scopes domain.ScopeSet, source tui.Source, expander tui.Expander, enricher tui.Enricher, options ...tea.ProgramOption) error {
+func launchProgram(ctx context.Context, scopes domain.ScopeSet, source tui.Source, expander tui.Expander, enricher tui.Enricher, capabilities tui.Capabilities, options ...tea.ProgramOption) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	model, err := tui.New(ctx, scopes, source, tui.WithExpander(expander), tui.WithEnricher(enricher))
+	model, err := launchModel(ctx, scopes, source, expander, enricher, capabilities)
 	if err != nil {
-		return fmt.Errorf("building the terminal ui: %w", err)
+		return err
 	}
 
 	programOptions := append([]tea.ProgramOption{tea.WithContext(ctx)}, options...)
@@ -88,6 +99,22 @@ func launchProgram(ctx context.Context, scopes domain.ScopeSet, source tui.Sourc
 		return fmt.Errorf("running the terminal ui: %w", err)
 	}
 	return nil
+}
+
+// launchModel builds the root model of one launch, with the resolved rendering
+// capabilities injected beside the expansion and enrichment seams. It is kept
+// apart from the program run so the wiring is assertable against a rendered
+// view rather than only against a started terminal.
+func launchModel(ctx context.Context, scopes domain.ScopeSet, source tui.Source, expander tui.Expander, enricher tui.Enricher, capabilities tui.Capabilities) (tui.Model, error) {
+	model, err := tui.New(ctx, scopes, source,
+		tui.WithExpander(expander),
+		tui.WithEnricher(enricher),
+		tui.WithCapabilities(capabilities),
+	)
+	if err != nil {
+		return tui.Model{}, fmt.Errorf("building the terminal ui: %w", err)
+	}
+	return model, nil
 }
 
 // isShutdown reports whether the program ended through a requested shutdown
