@@ -36,15 +36,21 @@ No administration, secrets, actions, members, issues, or organization
 permission is granted. A GitHub App carries one permission set across every
 installation, so `pull-requests: write` is granted App-wide and is simply unused
 on `fmueller/gh-orgtop`; the per-repository restriction that RG-011 describes is
-enforced by branch protection and by the workflow only ever opening pull
-requests against the source repository and the tap. Proving that with
+enforced by the workflow only ever opening pull requests against the source
+repository and the tap, not by any repository rule. Proving that with
 provisioning fixtures is tracked separately as
 `T-074-provision-and-validate-distribution-repositories`.
 
-The App cannot approve its own pull request and cannot push to the protected
-default branch. Every ledger and withdrawal-notice change therefore waits for
-the repository's required checks and an independent human approval before the
-workflow merges it and continues.
+Every ledger and withdrawal-notice change goes through a pull request the App
+opens and never approves. The workflow merges it only once its checks have
+settled green and a review approving it carries a login other than the App's,
+and `scripts/distribution-lib.sh` takes that decision from the reviews rather
+than from GitHub's `reviewDecision`: that field stays null unless a branch
+protection or ruleset requires review, so reading it would stall the release on
+a default branch carrying no rule. The approval requirement is therefore the
+workflow's own and holds with or without branch protection — but note that
+without a rule nothing stops a direct push to the default branch outside the
+release path.
 
 ## The ledger
 

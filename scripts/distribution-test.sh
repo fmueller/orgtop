@@ -17,6 +17,8 @@ verify="$script_dir/distribution-verify.sh"
 formula_script="$script_dir/distribution-formula.sh"
 append="$script_dir/distribution-ledger-append.sh"
 notice_script="$script_dir/distribution-notice.sh"
+# shellcheck source=scripts/distribution-lib.sh
+. "$script_dir/distribution-lib.sh"
 
 tmp_dir="$(mktemp -d)"
 trap 'rm -rf "$tmp_dir"' EXIT
@@ -561,5 +563,94 @@ assert_rejects "a ledger reason carrying a line break" "single line" -- \
   "$ledger" withdrawn --version "$version" --staged-sha "$staged_sha" \
   --state completed --reason "first
 second" --tap-commit "$tap_commit"
+
+# ---------------------------------------------------------------------------
+# Ledger pull-request readiness
+# ---------------------------------------------------------------------------
+
+# RG-011 requires an independent human approval before any built asset becomes
+# public. The workflow cannot read that from `reviewDecision`: GitHub leaves it
+# null unless a branch protection or ruleset requires review, so on a repository
+# whose default branch carries no rule an approved, green pull request would
+# never satisfy it and the release would stall until the poll bound expired.
+# The approval is therefore read from the reviews themselves, which is the same
+# answer under a rule and without one.
+pr_state() {
+  local mergeable="$1" author="$2" reviews="$3" checks="${4:-[]}"
+  printf '{"mergeable":"%s","author":{"login":"%s"},"latestReviews":%s,"statusCheckRollup":%s}' \
+    "$mergeable" "$author" "$reviews" "$checks"
+}
+
+approved_by_human="$(pr_state MERGEABLE orgtop-distribution '[{"state":"APPROVED","author":{"login":"fmueller"}}]')"
+assert_equal "an approved green pull request is ready" \
+  "$(pull_request_readiness "$approved_by_human")" ready
+
+assert_equal "an unreviewed pull request waits" \
+  "$(pull_request_readiness "$(pr_state MERGEABLE orgtop-distribution '[]')")" waiting
+
+assert_equal "a commented-on pull request is not approved" \
+  "$(pull_request_readiness "$(pr_state MERGEABLE orgtop-distribution '[{"state":"COMMENTED","author":{"login":"fmueller"}}]')")" waiting
+
+assert_equal "a changes-requested pull request waits" \
+  "$(pull_request_readiness "$(pr_state MERGEABLE orgtop-distribution '[{"state":"CHANGES_REQUESTED","author":{"login":"fmueller"}}]')")" waiting
+
+# The App opens the pull request; an approval carrying its own login is not the
+# independent approval RG-011 requires, whatever GitHub would allow.
+assert_equal "a self-approval is not independent" \
+  "$(pull_request_readiness "$(pr_state MERGEABLE orgtop-distribution '[{"state":"APPROVED","author":{"login":"orgtop-distribution"}}]')")" waiting
+
+# A later approval by a second reviewer still counts even when the App itself
+# appears among the reviewers.
+assert_equal "an independent approval beside a self-approval is ready" \
+  "$(pull_request_readiness "$(pr_state MERGEABLE orgtop-distribution '[{"state":"APPROVED","author":{"login":"orgtop-distribution"}},{"state":"APPROVED","author":{"login":"fmueller"}}]')")" ready
+
+assert_equal "a failed check blocks an approved pull request" \
+  "$(pull_request_readiness "$(pr_state MERGEABLE orgtop-distribution '[{"state":"APPROVED","author":{"login":"fmueller"}}]' '[{"conclusion":"FAILURE"}]')")" waiting
+
+assert_equal "a pending check blocks an approved pull request" \
+  "$(pull_request_readiness "$(pr_state MERGEABLE orgtop-distribution '[{"state":"APPROVED","author":{"login":"fmueller"}}]' '[{"conclusion":null}]')")" waiting
+
+assert_equal "a skipped check does not block" \
+  "$(pull_request_readiness "$(pr_state MERGEABLE orgtop-distribution '[{"state":"APPROVED","author":{"login":"fmueller"}}]' '[{"conclusion":"SKIPPED"},{"conclusion":"SUCCESS"},{"conclusion":"NEUTRAL"}]')")" ready
+
+# A conflict is not something waiting will resolve, so it is reported apart from
+# an unfinished review and fails the release rather than spending the poll bound.
+assert_equal "a conflicting pull request is reported apart" \
+  "$(pull_request_readiness "$(pr_state CONFLICTING orgtop-distribution '[{"state":"APPROVED","author":{"login":"fmueller"}}]')")" conflicting
+
+# One reviewer's approval does not settle another reviewer's outstanding
+# objection. Without a branch protection this loop is the only gate, so an
+# unaddressed CHANGES_REQUESTED has to block the merge the way GitHub's own
+# reviewDecision would under a rule.
+assert_equal "an outstanding objection blocks an approval" \
+  "$(pull_request_readiness "$(pr_state MERGEABLE orgtop-distribution '[{"state":"APPROVED","author":{"login":"fmueller"}},{"state":"CHANGES_REQUESTED","author":{"login":"reviewer"}}]')")" waiting
+
+assert_equal "a dismissed review is not an approval" \
+  "$(pull_request_readiness "$(pr_state MERGEABLE orgtop-distribution '[{"state":"DISMISSED","author":{"login":"fmueller"}}]')")" waiting
+
+# An approval GitHub can no longer attribute to an account is not the
+# independent human approval RG-011 requires.
+assert_equal "an unattributed approval is not independent" \
+  "$(pull_request_readiness "$(pr_state MERGEABLE orgtop-distribution '[{"state":"APPROVED","author":null}]')")" waiting
+
+# statusCheckRollup carries classic commit statuses as well as check runs, and a
+# commit status has no conclusion at all. Reading only the conclusion would hold
+# a green pull request forever, which is the failure this whole function exists
+# to remove.
+assert_equal "a successful commit status settles" \
+  "$(pull_request_readiness "$(pr_state MERGEABLE orgtop-distribution '[{"state":"APPROVED","author":{"login":"fmueller"}}]' '[{"state":"SUCCESS","context":"ci/legacy"}]')")" ready
+
+assert_equal "a failed commit status blocks" \
+  "$(pull_request_readiness "$(pr_state MERGEABLE orgtop-distribution '[{"state":"APPROVED","author":{"login":"fmueller"}}]' '[{"state":"FAILURE","context":"ci/legacy"}]')")" waiting
+
+# The poll loop reads this through a command substitution, where an exit would
+# only end the subshell and leave the loop spending its whole bound on a state
+# it never understood. A refusal is a non-zero return the caller can see.
+if pull_request_readiness 'not json' >/dev/null 2>&1; then
+  fail "an unreadable pull request state was accepted"
+fi
+
+assert_equal "an unknown mergeable state waits" \
+  "$(pull_request_readiness "$(pr_state UNKNOWN orgtop-distribution '[{"state":"APPROVED","author":{"login":"fmueller"}}]')")" waiting
 
 echo "PASS: distribution guards"

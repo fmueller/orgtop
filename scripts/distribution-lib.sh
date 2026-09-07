@@ -157,6 +157,59 @@ read_provenance() {
   done <"$file"
 }
 
+# pull_request_readiness <json> decides whether the ledger pull request may be
+# merged, from the `gh pr view` fields named in distribution-protected-commit.sh.
+# It prints `ready`, `waiting`, or `conflicting`, and returns non-zero when the
+# state cannot be read at all.
+#
+# The approval is read from the reviews rather than from `reviewDecision`.
+# GitHub populates `reviewDecision` only when a branch protection or ruleset
+# requires review, so on a default branch carrying no such rule it stays null
+# however many approvals a pull request has, and a release waiting on it would
+# spend its whole poll bound and then fail with every precondition actually met.
+# Reading the reviews gives the same answer under a rule and without one, and it
+# is the stricter of the two: RG-011's independent approval is checked here even
+# where no repository rule demands one.
+#
+# The refusal is a return rather than a die because the caller reads this
+# through a command substitution, where an exit would end only the subshell and
+# leave the poll loop retrying a state it never understood.
+pull_request_readiness() {
+  jq -er '
+    # An approval GitHub can no longer attribute to an account is not an
+    # independent human approval, and neither is one carrying the App'"'"'s own
+    # login: the App opens the pull request.
+    def independent: (.author.login // "") as $login
+      | $login != "" and $login != $author;
+
+    # latestReviews carries one entry per reviewer, so an approval that a later
+    # objection from the same person replaced is already gone. An objection
+    # standing from anyone else is not settled by somebody else'"'"'s approval.
+    def approved_independently:
+      ([.latestReviews[]? | select(independent and .state == "APPROVED")] | length > 0)
+      and ([.latestReviews[]? | select(independent and .state == "CHANGES_REQUESTED")] | length == 0);
+
+    # statusCheckRollup mixes check runs, which report a conclusion, with classic
+    # commit statuses, which report only a state and never a conclusion. Reading
+    # one field alone would hold a green pull request forever.
+    def settled: if .conclusion != null then (.conclusion | ascii_upcase) as $c
+        | $c == "SUCCESS" or $c == "NEUTRAL" or $c == "SKIPPED"
+      elif .state != null then (.state | ascii_upcase) == "SUCCESS"
+      else false
+      end;
+    def checks_settled: [.statusCheckRollup[]? | select(settled | not)] | length == 0;
+
+    if .mergeable == "CONFLICTING" then "conflicting"
+    elif .mergeable == "MERGEABLE" and approved_independently and checks_settled then "ready"
+    else "waiting"
+    end
+  ' --arg author "$(printf '%s' "$1" | jq -r '.author.login // ""' 2>/dev/null)" <<<"$1" 2>/dev/null ||
+    {
+      printf 'guard: the pull request state could not be read\n' >&2
+      return 1
+    }
+}
+
 # artifact_names <version> <channel> prints the exact asset names a channel's
 # draft carries, excluding the two metadata assets, sorted bytewise.
 artifact_names() {

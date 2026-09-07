@@ -6,10 +6,12 @@
 #                                    [--extra-path PATH]
 #
 # The release App can create a branch and open a narrowly scoped pull request,
-# but it cannot approve its own pull request and cannot push to the protected
-# default branch. This script therefore opens the pull request and waits: the
-# merge happens only once the repository's required checks pass and an
-# independent human approval exists.
+# but it never approves its own pull request and never pushes to the default
+# branch. This script therefore opens the pull request and waits: the merge
+# happens only once its checks have settled green and an independent approval
+# exists. That decision is the workflow's own, taken from the reviews
+# themselves, so it holds whether or not the default branch carries a protection
+# or ruleset that would also require them.
 #
 # It is idempotent. When the default branch already carries the exact event the
 # step is complete and nothing is created; when the pull request already exists
@@ -89,14 +91,16 @@ if ! gh pr view "$branch" --json number >/dev/null 2>&1; then
     --body "Records one RG-011 distribution-ledger event. Merging this pull request is a required transition of the release workflow, which is waiting for it."
 fi
 
-# Wait for the required checks and the independent approval the branch
-# protection demands. The App cannot supply either.
+# Wait for the checks to settle green and for an independent approval. The App
+# supplies neither: it is the pull request's author, and pull_request_readiness
+# refuses an approval carrying its own login.
 attempt=0
 while [ "$attempt" -lt "$poll_attempts" ]; do
-  state="$(gh pr view "$branch" --json mergeable,reviewDecision,statusCheckRollup \
-    --jq '[.mergeable, .reviewDecision, ([.statusCheckRollup[]? | select(.conclusion != null and .conclusion != "SUCCESS" and .conclusion != "NEUTRAL" and .conclusion != "SKIPPED")] | length | tostring)] | join(" ")')"
-  case "$state" in
-  "MERGEABLE APPROVED 0")
+  state="$(gh pr view "$branch" --json mergeable,author,latestReviews,statusCheckRollup)"
+  readiness="$(pull_request_readiness "$state")" ||
+    die "the ledger pull request state could not be read"
+  case "$readiness" in
+  ready)
     gh pr merge "$branch" --squash --delete-branch
     git "${authenticated[@]}" fetch origin "$default_branch"
     git show "origin/$default_branch:$ledger_path" | grep -qxF "$event" ||
@@ -104,7 +108,7 @@ while [ "$attempt" -lt "$poll_attempts" ]; do
     echo "guard: the event is on $default_branch"
     exit 0
     ;;
-  "CONFLICTING"*)
+  conflicting)
     die "the ledger pull request conflicts with $default_branch; rebase it and rerun"
     ;;
   esac
