@@ -25,9 +25,23 @@ var goModule = filepath.Join(repoRoot, "go.mod")
 // cgo-backed driver would require six cross-toolchains and would break the
 // single-command local build, so the choice is a toolchain constraint rather
 // than a preference.
+//
+// golang.org/x/sys is the second, and it is admitted for RG-005's Windows half
+// alone: the cache directory and its mutable files must be proven owned by the
+// current user under an ACL granting no other account write access, and the
+// standard library exposes no owner or ACL binding. It was already in the build
+// graph as an indirect requirement of modernc.org/sqlite, so promoting it adds
+// no module, no license, and no byte to any published artifact. It is pure Go
+// and its Windows package is build-constrained, so all six CGO_ENABLED=0
+// cross-compiles are unaffected. The alternative — hand-resolving the advapi32
+// entry points through syscall.NewLazyDLL, as internal/cache/lock_windows.go
+// does for the two kernel32 lock calls — would trade a dependency this build
+// already carries for unsafe SID and ACE decoding that no host in this
+// repository's test matrix can exercise.
 var v020Dependencies = []string{
 	"charm.land/bubbletea/v2",
 	"charm.land/lipgloss/v2",
+	"golang.org/x/sys",
 	"gopkg.in/yaml.v3",
 	"modernc.org/sqlite",
 }

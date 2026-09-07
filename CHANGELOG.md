@@ -74,6 +74,10 @@ workflow refuses to publish otherwise.
 - A launch recovers from a structurally corrupt enrichment cache once per
   process by discarding it and creating an empty one, and never serves the rows
   that happened to survive the damage.
+- On Windows the enrichment cache is now used only when its directory and files
+  belong to the account running OrgTop and no other account may write to them.
+  A cache another user owns or may write to is reported as degraded and left
+  untouched, matching the ownership rule already enforced on macOS and Linux.
 
 ### Changed
 

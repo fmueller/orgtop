@@ -11,8 +11,11 @@ import (
 )
 
 // Windows byte-range locking. The syscall package exposes no LockFileEx binding,
-// and golang.org/x/sys is not an approved direct requirement, so the two
-// kernel32 entry points are resolved lazily here.
+// so the two kernel32 entry points are resolved lazily here. golang.org/x/sys
+// became an approved direct requirement when T-078 admitted it for the cache's
+// owner and ACL checks, and it does wrap both calls, so this binding could be
+// replaced by golang.org/x/sys/windows.LockFileEx; that is a separate change to
+// working, tested code rather than part of the ownership contract.
 var (
 	kernel32     = syscall.NewLazyDLL("kernel32.dll")
 	lockFileEx   = kernel32.NewProc("LockFileEx")

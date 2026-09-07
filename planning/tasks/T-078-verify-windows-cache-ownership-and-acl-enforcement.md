@@ -1,12 +1,12 @@
 ---
 id: T-078-verify-windows-cache-ownership-and-acl-enforcement
 title: Verify Windows cache ownership and ACL enforcement
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.2.0.md#bounded-sqlite-cache
 dependencies:
     - T-050-implement-the-versioned-sqlite-enrichment-store
-updated_at: "2026-09-01T22:46:37Z"
+updated_at: "2026-09-07T10:52:46Z"
 ---
 
 # T-078-verify-windows-cache-ownership-and-acl-enforcement Verify Windows cache ownership and ACL enforcement
@@ -59,3 +59,4 @@ requirement to the v0.2.0 dependency surface.
 - Keep the checks inside `internal/cache/paths_windows.go`; the shared
   `inspectOwnedPaths`/`repairOwnedPaths` seam already isolates them.
 - Every path mutation still happens only under exclusive lifecycle access.
+- 2026-09-07T10:52:15Z: verification pass
