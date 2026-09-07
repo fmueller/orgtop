@@ -25,10 +25,7 @@ func setDACL(t *testing.T, path, sddl string) {
 	if err != nil {
 		t.Fatalf("DACL() error = %v", err)
 	}
-	object, err := os.Open(path)
-	if err != nil {
-		t.Fatalf("Open(%q) error = %v", path, err)
-	}
+	object := openForDACLWrite(t, path)
 	defer func() { _ = object.Close() }()
 
 	err = windows.SetSecurityInfo(
@@ -40,6 +37,32 @@ func setDACL(t *testing.T, path, sddl string) {
 	if err != nil {
 		t.Fatalf("SetSecurityInfo(%q) error = %v", path, err)
 	}
+}
+
+// openForDACLWrite opens one cache path with the rights SetSecurityInfo needs
+// to replace its discretionary ACL. os.Open asks only for GENERIC_READ, which
+// carries no WRITE_DAC and makes every such call fail with "Access is denied",
+// and it cannot open a directory for this at all without backup semantics.
+func openForDACLWrite(t *testing.T, path string) *os.File {
+	t.Helper()
+
+	name, err := windows.UTF16PtrFromString(path)
+	if err != nil {
+		t.Fatalf("UTF16PtrFromString(%q) error = %v", path, err)
+	}
+	handle, err := windows.CreateFile(
+		name,
+		windows.WRITE_DAC|windows.READ_CONTROL,
+		windows.FILE_SHARE_READ|windows.FILE_SHARE_WRITE|windows.FILE_SHARE_DELETE,
+		nil,
+		windows.OPEN_EXISTING,
+		windows.FILE_FLAG_BACKUP_SEMANTICS,
+		0,
+	)
+	if err != nil {
+		t.Fatalf("CreateFile(%q) error = %v", path, err)
+	}
+	return os.NewFile(uintptr(handle), path)
 }
 
 // describePath reads one cache path's real owner and ACL the way the guard
