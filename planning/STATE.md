@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-updated_at: "2026-09-07T09:53:17Z"
+updated_at: "2026-09-07T10:18:57Z"
 active_spec_version: v0.2.0
 active_spec_path: specs/v0.2.0.md
 current_task: ""
@@ -8,7 +8,7 @@ current_task_title: ""
 status_summary: idle
 blockers: []
 next_action: Select the next eligible task
-last_verification_result: pass for T-067-configure-multi-channel-release-workflows at 2026-09-07T09:53:12Z
+last_verification_result: pass for T-069-integrate-the-closed-v0-2-0-binary-flow at 2026-09-07T10:18:51Z
 relevant_artifacts: []
 continuation_notes:
     - This repository is using manual Taskrail-style workflow scaffolding until the product replaces more of the bootstrap steps.
@@ -34,7 +34,7 @@ continuation_notes:
 
 ## Last Verification
 
-- pass for T-067-configure-multi-channel-release-workflows at 2026-09-07T09:53:12Z
+- pass for T-069-integrate-the-closed-v0-2-0-binary-flow at 2026-09-07T10:18:51Z
 
 ## Next Action
 
@@ -50,8 +50,8 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 19
+- todo: 18
 - in_progress: 0
-- completed: 76
+- completed: 77
 - blocked: 0
 - cancelled: 0

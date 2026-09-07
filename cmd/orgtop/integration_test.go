@@ -18,7 +18,9 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
+	"github.com/fmueller/orgtop/internal/cache"
 	"github.com/fmueller/orgtop/internal/cli"
+	"github.com/fmueller/orgtop/internal/domain"
 	"github.com/fmueller/orgtop/internal/github"
 	"github.com/fmueller/orgtop/internal/tui"
 )
@@ -270,6 +272,17 @@ type flow struct {
 func newFlow(t *testing.T, endpoint *eventsEndpoint, args ...string) *flow {
 	t.Helper()
 
+	return newFlowWith(t, endpoint, nil, args...)
+}
+
+// newFlowWith wires the flow like newFlow but binds the given evidence
+// coordination instead of the launch's own. A flow whose selection must consult
+// no changed-file evidence at all states that by binding a coordination that
+// refuses to answer, which distinguishes evidence that was never asked for from
+// evidence that happened to render the same (A-001).
+func newFlowWith(t *testing.T, endpoint *eventsEndpoint, enricher tui.Enricher, args ...string) *flow {
+	t.Helper()
+
 	config, err := cli.ParseArgs("orgtop", args, &strings.Builder{})
 	if err != nil {
 		t.Fatalf("parsing %v failed: %v", args, err)
@@ -285,6 +298,10 @@ func newFlow(t *testing.T, endpoint *eventsEndpoint, args ...string) *flow {
 			request: expansionRequest(config),
 		}))
 	}
+	if enricher == nil {
+		enricher = wiredEnricher(t, config, adapter.source)
+	}
+	options = append(options, tui.WithEnricher(enricher))
 	model, err := tui.New(t.Context(), config.Scopes, adapter, options...)
 	if err != nil {
 		t.Fatalf("building the shell for %v failed: %v", args, err)
@@ -294,6 +311,44 @@ func newFlow(t *testing.T, endpoint *eventsEndpoint, args ...string) *flow {
 		model:   model,
 		adapter: adapter,
 	}
+}
+
+// wiredEnricher binds the changed-file evidence coordination the binary
+// launches with: the invocation's own cache decision through enricherFor, and
+// the real GitHub enricher pointed at the flow's fixture endpoint under the
+// same resolved credential the flow polls with. The store lives beneath a
+// temporary cache root, so a wired flow exercises the launch's cache wiring
+// without touching the user's real cache directory, and the flow closes it when
+// the test ends exactly as the launch closes it when the program ends.
+func wiredEnricher(t *testing.T, config cli.Config, source github.Source) enrichmentAdapter {
+	t.Helper()
+
+	adapter, release := enricherFor(source.Credential, config, func() (*cache.Store, error) {
+		return cache.Open(cache.LocationIn(t.TempDir()))
+	})
+	t.Cleanup(release)
+	adapter.coordinator.Adapter = github.Enricher{
+		Client:     source.Client,
+		BaseURL:    source.BaseURL,
+		Credential: source.Credential,
+		Now:        func() time.Time { return wiredInstant },
+	}
+	return adapter
+}
+
+// refusingEnricher fails its test the moment a flow asks it for changed-file
+// evidence. A repository-only selection decides membership from repository
+// identity alone, so being asked at all is the failure the flow is watching for
+// (FR-001, A-001, A-016).
+type refusingEnricher struct{ t *testing.T }
+
+// Evidence records the request the flow must never make. It settles nothing, so
+// a flow that reaches it also renders undecided membership; the recorded failure
+// is what names the cause.
+func (e refusingEnricher) Evidence(context.Context, []domain.Event) (tui.Evidence, error) {
+	e.t.Helper()
+	e.t.Error("a repository-only flow asked for changed-file evidence")
+	return tui.Evidence{}, nil
 }
 
 // apply drives messages through the shell.

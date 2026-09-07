@@ -1,14 +1,14 @@
 ---
 id: T-069-integrate-the-closed-v0-2-0-binary-flow
 title: Integrate the closed v0.2.0 binary flow
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#integration-documentation-and-release-readiness
 dependencies:
     - T-043-guard-the-v0-2-0-toolchain-and-dependency-baseline
     - T-066-implement-honest-degraded-state-presentation
     - T-067-configure-multi-channel-release-workflows
-updated_at: "2026-08-29T09:22:04Z"
+updated_at: "2026-09-07T10:18:57Z"
 ---
 
 # T-069-integrate-the-closed-v0-2-0-binary-flow Integrate the closed v0.2.0 binary flow
@@ -37,3 +37,4 @@ Wire the completed Scope, organization, enrichment, cache, membership, and three
 
 - Keep source payloads in adapters, domain calculations outside TUI, and SQLite behind enrichment.
 - Add no deferred source or analytics architecture.
+- 2026-09-07T10:18:51Z: verification pass
