@@ -26,6 +26,10 @@ type Result struct {
 	Repositories []domain.RepositoryActivity
 	// Delay is the wait before the next attempt is eligible.
 	Delay time.Duration
+	// RateLimited reports a failure GitHub rate limiting caused. It is carried
+	// as prepared state so the chrome never classifies a sanitized cause string
+	// (RG-004).
+	RateLimited bool
 }
 
 // Source performs one atomic refresh of the selected Scope outside the update
@@ -66,6 +70,21 @@ func (m refreshedMsg) failure() error {
 // only when a new one actually succeeded.
 func (m refreshedMsg) expanded() bool {
 	return m.expansion.attempted && m.expansion.err == nil
+}
+
+// rateLimit reports the prepared rate-limit condition of the attempt and the
+// instructed retry instant it named. An attempt stopped by its expansion is
+// limited by that expansion; a failed poll by its own result; and a successful
+// poll only by the enrichment its evidence settled.
+func (m refreshedMsg) rateLimit(at time.Time, delay time.Duration) (bool, time.Time) {
+	limited := m.expansion.outcome.RateLimited
+	if m.polled {
+		limited = m.err != nil && m.result.RateLimited
+	}
+	if !limited {
+		return false, time.Time{}
+	}
+	return true, at.Add(delay)
 }
 
 // refreshDueMsg reports that the scheduled delay elapsed.
@@ -143,13 +162,14 @@ func (m Model) applyRefresh(message refreshedMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
+	at := m.now()
 	m = m.applyExpansion(message.expansion)
 	if failure := message.failure(); failure != nil {
 		// A failed refresh retains the previous Rain snapshot under RG-004
 		// stale semantics, exactly as it retains the other two views.
-		m.state = degraded(m.state, failure)
+		limited, retryAt := message.rateLimit(at, m.delay(message))
+		m.state = degraded(m.state, failure, limited, retryAt)
 	} else if message.polled {
-		at := m.now()
 		m.state = published(m.state, m.selection, message, at, message.expanded())
 		m.rain = m.rain.reconciled(m.state.Scopes, m.state.Scoped, at)
 		// The strip reads the same atomic publication as the field and then
@@ -189,6 +209,8 @@ func published(state State, selection Selection, message refreshedMsg, at time.T
 	state.Scoped = domain.NewRetainedSnapshot(selection.Scopes, evidence.retained, evidence.truncated)
 	state.CacheDegraded = evidence.degraded
 	state.EnrichmentRetryAt = evidence.retryAt
+	state.RateLimited = false
+	state.RateLimitRetryAt = time.Time{}
 	state.Freshness = FreshnessCurrent
 	state.LastSuccess = at
 	state.Cause = ""
@@ -202,12 +224,14 @@ func published(state State, selection Selection, message refreshedMsg, at time.T
 // degraded keeps the last successful snapshot untouched and marks the header. A
 // failure before any success is an error state; a later failure is stale
 // (FR-008).
-func degraded(state State, err error) State {
+func degraded(state State, err error, limited bool, retryAt time.Time) State {
 	state.Freshness = FreshnessError
 	if !state.LastSuccess.IsZero() {
 		state.Freshness = FreshnessStale
 	}
 	state.Cause = sanitize(err)
+	state.RateLimited = limited
+	state.RateLimitRetryAt = retryAt
 	return state
 }
 

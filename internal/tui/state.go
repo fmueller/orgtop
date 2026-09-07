@@ -87,6 +87,14 @@ type State struct {
 	// EnrichmentRetryAt is the earliest instructed enrichment retry the latest
 	// refresh was given, and stays zero when nothing was rate limited.
 	EnrichmentRetryAt time.Time
+	// RateLimited reports that GitHub rate limiting degraded the latest refresh
+	// itself: its expansion or its poll. It is prepared by the lifecycle rather
+	// than re-derived from Cause, because a sanitized cause is display text and
+	// never a fact the chrome may classify (RG-004).
+	RateLimited bool
+	// RateLimitRetryAt is the instructed retry instant of that rate limit, and
+	// stays zero when the limit named none.
+	RateLimitRetryAt time.Time
 	// Freshness is the marker shown next to the transport label.
 	Freshness Freshness
 	// LastSuccess is the instant of the last complete refresh success. It stays

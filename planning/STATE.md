@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-updated_at: "2026-09-05T15:04:19Z"
+updated_at: "2026-09-07T07:55:28Z"
 active_spec_version: v0.2.0
 active_spec_path: specs/v0.2.0.md
 current_task: ""
@@ -8,7 +8,7 @@ current_task_title: ""
 status_summary: idle
 blockers: []
 next_action: Select the next eligible task
-last_verification_result: pass for T-095-preserve-viewport-state-through-zero-row-resize at 2026-09-05T15:04:19Z
+last_verification_result: pass for T-066-implement-honest-degraded-state-presentation at 2026-09-07T07:55:23Z
 relevant_artifacts: []
 continuation_notes:
     - This repository is using manual Taskrail-style workflow scaffolding until the product replaces more of the bootstrap steps.
@@ -34,7 +34,7 @@ continuation_notes:
 
 ## Last Verification
 
-- pass for T-095-preserve-viewport-state-through-zero-row-resize at 2026-09-05T15:04:19Z
+- pass for T-066-implement-honest-degraded-state-presentation at 2026-09-07T07:55:23Z
 
 ## Next Action
 
@@ -50,8 +50,8 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 21
+- todo: 20
 - in_progress: 0
-- completed: 74
+- completed: 75
 - blocked: 0
 - cancelled: 0

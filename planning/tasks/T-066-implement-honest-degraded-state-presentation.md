@@ -1,14 +1,14 @@
 ---
 id: T-066-implement-honest-degraded-state-presentation
 title: Implement honest degraded-state presentation
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#responsive-and-degraded-experience
 dependencies:
     - T-065-implement-deterministic-responsive-overflow
     - T-055-implement-safe-cache-failure-and-recovery
     - T-048-implement-organization-selection-snapshots
-updated_at: "2026-08-29T09:22:04Z"
+updated_at: "2026-09-07T07:55:28Z"
 ---
 
 # T-066-implement-honest-degraded-state-presentation Implement honest degraded-state presentation
@@ -40,3 +40,4 @@ Present source, enrichment, membership, cache, organization-expansion, rate-limi
   scheduling, and the repository poll surfaces neither. Carry both as prepared
   state rather than re-deriving `RATE LIMITED <retry>` from cause text
   (found while completing T-080).
+- 2026-09-07T07:55:23Z: verification pass

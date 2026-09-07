@@ -25,6 +25,14 @@ workflow refuses to publish otherwise.
   marks it stale rather than narrowing or emptying it; an initial expansion
   failure polls no subset, and a successful expansion with no eligible
   repository is a current empty selection.
+- The shared header states every secondary condition of a refresh beside the
+  primary source state, in one fixed priority: `RATE LIMITED <retry>`,
+  `SELECTION STALE`, `PATH ?U` for unresolved path evidence, `CURRENT PR Q` for
+  the qualified current-PR members, `CACHE DEGRADED`, and `TRUNCATED`. A width
+  too narrow for all of them spends its last badge slot on `+N status` rather
+  than dropping a condition silently, and every badge is read from prepared
+  state instead of the sanitized failure text, so a rate limit is stated only
+  when a refresh actually reported one.
 - The shared header discloses an organization selection as
   `selection: R repos · S scopes · X exact · G expanded`, appends the eligible
   omission count and a remaining-page warning when a bounded expansion could

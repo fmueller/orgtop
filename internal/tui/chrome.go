@@ -79,10 +79,6 @@ func headerCandidates(state State, mode Mode, overflow ...overflowRange) [][]fie
 		core = append(core, field{text: marker, style: markerStyle(state.Freshness)})
 	}
 
-	if marker := state.SelectionFreshness.Marker(); marker != "" {
-		core = append(core, field{text: marker, style: staleStyle})
-	}
-
 	var cause []field
 	if state.Cause != "" {
 		cause = append(cause, field{text: state.Cause, style: causeStyle})
@@ -115,21 +111,27 @@ func headerCandidates(state State, mode Mode, overflow ...overflowRange) [][]fie
 			forms = prepared
 		}
 	}
-	layouts := make([][]field, 0, len(forms)*7)
-	for _, form := range forms {
-		required := slices.Clone(core)
-		if form != "" {
-			required = append(required, field{text: form, style: contextStyle})
+	// The badge ladder is the outermost dimension, so every other field gives
+	// way before a secondary condition is collapsed into its status count.
+	badged := badgeForms(secondaryBadges(state))
+	layouts := make([][]field, 0, len(badged)*len(forms)*7)
+	for _, badges := range badged {
+		primary := slices.Concat(core, badges)
+		for _, form := range forms {
+			required := slices.Clone(primary)
+			if form != "" {
+				required = append(required, field{text: form, style: contextStyle})
+			}
+			layouts = append(layouts,
+				slices.Concat(title, required, cause, listed, updated),
+				slices.Concat(title, required, cause, counted, updated),
+				slices.Concat(title, required, cause, context),
+				slices.Concat(required, cause, context),
+				slices.Concat(required, cause),
+				slices.Concat(required, context),
+				required,
+			)
 		}
-		layouts = append(layouts,
-			slices.Concat(title, required, cause, listed, updated),
-			slices.Concat(title, required, cause, counted, updated),
-			slices.Concat(title, required, cause, context),
-			slices.Concat(required, cause, context),
-			slices.Concat(required, cause),
-			slices.Concat(required, context),
-			required,
-		)
 	}
 	return withSelection(layouts, selectionForms(state.Selection))
 }

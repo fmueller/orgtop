@@ -26,11 +26,12 @@ func newSourceAdapter(credential auth.Credential) sourceAdapter {
 
 // Refresh maps one atomic GitHub refresh onto the lifecycle's Result. Both
 // outcomes carry scheduling metadata: a failure reports the source's retry
-// delay so the lifecycle never re-derives GitHub's rules.
+// delay so the lifecycle never re-derives GitHub's rules, and marks a rate
+// limit so the chrome states it from prepared state rather than cause text.
 func (a sourceAdapter) Refresh(ctx context.Context, scopes domain.ScopeSet) (tui.Result, error) {
 	refresh, err := a.source.Refresh(ctx, scopes)
 	if err != nil {
-		return tui.Result{Delay: retryDelay(err)}, err
+		return tui.Result{Delay: retryDelay(err), RateLimited: errors.Is(err, github.ErrRateLimited)}, err
 	}
 	return tui.Result{Repositories: refresh.Repositories, Delay: refresh.PollDelay}, nil
 }
