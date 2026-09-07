@@ -129,7 +129,7 @@ func (r rain) fieldRows(set charset, width, height, stripRows int) int {
 func rainHeadingLine(field rainField, tokens map[domain.ScopeIdentity]string, width int) string {
 	headings := make([]string, 0, len(field.columns))
 	for _, column := range field.columns {
-		headings = append(headings, padColumn(shorten(scopeLabel(column.scope, tokens), column.interior), column.interior))
+		headings = append(headings, padColumn(shortenScopeLabel(column.scope, tokens, column.interior), column.interior))
 	}
 	return contextStyle.Render(shorten(strings.Join(headings, columnGap), width))
 }

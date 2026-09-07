@@ -1,12 +1,12 @@
 ---
 id: T-085-implement-cell-safe-scope-label-shortening
 title: Implement RG-012 cell-safe Scope label shortening
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.2.0.md#scope-aware-overview-and-stream
 dependencies:
     - T-057-render-mixed-scopes-in-overview
-updated_at: "2026-09-03T21:53:36Z"
+updated_at: "2026-09-07T12:27:15Z"
 ---
 
 # T-085-implement-cell-safe-scope-label-shortening Implement RG-012 cell-safe Scope label shortening
@@ -50,3 +50,4 @@ trailing ellipsis rather than splitting the payload around one.
   the same change.
 - Replace the Overview call site in `internal/tui/overview.go` and share the
   function with Stream and Rain rather than duplicating it per view.
+- 2026-09-07T12:26:41Z: verification pass

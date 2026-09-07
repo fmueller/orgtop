@@ -38,9 +38,17 @@ var goModule = filepath.Join(repoRoot, "go.mod")
 // does for the two kernel32 lock calls — would trade a dependency this build
 // already carries for unsafe SID and ACE decoding that no host in this
 // repository's test matrix can exercise.
+// github.com/charmbracelet/x/ansi is the third. RG-012 names it, beside
+// lipgloss `Width`, as the pinned grapheme and terminal-cell behavior the
+// cell-safe Scope shortening is measured against, so the shell cuts labels on
+// whole grapheme clusters rather than on bytes or runes. lipgloss already
+// requires it, so promoting it adds no module, no license, and no byte to any
+// published artifact; re-implementing cluster-aware cutting locally would fork
+// the very behavior the normative width vectors pin.
 var v020Dependencies = []string{
 	"charm.land/bubbletea/v2",
 	"charm.land/lipgloss/v2",
+	"github.com/charmbracelet/x/ansi",
 	"golang.org/x/sys",
 	"gopkg.in/yaml.v3",
 	"modernc.org/sqlite",

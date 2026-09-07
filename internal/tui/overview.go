@@ -152,7 +152,7 @@ var overviewLayouts = []rowLayout{
 func overviewRows(aggregates []domain.ScopeAggregate, tokens map[domain.ScopeIdentity]string, width int) []string {
 	labels := make([]string, 0, len(aggregates))
 	for _, aggregate := range aggregates {
-		labels = append(labels, scopeLabel(aggregate.Scope, tokens))
+		labels = append(labels, shortenScopeLabel(aggregate.Scope, tokens, width))
 	}
 
 	sparsest := len(overviewLayouts) - 1
@@ -174,18 +174,6 @@ func layoutRows(aggregates []domain.ScopeAggregate, labels []string, layout rowL
 		rows = append(rows, padRight(labels[index], labelWidth)+rowGap+layout.counts(aggregate))
 	}
 	return rows
-}
-
-// scopeLabel renders the full RG-012 label of one Scope: its compact
-// presentation token and the requested repository, and for a path Scope the
-// requested pattern behind it. A path Scope is therefore always distinguishable
-// from a repository one and is never spelled as a synthetic repository.
-func scopeLabel(scope domain.Scope, tokens map[domain.ScopeIdentity]string) string {
-	token, prepared := tokens[scope.Identity()]
-	if !prepared {
-		return scope.String()
-	}
-	return token + " " + scope.String()
 }
 
 // padLeft pads the text with leading spaces up to the rendered width.
