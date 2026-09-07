@@ -21,10 +21,18 @@ Guidance for coding agents working in the OrgTop repository.
 - `.github/workflows/planning.yml` is the fast lane for planning, spec, doc, and
   skill changes; its `paths:` set must stay an exact mirror of the `paths-ignore`
   in `ci.yml`, and `TestWorkflowPathLanesAreExactMirrors` fails when it does not.
-- `.github/workflows/release.yml` publishes tags; `CHANGELOG.md` is the source of
-  release notes and a tag whose `## [<version>]` section is missing or empty is
-  refused.
+- `.github/workflows/release.yml` publishes tags through every distribution
+  channel; `CHANGELOG.md` is the source of release notes and a tag whose
+  `## [<version>]` section is missing or empty is refused.
+- `scripts/distribution-*.sh` are the RG-011 distribution guards. They decide the
+  platform matrix, the canonical ledger and completion records, the Homebrew
+  formula, and the pre-publication reconciliation. They run only inside the
+  release workflow, so `scripts/distribution-test.sh` exercises them against
+  fixtures; `docs/distribution-ledger.jsonl` is Taskrail-like durable state and
+  is written only by that workflow's protected pull request, never by hand.
 - `docs/changelog.md` is the changelog authoring policy.
+- `docs/distribution.md` records the distribution channel operations: the three
+  repositories, the release App's permissions, the ledger, and withdrawal.
 - `internal/toolchain` holds no production code: it guards the repository's own
   CI, release, and toolchain configuration.
 - `README.md` is the repository-level product and contributor introduction.
@@ -56,6 +64,7 @@ Guidance for coding agents working in the OrgTop repository.
 - Build: `task build` (`go build ./cmd/orgtop`).
 - Test: `task test` (`go test ./...`).
 - Changelog guard tests: `task test:changelog`.
+- Distribution guard tests: `task test:distribution`.
 - Cross-compile smoke: `task build:cross` (every platform `.goreleaser.yml` publishes).
 - Startup smoke: `task run:smoke`.
 - Format: `task fmt` (`gofmt -w .`).

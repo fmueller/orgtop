@@ -13,6 +13,28 @@ workflow refuses to publish otherwise.
 
 ### Added
 
+- One tag now publishes through three channels. Alongside the release archives,
+  a GitHub CLI extension release in `fmueller/gh-orgtop` carries a raw
+  `gh-orgtop-<os>-<arch>` executable for each of the six platform targets, and a
+  Homebrew formula in `fmueller/homebrew-tap` installs the macOS and Linux
+  builds as `brew install fmueller/tap/orgtop`. Every channel redistributes the
+  byte-identical executable one build produced: the extension assets are that
+  build copied and renamed, and the formula downloads the release archives and
+  pins their checksums. `gh orgtop` forwards its arguments unchanged and adds no
+  credential path of its own, and the archives remain a complete installation
+  path on a host with neither tool.
+- Releases publish `checksums.txt` covering all twelve artifacts and a
+  `provenance.intoto.jsonl` bundle of GitHub build attestations, plus a
+  `distribution-complete.json` manifest binding every published digest to the
+  source tag, commit, and workflow. `README.md` documents the checksum and
+  attestation verification routes.
+- The release workflow stages every channel before anything becomes public and
+  fails closed. A missing, extra, renamed, rebuilt, or digest-divergent artifact
+  stops the release before publication; a channel that fails leaves an
+  explicitly partial release that is retried or withdrawn rather than reported
+  as complete. `docs/distribution-ledger.jsonl` records each staged, completed,
+  and withdrawn version, and a withdrawal keeps a durable notice under
+  `docs/withdrawals/`.
 - `--path` selects path Scopes. A bare `PATTERN` filters every `--repo`
   selection, a qualified `OWNER/REPOSITORY:PATTERN` stands on its own, and both
   forms may be repeated and mixed. Equivalent Scopes are deduplicated and keep

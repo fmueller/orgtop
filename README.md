@@ -16,9 +16,36 @@ credential of its own.
 
 ## Installation
 
-Download the archive for your platform from the
-[latest release](https://github.com/fmueller/orgtop/releases/latest), or install
-with Go:
+OrgTop is one standalone executable. Every channel below redistributes the
+byte-identical executable published by this repository for a tag; none of them
+is a runtime dependency, and none changes the command, its arguments, or how it
+resolves a token.
+
+**Release archives** — the complete installation path, and the only one a host
+without the GitHub CLI or Homebrew needs. Download the archive for your platform
+from the [latest release](https://github.com/fmueller/orgtop/releases/latest),
+extract it, and run `orgtop`.
+
+**Homebrew** (macOS and Linux, amd64 and arm64):
+
+```bash
+brew install fmueller/tap/orgtop
+```
+
+**GitHub CLI extension** (all six platforms):
+
+```bash
+gh extension install fmueller/gh-orgtop
+gh orgtop --repo acme/widget
+```
+
+`gh orgtop` forwards its arguments unchanged and adds no credential of its own:
+it resolves a token by the same precedence a direct `orgtop` launch uses. The
+GitHub CLI installs the executable under its own name rather than adding
+`orgtop` to `PATH`; the archive and Homebrew routes install the ordinary
+`orgtop` command.
+
+Or install with Go:
 
 ```bash
 go install github.com/fmueller/orgtop/cmd/orgtop@latest
@@ -27,6 +54,21 @@ go install github.com/fmueller/orgtop/cmd/orgtop@latest
 A `go install` build reports `dev` for `--version`; only release archives carry
 the tag. Build from source with `task build` or `go build ./cmd/orgtop`; see
 [CONTRIBUTING.md](CONTRIBUTING.md) for the development setup.
+
+### Verifying a download
+
+Every release publishes `checksums.txt` and a `provenance.intoto.jsonl` bundle
+of GitHub build attestations covering all twelve artifacts:
+
+```bash
+sha256sum --check --ignore-missing checksums.txt
+gh attestation verify orgtop_<version>_<os>_<arch>.tar.gz --repo fmueller/orgtop
+```
+
+`fmueller/orgtop` is the only publisher. The `gh-` repository name and the
+`gh-extension` topic are GitHub CLI discovery metadata, not an endorsement, and
+Homebrew trusts the tap and the formula hash rather than attesting the bytes
+itself; the checksum and the attestation above are the verification routes.
 
 ## Usage
 

@@ -86,6 +86,9 @@ jobs:
       - name: Test the changelog release guards
         run: task test:changelog
 
+      - name: Test the multi-channel distribution guards
+        run: task test:distribution
+
   build-test:
     needs: checks
     runs-on: ${{ matrix.runner }}

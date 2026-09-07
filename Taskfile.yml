@@ -56,6 +56,14 @@ tasks:
     cmds:
       - scripts/check-changelog-test.sh
 
+  test:distribution:
+    desc: Test the multi-channel distribution guards
+    # The guards only ever run inside the release workflow, against companion
+    # repositories this suite must not touch, so their decisions are exercised
+    # against fixtures instead. Guarded by TestDistributionGuardsAreExercised.
+    cmds:
+      - scripts/distribution-test.sh
+
   # The differential run stays on the five mutators gremlins enables by default,
   # so the per-change loop stays cheap. The weekly gate below widens the mutator
   # set instead, where the extra runtime is affordable.
@@ -159,6 +167,7 @@ tasks:
       - task: test:push-messages
       - task: test:author
       - task: test:changelog
+      - task: test:distribution
       - task: build
       - task: run:smoke
       - task: licenses:check

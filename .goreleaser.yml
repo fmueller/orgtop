@@ -20,6 +20,8 @@ builds:
       - -X github.com/fmueller/orgtop/internal/cli.Version={{ .Version }}
 
 archives:
+  # The source channel: one archive per RG-011 matrix row, holding the ordinary
+  # `orgtop` executable plus the license and readme.
   - id: orgtop
     ids:
       - orgtop
@@ -34,8 +36,36 @@ archives:
       - LICENSE
       - README.md
 
+  # The GitHub CLI extension channel: the same build output, copied and renamed
+  # rather than rebuilt, so the raw asset and the archived executable are the
+  # byte-identical artifact RG-011 requires. The `binary` format publishes the
+  # executable itself, and GoReleaser appends `.exe` on Windows, which is the
+  # only place the extension names carry a suffix. Guarded by
+  # TestReleasePublishesTheDistributionMatrix.
+  - id: gh-extension
+    ids:
+      - orgtop
+    formats:
+      - binary
+    name_template: "gh-orgtop-{{ .Os }}-{{ .Arch }}"
+
+# One checksums.txt covers all twelve published artifacts. RG-011 requires it
+# sorted bytewise by asset name with two spaces before the name, which is the
+# `sha256sum` format GoReleaser emits; scripts/distribution-verify.sh proves the
+# ordering before anything is published.
 checksum:
   name_template: checksums.txt
+
+# The source release is created as a draft and stays unpublished until every
+# channel reconciles. Nothing built becomes anonymously downloadable before the
+# release workflow flips it, which is the staged visibility A-072 requires.
+release:
+  draft: true
+  prerelease: false
+  # An existing draft is reused and missing assets are added; an asset already
+  # present is never overwritten, so a retry of the same tag cannot replace
+  # published bytes.
+  mode: keep-existing
 
 # The changelog pipe must stay ENABLED. GoReleaser reads `--release-notes`
 # inside this pipe (internal/pipe/changelog), and its Skip() returns early on

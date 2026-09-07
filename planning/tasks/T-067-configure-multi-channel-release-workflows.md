@@ -1,12 +1,12 @@
 ---
 id: T-067-configure-multi-channel-release-workflows
 title: Configure multi-channel release workflows
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.2.0.md#distribution-channels
 dependencies:
     - T-043-guard-the-v0-2-0-toolchain-and-dependency-baseline
-updated_at: "2026-08-29T09:22:04Z"
+updated_at: "2026-09-07T09:53:17Z"
 ---
 
 # T-067-configure-multi-channel-release-workflows Configure multi-channel release workflows
@@ -33,3 +33,4 @@ Implement the closed release automation for existing archives, GitHub CLI extens
 
 - Preserve archives and standalone execution.
 - Keep workflow path-lane mirrors exact when changing repository workflow files.
+- 2026-09-07T09:53:12Z: verification pass

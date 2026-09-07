@@ -1,7 +1,24 @@
 name: Release
 
-# Tag pushes publish a real GitHub Release; manual dispatch only builds a local
-# snapshot so the release path can be rehearsed without publishing anything.
+# Tag pushes publish a real, multi-channel release. Manual dispatch either
+# rehearses the build as a local snapshot or withdraws a version; neither
+# dispatch path publishes an asset.
+#
+# One tag publishes through three channels: the source release archives here,
+# the GitHub CLI extension release in fmueller/gh-orgtop, and the Homebrew
+# formula in fmueller/homebrew-tap. RG-011 fixes what that means:
+#
+#   * One build produces every published byte. The extension raw assets are the
+#     same build output copied and renamed, and the tap downloads the source
+#     archives; no channel rebuilds.
+#   * Nothing built is anonymously downloadable until the source release
+#     transition, and the durable staged ledger event precedes it.
+#   * Every step is create-if-absent or compare-exactly, so a retry of the same
+#     tag reconciles instead of republishing.
+#   * A channel that fails leaves an explicitly partial release. The workflow
+#     fails, no completion manifest is written, and the version is either
+#     retried or withdrawn — never reported as a successful release.
+#
 # Release notes come from CHANGELOG.md: a guard refuses to publish a tag whose
 # section is missing or empty, and the extraction that produces the release body
 # refuses the same, so a blank release body cannot reach GoReleaser.
@@ -10,23 +27,447 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      operation:
+        description: Rehearse the build, or withdraw a published version
+        type: choice
+        options:
+          - snapshot
+          - withdraw
+        default: snapshot
+      version:
+        description: The version to withdraw, without the leading v
+        type: string
+        default: ""
+      reason:
+        description: Public, sanitized reason recorded in the withdrawal notice
+        type: string
+        default: ""
+      replacement:
+        description: Replacement version, when one is already known
+        type: string
+        default: ""
 
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
+# The repository token publishes the source release only. Every companion
+# repository mutation uses the installation token minted below, which carries
+# metadata read plus contents write — and, on this repository and the tap,
+# pull-requests write — and nothing else. id-token and attestations are the
+# OIDC build provenance this repository issues for its own artifacts.
 permissions:
   contents: write
+  id-token: write
+  attestations: write
+
+env:
+  SOURCE_REPOSITORY: fmueller/orgtop
+  EXTENSION_REPOSITORY: fmueller/gh-orgtop
+  TAP_REPOSITORY: fmueller/homebrew-tap
+  LEDGER_PATH: docs/distribution-ledger.jsonl
 
 jobs:
   release:
+    name: Publish every channel for the tag
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # GoReleaser derives the version and the previous tag from history.
+          fetch-depth: 0
+          # No ambient git credential. RG-011 reserves the repository token for
+          # the source release, and every git operation against a repository is
+          # the distribution App's; a persisted header would authenticate the
+          # ledger branch as this workflow instead and would collide with the
+          # per-command header the guard passes.
+          persist-credentials: false
+
+      - name: Setup toolchain
+        uses: ./.github/actions/setup
+
+      - name: Validate release configuration
+        run: task release:check
+
+      - name: Test the distribution guards
+        run: task test:distribution
+
+      - name: Guard CHANGELOG documents this tag
+        run: ./scripts/check-changelog-version.sh "${GITHUB_REF_NAME}"
+
+      - name: Extract release notes from CHANGELOG
+        run: ./scripts/changelog-release-notes.sh "${GITHUB_REF_NAME}" > "${RUNNER_TEMP}/release-notes.md"
+
+      # The App is installed on all three repositories. It cannot approve its own
+      # pull request and cannot push to a protected default branch, so every
+      # ledger and notice change still goes through review.
+      - name: Mint the distribution App token
+        id: app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.DISTRIBUTION_APP_ID }}
+          private-key: ${{ secrets.DISTRIBUTION_APP_PRIVATE_KEY }}
+          owner: fmueller
+          repositories: |
+            orgtop
+            gh-orgtop
+            homebrew-tap
+
+      # The reservation: an earlier version that is staged but neither completed
+      # nor withdrawn blocks this tag until it is resolved, and a completed
+      # version can never be republished.
+      - name: Refuse to publish over an unresolved release
+        run: ./scripts/distribution-ledger-append.sh --ledger "${LEDGER_PATH}" --assert-publishable "${GITHUB_REF_NAME#v}"
+
+      # Ownership, the gh- prefix, and the topic are what GitHub CLI discovery
+      # needs. They are not publisher proof, and the documentation says so; they
+      # are checked here because staging into the wrong repository is not
+      # recoverable by retry.
+      - name: Verify the companion repositories
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          extension="$(gh api "repos/${EXTENSION_REPOSITORY}" \
+            --jq '[.owner.login, .name, ((.topics // []) | index("gh-extension") != null | tostring)] | join(" ")')"
+          if [ "$extension" != "fmueller gh-orgtop true" ]; then
+            echo "guard: ${EXTENSION_REPOSITORY} must be owned by fmueller, named gh-orgtop, and carry the gh-extension topic; got: $extension" >&2
+            exit 1
+          fi
+          tap="$(gh api "repos/${TAP_REPOSITORY}" --jq '[.owner.login, .name] | join(" ")')"
+          if [ "$tap" != "fmueller homebrew-tap" ]; then
+            echo "guard: ${TAP_REPOSITORY} must be owned by fmueller and named homebrew-tap; got: $tap" >&2
+            exit 1
+          fi
+
+      # One build, from the tag commit, with the pinned toolchain. It produces
+      # the six archives, the six renamed raw assets, and checksums.txt, and
+      # creates or reconciles the unpublished source draft.
+      - name: Build once and create or reconcile the source draft
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CGO_ENABLED: "0"
+        run: goreleaser release --clean --release-notes="${RUNNER_TEMP}/release-notes.md"
+
+      # One attestation per artifact, so every subject binds to this repository,
+      # this tag's commit, and this workflow identity.
+      - name: Attest the twelve build artifacts
+        id: attest
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-checksums: dist/checksums.txt
+
+      # RG-011 fixes the bundle's encoding: one statement per line, LF
+      # delimited, bytewise sorted by subject name, no blank line. The bundle
+      # the attestation action writes is normalized to that form here, and the
+      # extension draft later receives these exact lines unchanged rather than a
+      # second attestation implying a second build.
+      - name: Assemble the canonical provenance bundle
+        env:
+          BUNDLE: ${{ steps.attest.outputs.bundle-path }}
+        run: |
+          jq -c '. as $statement
+            | (.subject // [])[]
+            | $statement + {subject: [.]}' "$BUNDLE" \
+            | LC_ALL=C sort -t'"' -k4,4 >"${RUNNER_TEMP}/provenance.intoto.jsonl"
+          cp "${RUNNER_TEMP}/provenance.intoto.jsonl" dist/provenance.intoto.jsonl
+
+      - name: Add the provenance bundle to the source draft
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${GITHUB_REF_NAME}" dist/provenance.intoto.jsonl --clobber
+
+      # Reconciliation reads what the draft actually holds, downloaded through
+      # authenticated URLs, rather than what the build believes it produced.
+      - name: Download the source draft assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          rm -rf "${RUNNER_TEMP}/source"
+          mkdir -p "${RUNNER_TEMP}/source"
+          gh release download "${GITHUB_REF_NAME}" --dir "${RUNNER_TEMP}/source"
+
+      - name: Reconcile the source draft
+        run: ./scripts/distribution-verify.sh --dir "${RUNNER_TEMP}/source" --version "${GITHUB_REF_NAME#v}" --channel source
+
+      - name: Verify the built executable reports this version
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          reported="$(./dist/orgtop_linux_amd64_v1/orgtop --version)"
+          case "$reported" in
+          *"$version"*) ;;
+          *)
+            echo "guard: the built executable reports '$reported', which does not carry $version" >&2
+            exit 1
+            ;;
+          esac
+
+      # The extension draft carries the same six raw bytes under the same names,
+      # a raw-only checksums.txt, and the unchanged source provenance lines for
+      # those six subjects.
+      - name: Create or reconcile the extension draft
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          staging="${RUNNER_TEMP}/extension"
+          rm -rf "$staging"
+          mkdir -p "$staging"
+
+          # Matrix order is the bytewise name order both metadata assets are
+          # required to be in, and the staging directory was just recreated, so
+          # appending to it builds exactly the raw-only pair.
+          while IFS=$'\t' read -r _ _ _ raw _; do
+            cp "${RUNNER_TEMP}/source/$raw" "$staging/$raw"
+            grep -F "  $raw" "${RUNNER_TEMP}/source/checksums.txt" >>"$staging/checksums.txt"
+            grep -F "\"name\":\"$raw\"" "${RUNNER_TEMP}/source/provenance.intoto.jsonl" \
+              >>"$staging/provenance.intoto.jsonl"
+          done < <(./scripts/distribution-matrix.sh "$version")
+
+          if ! gh release view "${GITHUB_REF_NAME}" --repo "${EXTENSION_REPOSITORY}" >/dev/null 2>&1; then
+            gh release create "${GITHUB_REF_NAME}" --repo "${EXTENSION_REPOSITORY}" --draft \
+              --title "${GITHUB_REF_NAME}" \
+              --notes "GitHub CLI extension assets for ${SOURCE_REPOSITORY} ${GITHUB_REF_NAME}. See https://github.com/${SOURCE_REPOSITORY}/releases/tag/${GITHUB_REF_NAME} for the release notes."
+          fi
+
+          # Create-or-compare, never create-if-absent-by-name: an asset an earlier
+          # partial run left behind is downloaded and compared, so a stale draft
+          # fails closed here instead of publishing bytes the source never made.
+          attached="$(gh release view "${GITHUB_REF_NAME}" --repo "${EXTENSION_REPOSITORY}" \
+            --json assets --jq '.assets[].name')"
+          for asset in "$staging"/*; do
+            name="$(basename "$asset")"
+            if ! grep -qxF "$name" <<<"$attached"; then
+              gh release upload "${GITHUB_REF_NAME}" "$asset" --repo "${EXTENSION_REPOSITORY}"
+              continue
+            fi
+            published="${RUNNER_TEMP}/attached-$name"
+            gh release download "${GITHUB_REF_NAME}" --repo "${EXTENSION_REPOSITORY}" \
+              --pattern "$name" --output "$published" --clobber
+            if ! cmp -s "$asset" "$published"; then
+              echo "guard: ${EXTENSION_REPOSITORY} already carries a different $name; withdraw v$version before restaging" >&2
+              exit 1
+            fi
+          done
+
+      - name: Download the extension draft assets
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          rm -rf "${RUNNER_TEMP}/extension-published"
+          mkdir -p "${RUNNER_TEMP}/extension-published"
+          gh release download "${GITHUB_REF_NAME}" --repo "${EXTENSION_REPOSITORY}" \
+            --dir "${RUNNER_TEMP}/extension-published"
+
+      - name: Reconcile the extension draft
+        run: |
+          ./scripts/distribution-verify.sh --dir "${RUNNER_TEMP}/extension-published" \
+            --version "${GITHUB_REF_NAME#v}" --channel extension --against "${RUNNER_TEMP}/source"
+
+      # The staging branch is public and may reveal planned metadata, but it is
+      # inactive: the tap default branch still selects the prior formula and the
+      # draft archive URL is not anonymously downloadable.
+      - name: Create or reconcile the tap staging branch
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          branch="release/orgtop-${GITHUB_REF_NAME}"
+          ./scripts/distribution-formula.sh --tag "${GITHUB_REF_NAME}" --commit "${GITHUB_SHA}" \
+            --checksums "${RUNNER_TEMP}/source/checksums.txt" >"${RUNNER_TEMP}/orgtop.rb"
+
+          # The token is passed per command rather than embedded in the remote
+          # URL, so it never lands in the clone's .git/config on the runner.
+          auth=(-c "http.extraheader=AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)")
+          rm -rf "${RUNNER_TEMP}/tap"
+          git "${auth[@]}" clone --depth 1 "https://github.com/${TAP_REPOSITORY}.git" "${RUNNER_TEMP}/tap"
+          base="$(git -C "${RUNNER_TEMP}/tap" rev-parse HEAD)"
+          echo "TAP_BASE=$base" >>"$GITHUB_ENV"
+
+          git -C "${RUNNER_TEMP}/tap" checkout -B "$branch" "$base"
+          cp "${RUNNER_TEMP}/orgtop.rb" "${RUNNER_TEMP}/tap/Formula/orgtop.rb"
+
+          # The branch changes only the formula. Anything else is a staging bug.
+          changed="$(git -C "${RUNNER_TEMP}/tap" status --porcelain -- . | awk '{print $2}')"
+          if [ -n "$changed" ] && [ "$changed" != "Formula/orgtop.rb" ]; then
+            echo "guard: the tap staging branch must change only Formula/orgtop.rb; changed: $changed" >&2
+            exit 1
+          fi
+          if [ -z "$changed" ]; then
+            echo "guard: the tap staging branch already carries the exact formula"
+          else
+            git -C "${RUNNER_TEMP}/tap" -c user.name=orgtop-distribution \
+              -c user.email=distribution@users.noreply.github.com \
+              commit -am "orgtop ${GITHUB_REF_NAME#v}"
+          fi
+          git -C "${RUNNER_TEMP}/tap" "${auth[@]}" push --force-with-lease origin "$branch"
+
+      # The durable staged event is appended through the protected pull request
+      # before any built asset becomes public.
+      - name: Append the staged ledger event through the protected pull request
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          source_dir="${RUNNER_TEMP}/source"
+
+          # The record and the digest of exactly those bytes come from one
+          # argument list: later events reference the digest, so the two must
+          # describe the same event.
+          staged=(
+            --version "$version" --tag "${GITHUB_REF_NAME}" --commit "${GITHUB_SHA}"
+            --artifacts "$source_dir/checksums.txt"
+            --checksums-sha "$(sha256sum "$source_dir/checksums.txt" | cut -d' ' -f1)"
+            --provenance-sha "$(sha256sum "$source_dir/provenance.intoto.jsonl" | cut -d' ' -f1)"
+          )
+          ./scripts/distribution-ledger.sh staged "${staged[@]}" >"${RUNNER_TEMP}/staged.json"
+          ./scripts/distribution-ledger.sh staged "${staged[@]}" --digest >"${RUNNER_TEMP}/staged.sha256"
+          ./scripts/distribution-protected-commit.sh \
+            --branch "ledger/orgtop-${GITHUB_REF_NAME}-staged" \
+            --title "chore: record the staged v$version distribution event" \
+            --ledger-event "${RUNNER_TEMP}/staged.json"
+
+      # Publication order: source release, extension release, then the formula.
+      - name: Publish the source release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit "${GITHUB_REF_NAME}" --draft=false --prerelease=false
+
+      - name: Publish the extension release
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: gh release edit "${GITHUB_REF_NAME}" --repo "${EXTENSION_REPOSITORY}" --draft=false --prerelease=false
+
+      # Compare-and-swap: the merge is refused when the tap base moved under the
+      # staging branch, which is rebuilt and retested against the new base on the
+      # next run rather than merged blind.
+      - name: Merge the formula onto the verified tap base
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          branch="release/orgtop-${GITHUB_REF_NAME}"
+          current="$(gh api "repos/${TAP_REPOSITORY}/commits/main" --jq '.sha')"
+          if [ "$current" != "${TAP_BASE}" ]; then
+            echo "guard: the tap base moved from ${TAP_BASE} to $current; restage the formula branch" >&2
+            exit 1
+          fi
+          if ! gh pr view "$branch" --repo "${TAP_REPOSITORY}" >/dev/null 2>&1; then
+            gh pr create --repo "${TAP_REPOSITORY}" --base main --head "$branch" \
+              --title "orgtop ${GITHUB_REF_NAME#v}" \
+              --body "Updates Formula/orgtop.rb to ${GITHUB_REF_NAME#v}, published by https://github.com/${SOURCE_REPOSITORY}/releases/tag/${GITHUB_REF_NAME}."
+          fi
+          gh pr merge "$branch" --repo "${TAP_REPOSITORY}" --squash --delete-branch
+          echo "TAP_COMMIT=$(gh api "repos/${TAP_REPOSITORY}/commits/main" --jq '.sha')" >>"$GITHUB_ENV"
+
+      # Final parity: every public asset is downloaded again and rechecked, and
+      # the default-branch formula is compared against the exact rendering.
+      - name: Reconcile every public asset
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          for channel in source extension; do
+            repo="${SOURCE_REPOSITORY}"
+            if [ "$channel" = extension ]; then repo="${EXTENSION_REPOSITORY}"; fi
+
+            dir="${RUNNER_TEMP}/public-$channel"
+            rm -rf "$dir"
+            mkdir -p "$dir"
+            gh release download "${GITHUB_REF_NAME}" --repo "$repo" --dir "$dir"
+
+            # The public extension assets are compared against the public source
+            # assets, not only against their own metadata: only a cross-channel
+            # comparison sees a channel redistributing bytes the source never
+            # published.
+            reference=()
+            if [ "$channel" = extension ]; then reference=(--against "${RUNNER_TEMP}/public-source"); fi
+            ./scripts/distribution-verify.sh --dir "$dir" --version "$version" --channel "$channel" "${reference[@]}"
+          done
+
+          gh api "repos/${TAP_REPOSITORY}/contents/Formula/orgtop.rb?ref=main" \
+            --jq '.content' | base64 -d >"${RUNNER_TEMP}/published-formula.rb"
+          if ! diff -u "${RUNNER_TEMP}/orgtop.rb" "${RUNNER_TEMP}/published-formula.rb"; then
+            echo "guard: the tap default branch does not carry the exact formula this tag rendered" >&2
+            exit 1
+          fi
+
+      - name: Build the completion manifest
+        run: |
+          workflow_commit="$(git log -1 --format=%H -- .github/workflows/release.yml)"
+          ./scripts/distribution-manifest.sh \
+            --tag "${GITHUB_REF_NAME}" --commit "${GITHUB_SHA}" \
+            --workflow-commit "$workflow_commit" --tap-commit "${TAP_COMMIT}" \
+            --checksums "${RUNNER_TEMP}/public-source/checksums.txt" \
+            --provenance "${RUNNER_TEMP}/public-source/provenance.intoto.jsonl" \
+            >"${RUNNER_TEMP}/distribution-complete.json"
+
+          # Both channels carry these exact bytes and the completed event
+          # references their digest, so it is taken once, here.
+          echo "MANIFEST_SHA=$(sha256sum "${RUNNER_TEMP}/distribution-complete.json" | cut -d' ' -f1)" >>"$GITHUB_ENV"
+
+      # Create-or-compare on both releases. One manifest alone is partial: the
+      # retry compares the manifest that exists and adds the missing one.
+      - name: Add the completion manifest to the source release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./scripts/distribution-manifest-asset.sh --tag "${GITHUB_REF_NAME}" --repo "${SOURCE_REPOSITORY}" --manifest "${RUNNER_TEMP}/distribution-complete.json"
+
+      - name: Add the completion manifest to the extension release
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: ./scripts/distribution-manifest-asset.sh --tag "${GITHUB_REF_NAME}" --repo "${EXTENSION_REPOSITORY}" --manifest "${RUNNER_TEMP}/distribution-complete.json"
+
+      - name: Append the completed ledger event through the protected pull request
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          ./scripts/distribution-ledger.sh completed \
+            --version "$version" --staged-sha "$(cat "${RUNNER_TEMP}/staged.sha256")" \
+            --source-manifest-sha "${MANIFEST_SHA}" --extension-manifest-sha "${MANIFEST_SHA}" \
+            --tap-commit "${TAP_COMMIT}" >"${RUNNER_TEMP}/completed.json"
+          ./scripts/distribution-protected-commit.sh \
+            --branch "ledger/orgtop-${GITHUB_REF_NAME}-completed" \
+            --title "chore: record the completed v$version distribution event" \
+            --ledger-event "${RUNNER_TEMP}/completed.json"
+
+      # Success requires all five completion steps. Until the completed event is
+      # merged and this last reconciliation passes, the release is partial.
+      - name: Reconcile the completed release
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          for repo in "${SOURCE_REPOSITORY}" "${EXTENSION_REPOSITORY}"; do
+            rm -f "${RUNNER_TEMP}/published-manifest.json"
+            gh release download "${GITHUB_REF_NAME}" --repo "$repo" \
+              --pattern distribution-complete.json --output "${RUNNER_TEMP}/published-manifest.json"
+            published="$(sha256sum "${RUNNER_TEMP}/published-manifest.json" | cut -d' ' -f1)"
+            if [ "$published" != "${MANIFEST_SHA}" ]; then
+              echo "guard: the $repo completion manifest is $published, not ${MANIFEST_SHA}" >&2
+              exit 1
+            fi
+          done
+
+          gh api "repos/${SOURCE_REPOSITORY}/contents/${LEDGER_PATH}?ref=main" \
+            --jq '.content' | base64 -d >"${RUNNER_TEMP}/published-ledger.jsonl"
+          if ! grep -qxF "$(cat "${RUNNER_TEMP}/completed.json")" "${RUNNER_TEMP}/published-ledger.jsonl"; then
+            echo "guard: the completed event is not on the protected default branch" >&2
+            exit 1
+          fi
+          echo "release: v$version is complete across every channel"
+
+  snapshot:
+    name: Rehearse the build without publishing
+    if: github.event_name == 'workflow_dispatch' && inputs.operation == 'snapshot'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # GoReleaser derives the version and the previous tag from history.
           fetch-depth: 0
 
       - name: Setup toolchain
@@ -35,44 +476,209 @@ jobs:
       - name: Validate release configuration
         run: task release:check
 
-      # --- Tag push: real, published release ---
-
-      - name: Guard CHANGELOG documents this tag
-        if: startsWith(github.ref, 'refs/tags/v')
-        run: ./scripts/check-changelog-version.sh "${GITHUB_REF_NAME}"
-
-      - name: Extract release notes from CHANGELOG
-        if: startsWith(github.ref, 'refs/tags/v')
-        run: ./scripts/changelog-release-notes.sh "${GITHUB_REF_NAME}" > "${RUNNER_TEMP}/release-notes.md"
-
-      - name: Run GoReleaser (publish)
-        if: startsWith(github.ref, 'refs/tags/v')
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: goreleaser release --clean --release-notes="${RUNNER_TEMP}/release-notes.md"
-
-      - name: Verify the published release body carries the notes
-        if: startsWith(github.ref, 'refs/tags/v')
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # The guards above prove the notes file is non-empty; this proves the
-          # notes actually reached the published release. v0.1.0 passed every
-          # earlier guard and still shipped an empty body.
-          body="$(gh release view "${GITHUB_REF_NAME}" --json body --jq '.body')"
-          if [ -z "$(printf '%s' "$body" | tr -d '[:space:]')" ]; then
-            echo "guard: published release ${GITHUB_REF_NAME} has an empty body" >&2
-            exit 1
-          fi
-          expected="$(./scripts/changelog-release-notes.sh "${GITHUB_REF_NAME}")"
-          if [ "$(printf '%s' "$body" | tr -d '[:space:]')" != "$(printf '%s' "$expected" | tr -d '[:space:]')" ]; then
-            echo "guard: published release ${GITHUB_REF_NAME} does not carry the CHANGELOG notes" >&2
-            exit 1
-          fi
-          echo "guard: published release ${GITHUB_REF_NAME} carries the CHANGELOG notes"
-
-      # --- Manual dispatch: snapshot only, no GitHub Release ---
+      - name: Test the distribution guards
+        run: task test:distribution
 
       - name: Run GoReleaser (snapshot, no publish)
-        if: github.event_name == 'workflow_dispatch'
         run: task release:dry
+
+      # The snapshot proves the matrix without publishing: every archive and raw
+      # asset name the tag would produce has to appear in the snapshot's own
+      # checksums.txt.
+      - name: Assert the snapshot produces the distribution matrix
+        run: |
+          version="$(jq -r '.version' dist/metadata.json)"
+          while IFS=$'\t' read -r _ _ archive raw _; do
+            for name in "$archive" "$raw"; do
+              if ! grep -qE "  ${name}\$" dist/checksums.txt; then
+                echo "guard: the snapshot produced no asset named $name" >&2
+                exit 1
+              fi
+            done
+          done < <(./scripts/distribution-matrix.sh "$version")
+          echo "guard: the snapshot carries every matrix artifact"
+
+  withdraw:
+    name: Withdraw a version from every channel
+    if: github.event_name == 'workflow_dispatch' && inputs.operation == 'withdraw'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # The dispatch inputs reach every step as environment values rather than as
+    # interpolated template text, so a version or a reason is data the scripts
+    # validate and never part of the command that runs.
+    env:
+      VERSION: ${{ inputs.version }}
+      REASON: ${{ inputs.reason }}
+      REPLACEMENT: ${{ inputs.replacement }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup toolchain
+        uses: ./.github/actions/setup
+
+      - name: Mint the distribution App token
+        id: app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.DISTRIBUTION_APP_ID }}
+          private-key: ${{ secrets.DISTRIBUTION_APP_PRIVATE_KEY }}
+          owner: fmueller
+          repositories: |
+            orgtop
+            gh-orgtop
+            homebrew-tap
+
+      # Withdrawal merges the protected event and notice first, so the durable
+      # record exists before anything is removed and survives the deletions.
+      - name: Append the withdrawal event and notice through the protected pull request
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          # The staged digest is the SHA-256 of that event's canonical bytes, so
+          # the recorded line is read back compactly and hashed as written.
+          staged_event="$(jq -c --arg version "${VERSION}" \
+            'select(.version == $version and .event == "staged")' "${LEDGER_PATH}")"
+          if [ -z "$staged_event" ]; then
+            echo "guard: the ledger holds no staged event for ${VERSION}" >&2
+            exit 1
+          fi
+          staged_sha="$(printf '%s' "$staged_event" | sha256sum | cut -d' ' -f1)"
+
+          # An absent completed event leaves the tap commit empty, which the
+          # ledger guard records as null: the formula was never published.
+          state=incomplete
+          if jq -e --arg version "${VERSION}" \
+            'select(.version == $version and .event == "completed")' "${LEDGER_PATH}" >/dev/null; then
+            state=completed
+          fi
+
+          tap_commit="$(jq -r --arg version "${VERSION}" \
+            'select(.version == $version and .event == "completed") | .tap_commit' "${LEDGER_PATH}")"
+
+          ./scripts/distribution-ledger.sh withdrawn --version "${VERSION}" --staged-sha "$staged_sha" \
+            --state "$state" --reason "${REASON}" --tap-commit "$tap_commit" \
+            >"${RUNNER_TEMP}/withdrawn.json"
+
+          mkdir -p docs/withdrawals
+          ./scripts/distribution-notice.sh --version "${VERSION}" --state "$state" \
+            --reason "${REASON}" --staged-sha "$staged_sha" \
+            --replacement "${REPLACEMENT}" >"docs/withdrawals/v${VERSION}.md"
+
+          ./scripts/distribution-protected-commit.sh \
+            --branch "ledger/orgtop-v${VERSION}-withdrawn" \
+            --title "chore: withdraw the v${VERSION} distribution" \
+            --ledger-event "${RUNNER_TEMP}/withdrawn.json" \
+            --extra-path "docs/withdrawals/v${VERSION}.md"
+
+      # Only then is public state removed. Order inside the removal matters too:
+      # the staging branch always goes, and the default-branch formula is
+      # reverted only while it still selects the withdrawn version, so a newer
+      # formula published since is preserved.
+      - name: Delete the tap staging branch
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          branch="release/orgtop-v${VERSION}"
+          if ! gh api "repos/${TAP_REPOSITORY}/git/ref/heads/${branch}" >/dev/null 2>&1; then
+            echo "guard: the tap staging branch ${branch} is already gone"
+            exit 0
+          fi
+          gh api -X DELETE "repos/${TAP_REPOSITORY}/git/refs/heads/${branch}"
+          echo "guard: deleted the tap staging branch ${branch}"
+
+      - name: Revert the tap formula when it still selects this version
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          published="$(gh api "repos/${TAP_REPOSITORY}/contents/Formula/orgtop.rb?ref=main" \
+            --jq '.content' | base64 -d)"
+          if ! grep -qxF "  version \"${VERSION}\"" <<<"$published"; then
+            echo "guard: the tap default branch no longer selects ${VERSION}; the newer formula is preserved"
+            exit 0
+          fi
+
+          # The ledger names the commit that published this formula, so the
+          # revert is that exact commit rather than a guess at "the prior
+          # version". Compare-and-swap: the base is captured before the branch is
+          # built and rechecked immediately before the merge.
+          tap_commit="$(jq -r --arg version "${VERSION}" \
+            'select(.version == $version and .event == "withdrawn") | .tap_commit' "${LEDGER_PATH}")"
+          if [ -z "$tap_commit" ] || [ "$tap_commit" = null ]; then
+            echo "guard: the withdrawal event records no published formula commit to revert" >&2
+            exit 1
+          fi
+
+          auth=(-c "http.extraheader=AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)")
+          rm -rf "${RUNNER_TEMP}/tap"
+          git "${auth[@]}" clone "https://github.com/${TAP_REPOSITORY}.git" "${RUNNER_TEMP}/tap"
+          base="$(git -C "${RUNNER_TEMP}/tap" rev-parse HEAD)"
+
+          branch="withdraw/orgtop-v${VERSION}"
+          git -C "${RUNNER_TEMP}/tap" checkout -B "$branch" "$base"
+          git -C "${RUNNER_TEMP}/tap" \
+            -c user.name=orgtop-distribution -c user.email=distribution@users.noreply.github.com \
+            revert --no-edit "$tap_commit"
+
+          changed="$(git -C "${RUNNER_TEMP}/tap" diff --name-only "$base" "$branch")"
+          if [ "$changed" != "Formula/orgtop.rb" ]; then
+            echo "guard: the withdrawal revert must change only Formula/orgtop.rb; it changes: $changed" >&2
+            exit 1
+          fi
+
+          git -C "${RUNNER_TEMP}/tap" "${auth[@]}" push --force-with-lease origin "$branch"
+          if ! gh pr view "$branch" --repo "${TAP_REPOSITORY}" >/dev/null 2>&1; then
+            gh pr create --repo "${TAP_REPOSITORY}" --base main --head "$branch" \
+              --title "withdraw orgtop ${VERSION}" \
+              --body "Reverts Formula/orgtop.rb to the version it selected before ${VERSION}. See https://github.com/${SOURCE_REPOSITORY}/blob/main/docs/withdrawals/v${VERSION}.md."
+          fi
+
+          current="$(gh api "repos/${TAP_REPOSITORY}/commits/main" --jq '.sha')"
+          if [ "$current" != "$base" ]; then
+            echo "guard: the tap default branch moved from $base to $current; rerun the withdrawal against the new base" >&2
+            exit 1
+          fi
+          gh pr merge "$branch" --repo "${TAP_REPOSITORY}" --squash --delete-branch
+
+          reverted="$(gh api "repos/${TAP_REPOSITORY}/contents/Formula/orgtop.rb?ref=main" \
+            --jq '.content' | base64 -d)"
+          if grep -qxF "  version \"${VERSION}\"" <<<"$reverted"; then
+            echo "guard: the tap default branch still selects ${VERSION} after the revert" >&2
+            exit 1
+          fi
+          echo "guard: the tap default branch no longer selects ${VERSION}"
+
+      # Delete-if-present, then verify. A swallowed permission failure would
+      # leave the version half withdrawn while the workflow reported success,
+      # which is the partial state the withdrawal exists to end.
+      - name: Delete the releases and tags
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          SOURCE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for repo in "${SOURCE_REPOSITORY}" "${EXTENSION_REPOSITORY}"; do
+            token="${GH_TOKEN}"
+            if [ "$repo" = "${SOURCE_REPOSITORY}" ]; then token="${SOURCE_TOKEN}"; fi
+
+            if GH_TOKEN="$token" gh release view "v${VERSION}" --repo "$repo" >/dev/null 2>&1; then
+              GH_TOKEN="$token" gh release delete "v${VERSION}" --repo "$repo" --cleanup-tag --yes
+            fi
+
+            if GH_TOKEN="$token" gh release view "v${VERSION}" --repo "$repo" >/dev/null 2>&1; then
+              echo "guard: the v${VERSION} release still exists in $repo" >&2
+              exit 1
+            fi
+            if GH_TOKEN="$token" gh api "repos/$repo/git/ref/tags/v${VERSION}" >/dev/null 2>&1; then
+              echo "guard: the v${VERSION} tag still exists in $repo" >&2
+              exit 1
+            fi
+          done
+
+      - name: Verify the notice outlives the deleted releases
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          gh api "repos/${SOURCE_REPOSITORY}/contents/docs/withdrawals/v${VERSION}.md?ref=main" --jq '.path'
