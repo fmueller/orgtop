@@ -55,7 +55,7 @@ type stream struct {
 // both, because it is a bounded reading of one event rather than a pane beside
 // the list it was opened from.
 func (s stream) render(state State, width, height int) string {
-	if lines, open := detailContent(state, s.detail, width); open {
+	if lines, _, open := detailContent(state, s.detail, width); open {
 		return renderBody(lines, s.detail.viewport, width, height)
 	}
 	chrome, lines, rowHeight := streamContent(state, width, height)
@@ -70,7 +70,7 @@ func (s stream) render(state State, width, height int) string {
 // scrolled returns the view moved by one scrolling keystroke over the rows that
 // remain once Stream's own chrome has taken its lines.
 func (s stream) scrolled(keystroke string, state State, width, height int) stream {
-	if lines, open := detailContent(state, s.detail, width); open {
+	if lines, _, open := detailContent(state, s.detail, width); open {
 		// Detail has no focused line, so its offset moves directly by one row
 		// or by the detail rows the body holds, and clamps against them alone.
 		s.detail.viewport = s.detail.scrolled(keystroke, len(lines), height)
@@ -388,7 +388,7 @@ func (s stream) followedDetail(state State, width, height int) stream {
 	if !s.detail.open {
 		return s
 	}
-	lines, open := detailContent(state, s.detail, width)
+	lines, _, open := detailContent(state, s.detail, width)
 	if !open {
 		return s.closedDetail()
 	}

@@ -39,6 +39,10 @@ type overflowRange struct {
 	hiddenItems        int
 	discloseHidden     bool
 	singularScope      bool
+	// clippedGraphemes counts the detail graphemes a one-cell width replaced
+	// with the placeholder. It is disjoint from every other counter here: it
+	// accounts for horizontal substitution, never for a hidden row.
+	clippedGraphemes int
 }
 
 // forms returns RG-012's range ladder from full to minimum. The minimum counts
@@ -48,14 +52,16 @@ type overflowRange struct {
 // the count with a second label.
 func (r overflowRange) forms() []string {
 	if r.total <= 0 {
-		return nil
+		// A detail that hides no line still discloses the graphemes its width
+		// replaced, so the count survives a body tall enough for every line.
+		return r.clippedForms()
 	}
 	if r.first == 0 || r.last == 0 {
-		return []string{
+		return r.withClipped([]string{
 			fmt.Sprintf("%s 0 shown of %d", r.kind, r.total),
 			fmt.Sprintf("0/%d", r.total),
 			fmt.Sprintf("+%d", r.total),
-		}
+		})
 	}
 	hidden := r.total - (r.last - r.first + 1)
 	full := fmt.Sprintf("%s %d-%d of %d", r.kind, r.first, r.last, r.total)
@@ -80,7 +86,37 @@ func (r overflowRange) forms() []string {
 		forms[1] += fmt.Sprintf("%s+%di", separator, r.hiddenItems)
 		forms[2] += fmt.Sprintf("%s+%di", separator, r.hiddenItems)
 	}
+	return r.withClipped(forms)
+}
+
+// withClipped appends the clipped-grapheme count to every rung of a prepared
+// ladder, so no height leaves the substitution the width made undisclosed. The
+// rungs below the full one carry the shortened spelling, exactly as the other
+// disjoint counts on this ladder do.
+func (r overflowRange) withClipped(forms []string) []string {
+	clipped := r.clippedForms()
+	if clipped == nil {
+		return forms
+	}
+	full, short := clipped[0], clipped[1]
+	forms[0] += separator + full
+	for index := 1; index < len(forms); index++ {
+		forms[index] += separator + short
+	}
 	return forms
+}
+
+// clippedForms returns the clipped-grapheme count in its full and shortened
+// spellings, or nil when the width replaced nothing and there is no count to
+// report (A-077).
+func (r overflowRange) clippedForms() []string {
+	if r.clippedGraphemes <= 0 {
+		return nil
+	}
+	return []string{
+		fmt.Sprintf("+%d clipped detail graphemes", r.clippedGraphemes),
+		fmt.Sprintf("+%dg", r.clippedGraphemes),
+	}
 }
 
 // renderHeader renders the widest header that fits the width. The active view,

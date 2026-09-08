@@ -1,11 +1,11 @@
 ---
 id: T-099-account-for-clipped-detail-graphemes-at-one-cell
 title: Account for clipped detail graphemes at one-cell width
-status: todo
+status: completed
 priority: low
 spec_ref: specs/v0.2.0.md#scope-aware-overview-and-stream
 dependencies: []
-updated_at: "2026-09-07T13:34:16Z"
+updated_at: "2026-09-08T19:57:35Z"
 ---
 
 # T-099-account-for-clipped-detail-graphemes-at-one-cell Account for clipped detail graphemes at one-cell width
@@ -55,3 +55,4 @@ Follow-up derived from T-086-implement-bounded-stream-event-detail's review.
 - `overflowRange` and `Model.overflow` already carry the detail's own
   `lines A-B of N` range, so the count belongs beside it rather than in a
   mechanism of its own.
+- 2026-09-08T19:57:32Z: verification pass

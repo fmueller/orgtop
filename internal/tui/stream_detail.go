@@ -125,44 +125,55 @@ func detailField(name, value string) string {
 	return name + ": " + escapeControls(value)
 }
 
-// wrapDetail wraps every logical line into the physical lines the width holds.
-// The wrapped lines are what the viewport scrolls, so no prepared text is
-// hidden behind a mark: it is reached by scrolling instead (RG-012).
-func wrapDetail(lines []string, width int) []string {
+// wrapDetail wraps every logical line into the physical lines the width holds,
+// and totals the graphemes the width replaced with the placeholder. The wrapped
+// lines are what the viewport scrolls, so no prepared text is hidden behind a
+// mark: it is reached by scrolling instead (RG-012).
+func wrapDetail(lines []string, width int) ([]string, int) {
 	wrapped := make([]string, 0, len(lines))
+	clipped := 0
 	for _, line := range lines {
-		wrapped = append(wrapped, wrapDetailLine(line, width)...)
+		physical, replaced := wrapDetailLine(line, width)
+		wrapped = append(wrapped, physical...)
+		clipped += replaced
 	}
-	return wrapped
+	return wrapped, clipped
 }
 
 // wrapDetailLine greedily splits one logical line into the longest whole-
 // grapheme chunks of at most width cells, without dropping text and without
-// inventing a continuation prefix. A negative width is unbounded and keeps the
+// inventing a continuation prefix, and reports how many graphemes the width
+// replaced with the placeholder. A negative width is unbounded and keeps the
 // line whole. A zero width renders no cells and an empty line has none to
 // render, but both still occupy one physical line, so the prepared line count
 // survives a terminal with no room for it and an event field left blank.
-func wrapDetailLine(line string, width int) []string {
+// Neither renders a placeholder, so neither clips a grapheme.
+func wrapDetailLine(line string, width int) ([]string, int) {
 	if width < 0 {
-		return []string{line}
+		return []string{line}, 0
 	}
 	if width == 0 || line == "" {
-		return []string{""}
+		return []string{""}, 0
 	}
 	var chunks []string
+	clipped := 0
 	for rest := line; rest != ""; {
-		var chunk string
-		chunk, rest = leadingChunk(rest, width)
+		chunk, remainder, replaced := leadingChunk(rest, width)
 		chunks = append(chunks, chunk)
+		if replaced {
+			clipped++
+		}
+		rest = remainder
 	}
-	return chunks
+	return chunks, clipped
 }
 
 // leadingChunk takes the longest whole-grapheme prefix of the text that fits
-// the positive width, and returns it with the remainder. A leading grapheme
-// wider than the whole width cannot be split, so it is consumed as the
-// placeholder that marks the cell the width does grant.
-func leadingChunk(text string, width int) (chunk, rest string) {
+// the positive width, and returns it with the remainder and whether the chunk
+// is a placeholder. A leading grapheme wider than the whole width cannot be
+// split, so it is consumed as the placeholder that marks the cell the width
+// does grant, and the replacement is reported once for that grapheme alone.
+func leadingChunk(text string, width int) (chunk, rest string, clipped bool) {
 	var builder strings.Builder
 	used := 0
 	for rest = text; rest != ""; {
@@ -176,25 +187,27 @@ func leadingChunk(text string, width int) (chunk, rest string) {
 	}
 	if builder.Len() == 0 {
 		cluster, _ := ansi.FirstGraphemeCluster(text, ansi.GraphemeWidth)
-		return wideGraphemePlaceholder, text[len(cluster):]
+		return wideGraphemePlaceholder, text[len(cluster):], true
 	}
-	return builder.String(), rest
+	return builder.String(), rest, false
 }
 
-// detailContent returns the wrapped detail lines of the open detail, and
-// whether detail is open over an event the current snapshot still holds. A
-// detail whose event a refresh removed reports closed, so no caller renders or
-// accounts for lines the snapshot no longer prepares.
-func detailContent(state State, detail streamDetail, width int) ([]string, bool) {
+// detailContent returns the wrapped detail lines of the open detail, how many
+// graphemes the width replaced with the placeholder, and whether detail is open
+// over an event the current snapshot still holds. A detail whose event a refresh
+// removed reports closed, so no caller renders or accounts for lines the
+// snapshot no longer prepares.
+func detailContent(state State, detail streamDetail, width int) ([]string, int, bool) {
 	if !detail.open {
-		return nil, false
+		return nil, 0, false
 	}
 	events := state.Scoped.StreamEvents()
 	index, found := eventIndex(events, detail.eventID)
 	if !found {
-		return nil, false
+		return nil, 0, false
 	}
-	return wrapDetail(detailLines(events[index], state.Scopes.Tokens(), state.LastSuccess), width), true
+	lines, clipped := wrapDetail(detailLines(events[index], state.Scopes.Tokens(), state.LastSuccess), width)
+	return lines, clipped, true
 }
 
 // eventIndex returns the position of the source event ID in the prepared list.

@@ -205,7 +205,8 @@ func TestStreamDetailReachesEveryWrappedLine(t *testing.T) {
 		model = scrolled(t, model, "down")
 	}
 
-	for index, chunk := range wrapDetailLine("Description: "+description, width) {
+	wrapped, _ := wrapDetailLine("Description: "+description, width)
+	for index, chunk := range wrapped {
 		if !seen[chunk] {
 			t.Errorf("scrolling never revealed wrapped description line %d: %q", index, chunk)
 		}
@@ -345,7 +346,7 @@ func TestWrapDetailLineKeepsWholeGraphemes(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := wrapDetailLine(tt.line, tt.width)
+			got, _ := wrapDetailLine(tt.line, tt.width)
 			if len(got) != len(tt.want) {
 				t.Fatalf("wrapDetailLine(%q, %d) = %v, want %v", tt.line, tt.width, got, tt.want)
 			}
@@ -443,5 +444,111 @@ func TestStreamDetailIgnoresEscFromAnotherView(t *testing.T) {
 		if got := rowWithPrefix(t, detailRows(t, switched.View().Content), "Event:"); got != "Event: elsewhere" {
 			t.Errorf("returning to Stream rendered %q, want the detail the operator left", got)
 		}
+	}
+}
+
+// TestWrapDetailLineCountsClippedGraphemes guards A-077's counter half: every
+// grapheme the one-cell exception replaced with the placeholder is counted
+// exactly once, and a width that replaces nothing counts nothing.
+func TestWrapDetailLineCountsClippedGraphemes(t *testing.T) {
+	tests := []struct {
+		name  string
+		line  string
+		width int
+		want  int
+	}{
+		{name: "one cell replaces one wide grapheme", line: "a世b", width: 1, want: 1},
+		{name: "one cell replaces every wide grapheme once", line: "世界", width: 1, want: 2},
+		{name: "a zero-width cluster is never clipped", line: "éx", width: 1, want: 0},
+		{name: "a width the grapheme fits clips nothing", line: "a世b", width: 2, want: 0},
+		{name: "zero width clips nothing", line: "a世b", width: 0, want: 0},
+		{name: "unbounded clips nothing", line: "a世b", width: unbounded, want: 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, got := wrapDetailLine(tt.line, tt.width); got != tt.want {
+				t.Errorf("wrapDetailLine(%q, %d) clipped %d graphemes, want %d", tt.line, tt.width, got, tt.want)
+			}
+		})
+	}
+}
+
+// TestStreamDetailReportsClippedGraphemesAtOneCell guards A-077: a one-column
+// terminal discloses in the shared chrome that it substituted placeholders, and
+// restoring a width the grapheme fits renders the original and drops the count.
+func TestStreamDetailReportsClippedGraphemesAtOneCell(t *testing.T) {
+	api := "acme/api"
+	scopes := detailScopes(t, api, "src")
+	retained := []domain.EventEvidence{
+		detailEvidence(t, "clipped", api, "alice", "世界", time.Minute, completeEvidence(t, "src/main.go")),
+	}
+	model := opened(t, scopedStreamModel(t, scopes, retained), 1, wideHeight)
+
+	seen := map[string]bool{}
+	for scan := model; ; scan = scrolled(t, scan, "pgdown") {
+		rows := detailRows(t, scan.View().Content)
+		for _, row := range rows {
+			seen[row] = true
+		}
+		if scan.stream.detail.offset == scrolled(t, scan, "pgdown").stream.detail.offset {
+			break
+		}
+	}
+	if !seen[wideGraphemePlaceholder] {
+		t.Errorf("the one-cell detail rendered no placeholder cell in %d distinct lines", len(seen))
+	}
+	forms := model.overflow(1, wideHeight-chromeLines).forms()
+	if len(forms) == 0 {
+		t.Fatal("the one-cell detail reported no chrome accounting for its replaced graphemes")
+	}
+	if want := "+2 clipped detail graphemes"; !strings.Contains(forms[0], want) {
+		t.Errorf("the one-cell detail chrome %q reports no %q", forms[0], want)
+	}
+	if want := "+2g"; !strings.Contains(forms[len(forms)-1], want) {
+		t.Errorf("the minimum one-cell detail form %q drops the clipped count", forms[len(forms)-1])
+	}
+
+	restored, _ := apply(t, model, tea.WindowSizeMsg{Width: wideWidth, Height: wideHeight})
+	if got := rowWithPrefix(t, detailRows(t, restored.View().Content), "Description:"); got != "Description: 世界" {
+		t.Errorf("the restored detail line is %q, want the original prepared graphemes", got)
+	}
+	for _, form := range restored.overflow(wideWidth, wideHeight-chromeLines).forms() {
+		if strings.Contains(form, "clipped") {
+			t.Errorf("the restored detail chrome %q still reports a clipped count", form)
+		}
+	}
+}
+
+// TestStreamDetailReportsClippedGraphemesAtEveryHeight guards A-077: the
+// clipped-grapheme count is disclosed by every rung of the range ladder, so
+// neither a body tall enough to hide no line nor one with no room for a line at
+// all silently swallows the substitution the width made.
+func TestStreamDetailReportsClippedGraphemesAtEveryHeight(t *testing.T) {
+	api := "acme/api"
+	scopes := detailScopes(t, api, "src")
+	retained := []domain.EventEvidence{
+		detailEvidence(t, "clipped", api, "alice", "世界", time.Minute, completeEvidence(t, "src/main.go")),
+	}
+	tests := []struct {
+		name   string
+		height int
+	}{
+		{name: "a body tall enough for every line", height: 400},
+		{name: "a body with no room for a line", height: chromeLines},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			model := opened(t, scopedStreamModel(t, scopes, retained), 1, tt.height)
+			forms := model.overflow(1, contentHeight(tt.height)).forms()
+			if len(forms) == 0 {
+				t.Fatal("the one-cell detail reported no chrome accounting for its replaced graphemes")
+			}
+			if want := "+2 clipped detail graphemes"; !strings.Contains(forms[0], want) {
+				t.Errorf("the one-cell detail chrome %q reports no %q", forms[0], want)
+			}
+			if want := "+2g"; !strings.Contains(forms[len(forms)-1], want) {
+				t.Errorf("the minimum one-cell detail form %q drops the clipped count", forms[len(forms)-1])
+			}
+		})
 	}
 }

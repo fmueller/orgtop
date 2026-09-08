@@ -359,8 +359,10 @@ func (m Model) overflow(width, height int) overflowRange {
 	case ModeStream:
 		// Open detail scrolls its own wrapped lines, so the header accounts for
 		// the lines it hides rather than for the events behind it.
-		if lines, open := detailContent(m.state, m.stream.detail, width); open {
-			return visibleRange(detailRange, m.stream.detail.offset, len(lines), height)
+		if lines, clipped, open := detailContent(m.state, m.stream.detail, width); open {
+			detail := visibleRange(detailRange, m.stream.detail.offset, len(lines), height)
+			detail.clippedGraphemes = clipped
+			return detail
 		}
 		_, lines, rowHeight := streamContent(m.state, width, height)
 		if streamStateLine(m.state.Freshness, len(m.state.Scoped.StreamEvents())) != "" {
