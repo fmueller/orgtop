@@ -1,12 +1,12 @@
 ---
 id: T-088-match-deferred-claim-spelling-variants
 title: Match deferred-claim spelling variants in the documentation gate
-status: todo
+status: completed
 priority: low
 spec_ref: specs/v0.2.0.md#fr-012-documentation
 dependencies:
     - T-030-decouple-readme-structure-from-doc-tests
-updated_at: "2026-09-04T00:00:00Z"
+updated_at: "2026-09-08T17:48:58Z"
 ---
 
 # T-088-match-deferred-claim-spelling-variants Match deferred-claim spelling variants in the documentation gate
@@ -52,3 +52,4 @@ verification or discovery.
   over normalizing hyphens and spaces in documents and claims: an explicit
   vocabulary fails loudly when a new spelling matters, while silent
   normalization also rewrites the matched text the failure messages quote.
+- 2026-09-08T17:48:52Z: verification pass

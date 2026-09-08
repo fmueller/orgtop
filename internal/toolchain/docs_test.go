@@ -38,15 +38,22 @@ var activeSpecVersionPattern = regexp.MustCompile(`(?m)^active_spec_version:\s*"
 // Every entry is keyed to a spec version rather than being a constant, because a
 // deny list outlives its release otherwise: v0.1.0 defers Rain, v0.2.0 ships it
 // as a primary view (FR-008). Add a key when a spec version becomes active, and
-// review the entries it inherits while doing so.
+// review the entries it inherits while doing so. Each spelling a capability is
+// written in is listed on its own, because the match is word-bounded: to a
+// reader "drilldown", "drill-down", and "drill down" are one promise, but
+// `\bdrilldown\b` matches none of the others. Listing them explicitly fails
+// loudly when a new spelling matters, where normalizing hyphens and spaces out
+// of both documents and claims would also rewrite the text the failure quotes.
 var deferredClaimsBySpec = map[string][]string{
 	"v0.1.0": {
-		"filtering", "search", "clustering", "inspect", "rain", "drilldown",
-		"live activity", "real time", "real-time", "webhook",
+		"filtering", "search", "clustering", "inspect", "rain",
+		"drilldown", "drill-down", "drill down",
+		"live activity", "realtime", "real time", "real-time", "webhook",
 	},
 	"v0.2.0": {
-		"filtering", "search", "clustering", "inspect", "drilldown",
-		"live activity", "real time", "real-time", "webhook",
+		"filtering", "search", "clustering", "inspect",
+		"drilldown", "drill-down", "drill down",
+		"live activity", "realtime", "real time", "real-time", "webhook",
 	},
 }
 

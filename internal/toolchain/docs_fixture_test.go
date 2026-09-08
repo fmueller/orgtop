@@ -186,6 +186,27 @@ func TestDeferredClaimsMatchOnWordBoundaries(t *testing.T) {
 	}
 }
 
+// TestDeferredClaimsCatchSpellingVariants covers the escape the word-boundary
+// match leaves open: a deferred capability written with a hyphen, split into two
+// words, or run solid is the same promise to a reader, so each spelling must
+// trip the gate under every keyed spec version.
+func TestDeferredClaimsCatchSpellingVariants(t *testing.T) {
+	t.Parallel()
+
+	for _, version := range []string{"v0.1.0", "v0.2.0"} {
+		claims := deferredClaims(t, version)
+		for _, prose := range []string{
+			"Every row supports drill-down.\n",
+			"Every row supports drill down.\n",
+			"The view updates in realtime.\n",
+		} {
+			if problems := deferredClaimProblems(prose, claims); len(problems) == 0 {
+				t.Errorf("claiming %q under %s, which defers it, did not fail", prose, version)
+			}
+		}
+	}
+}
+
 // TestSectionWindowFollowsHeadingDepth covers the layout regressions: the window
 // a section-scoped check searches ends at the next heading of the same or
 // shallower depth, and never silently widens or empties.
