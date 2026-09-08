@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/fmueller/orgtop/internal/domain"
 )
@@ -438,20 +439,13 @@ func shorten(text string, limit int) string {
 	return truncate(text, limit-markWidth) + shortenedMark
 }
 
-// truncate cuts the text to the limit without marking it.
+// truncate cuts the text to the limit without marking it. The cut lands on a
+// whole grapheme cluster, so a combining sequence is kept or dropped entire
+// rather than split, and a cluster whose cells the limit cannot hold is dropped
+// rather than emitted as the narrower code point it starts with.
 func truncate(text string, limit int) string {
 	if fits(lipgloss.Width(text), limit) {
 		return text
 	}
-	var builder strings.Builder
-	used := 0
-	for _, character := range text {
-		width := lipgloss.Width(string(character))
-		if used+width > limit {
-			break
-		}
-		builder.WriteRune(character)
-		used += width
-	}
-	return builder.String()
+	return ansi.Truncate(text, limit, "")
 }

@@ -93,6 +93,51 @@ func TestShortenKeepsALeadingPrefixOfTheLine(t *testing.T) {
 	}
 }
 
+// TestShortenCutsOnWholeGraphemeClusters guards FR-010: the shared body cut is
+// grapheme-cluster aware, so a cut never splits a combining sequence and never
+// renders a cluster the limit cannot hold. A cluster the limit cannot hold is
+// dropped whole rather than emitted as its leading code point, because half a
+// sequence is neither the content nor inside the limit.
+func TestShortenCutsOnWholeGraphemeClusters(t *testing.T) {
+	// The family is one grapheme built from three wide code points joined by
+	// zero-width joiners, and it occupies the two cells of a single wide
+	// grapheme rather than the six its code points measure apart.
+	const family = "\U0001F468\u200D\U0001F469\u200D\U0001F466"
+	// The heart is one cell as a bare code point and two as the grapheme its
+	// variation selector completes, so a cut that measures the code point
+	// alone overflows the limit it was given.
+	const heart = "\u2764\uFE0F"
+
+	t.Run("truncate keeps a joined cluster whole", func(t *testing.T) {
+		const line, limit = family + "x", 2
+		if got := truncate(line, limit); got != family {
+			t.Errorf("truncate(%q, %d) is %q, want the whole cluster %q", line, limit, got, family)
+		}
+	})
+
+	t.Run("truncate drops a cluster the limit cannot hold", func(t *testing.T) {
+		const line, limit = heart + "x", 1
+		got := truncate(line, limit)
+		if got != "" {
+			t.Errorf("truncate(%q, %d) is %q, want nothing", line, limit, got)
+		}
+		if rendered := lipgloss.Width(got); rendered > limit {
+			t.Errorf("truncate(%q, %d) is %d cells wide, want at most %d", line, limit, rendered, limit)
+		}
+	})
+
+	t.Run("shorten marks a cut on a cluster boundary", func(t *testing.T) {
+		const line, limit = family + "xy", 3
+		got := shorten(line, limit)
+		if want := family + shortenedMark; got != want {
+			t.Errorf("shorten(%q, %d) is %q, want %q", line, limit, got, want)
+		}
+		if rendered := lipgloss.Width(got); rendered > limit {
+			t.Errorf("shorten(%q, %d) is %d cells wide, want at most %d", line, limit, rendered, limit)
+		}
+	})
+}
+
 // shortEnricher settles fewer outcomes than the refresh gave it events, which
 // is the short result FR-004 leaves undecided rather than decided.
 type shortEnricher struct {

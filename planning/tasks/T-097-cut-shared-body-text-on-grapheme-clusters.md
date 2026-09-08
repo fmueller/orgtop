@@ -1,12 +1,12 @@
 ---
 id: T-097-cut-shared-body-text-on-grapheme-clusters
 title: Cut shared body text on grapheme clusters
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.2.0.md#scope-aware-overview-and-stream
 dependencies:
     - T-085-implement-cell-safe-scope-label-shortening
-updated_at: "2026-09-07T12:26:51Z"
+updated_at: "2026-09-08T08:17:07Z"
 ---
 
 # T-097-cut-shared-body-text-on-grapheme-clusters Cut shared body text on grapheme clusters
@@ -37,3 +37,5 @@ semantics for non-label content.
   line at the limits the existing chrome tests pin.
 
 ## Implementation Notes
+
+- 2026-09-08T08:17:03Z: verification pass
