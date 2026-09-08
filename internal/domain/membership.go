@@ -154,6 +154,9 @@ func unknownMembership(reason UnknownReason) Membership {
 // whatever the evidence did. A path Scope of another repository is not a member
 // without consulting evidence, so one repository's missing evidence never
 // degrades another's coverage. Only a complete outcome reaches the matcher.
+// Cancellation is decided once for the whole event by ScopeSet.Evaluate, so the
+// canceled case below only settles a Scope evaluated on its own, never one
+// reached through a ScopeSet.
 func (s Scope) Evaluate(event Event, outcome EvidenceOutcome) (Membership, bool) {
 	if s.repository.Key() != event.Repository.Key() {
 		return Membership{kind: MembershipNotMember}, true
@@ -203,6 +206,17 @@ type ScopeMembership struct {
 // The second result is false when the evidence was canceled: the event publishes
 // no membership at all rather than a partial mix of known repository outcomes and
 // synthesized unknowns.
+//
+// Dropping the event whole is the intended closed reading of RG-004, not an
+// oversight. A repository Scope would evaluate to member from identity alone even
+// under cancellation, so evaluating per Scope would make publication depend on the
+// selected Scope mix: a repository-only selection would publish memberships for a
+// canceled event while any path Scope in the same selection would suppress them.
+// RG-004 requires a canceled attempt to publish nothing, so the whole-event short
+// circuit is the only mix-independent reading. Retaining the previous snapshot is
+// a separate guarantee the refresh applier owns by discarding a canceled attempt
+// before it reaches this evaluation at all; this short circuit keeps a direct
+// caller honest, it does not implement snapshot retention.
 func (s ScopeSet) Evaluate(event Event, outcome EvidenceOutcome) ([]ScopeMembership, bool) {
 	if !s.Contains(event.Repository) {
 		return nil, true

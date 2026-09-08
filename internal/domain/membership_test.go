@@ -400,14 +400,29 @@ func TestScopeSetEvaluationKeepsUnknownPerScope(t *testing.T) {
 
 // TestScopeSetEvaluationCancelsWholeEvent guards RG-004: canceled evidence
 // publishes nothing for the event, not a partial mix of known repository
-// memberships and synthesized unknowns.
+// memberships and synthesized unknowns. The drop must not depend on which Scope
+// kinds the selection happens to hold, so a repository-only selection decided
+// from identity alone is dropped as well.
 func TestScopeSetEvaluationCancelsWholeEvent(t *testing.T) {
-	set := mustScopeSet(t,
-		domain.NewRepositoryScope(mustParseRepository(t, "acme/api")),
-		mustPathScope(t, "acme/api", literal("services")),
-	)
-	if memberships, ok := set.Evaluate(eventIn(t, "acme/api"), domain.CanceledOutcome()); ok {
-		t.Fatalf("ScopeSet.Evaluate returned %d memberships for canceled evidence, want none", len(memberships))
+	tests := []struct {
+		name string
+		set  domain.ScopeSet
+	}{
+		{"a repository Scope beside a path Scope", mustScopeSet(t,
+			domain.NewRepositoryScope(mustParseRepository(t, "acme/api")),
+			mustPathScope(t, "acme/api", literal("services")),
+		)},
+		{"repository Scopes only", mustScopeSet(t,
+			domain.NewRepositoryScope(mustParseRepository(t, "acme/api")),
+			domain.NewRepositoryScope(mustParseRepository(t, "acme/web")),
+		)},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if memberships, ok := test.set.Evaluate(eventIn(t, "acme/api"), domain.CanceledOutcome()); ok {
+				t.Fatalf("ScopeSet.Evaluate returned %d memberships for canceled evidence, want none", len(memberships))
+			}
+		})
 	}
 }
 

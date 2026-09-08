@@ -1,11 +1,11 @@
 ---
 id: T-084-keep-repository-membership-through-canceled
 title: Keep repository membership through canceled evidence
-status: todo
+status: completed
 priority: low
 spec_ref: specs/v0.2.0.md#explicit-scope-membership
 dependencies: []
-updated_at: "2026-09-03T12:57:17Z"
+updated_at: "2026-09-08T17:31:31Z"
 ---
 
 # T-084-keep-repository-membership-through-canceled Keep repository membership through canceled evidence
@@ -46,3 +46,4 @@ Discovered during the T-056 review.
 
 - Do not change the RG-004 unknown reason groups or the aggregation semantics
   while doing this.
+- 2026-09-08T17:31:27Z: verification pass
