@@ -87,7 +87,6 @@ func activity(t *testing.T, values ...string) Result {
 	for index, value := range values {
 		repository := testRepository(t, value)
 		repositories = append(repositories, domain.RepositoryActivity{
-			Repository: repository,
 			Events: []domain.Event{{
 				ID:          repository.Key() + "-" + strconv.Itoa(index),
 				OccurredAt:  time.Date(2026, time.August, 22, 10, index, 0, 0, time.UTC),
@@ -180,7 +179,7 @@ func TestCompleteSuccessPublishesTheSnapshotAndRecordsFreshness(t *testing.T) {
 
 func TestEmptySuccessStillRecordsOneLastSuccess(t *testing.T) {
 	at := time.Date(2026, time.August, 22, 12, 0, 0, 0, time.UTC)
-	empty := Result{Repositories: []domain.RepositoryActivity{{Repository: testRepository(t, "acme/backend")}}}
+	empty := Result{Repositories: []domain.RepositoryActivity{{}}}
 	source := &fakeSource{outcomes: []outcome{{result: empty}}}
 	model := lifecycle(t, source, at, &recorder{}, "acme/backend")
 

@@ -5,17 +5,16 @@ const MaxSnapshotEvents = 500
 
 // RepositoryActivity is the successful result for one Scope entry as the source
 // returns it: the input a refresh retains through Retain before it enriches the
-// retained set and publishes a ScopedSnapshot. Only Events are retained.
+// retained set and publishes a ScopedSnapshot.
 //
-// Repository is the FR-002 returned display identity the source records for
-// this refresh: the first matching returned spelling, or the requested spelling
-// when the page is empty. Nothing downstream consumes it for display today,
-// because a published Scope row is labelled from the Scope's own retained
-// requested spelling; the field carries the source-side fact so a later change
-// can render it without re-deriving one.
+// It carries no repository display identity. v0.2 supersedes the v0.1 FR-002
+// rule that promoted the first matching returned spelling to a snapshot display
+// name: under RG-012 a published Scope row is labelled from the Scope's own
+// retained requested spelling, so a returned spelling would be a display fact
+// nothing reads. Each event keeps the returned identity the source validated
+// case-insensitively against the request.
 type RepositoryActivity struct {
-	Repository Repository
-	Events     []Event
+	Events []Event
 }
 
 // isPullRequestActivity reports whether the event counts as pull-request

@@ -1,12 +1,12 @@
 ---
 id: T-101-render-the-returned-repository-display-identity-in
 title: Render the returned repository display identity in Scope rows
-status: todo
+status: completed
 priority: low
 spec_ref: specs/v0.2.0.md#explicit-scope-membership
 dependencies:
     - T-081-retire-v01-repository-snapshot-aggregation
-updated_at: "2026-09-08T17:18:16Z"
+updated_at: "2026-09-08T20:16:43Z"
 ---
 
 # T-101-render-the-returned-repository-display-identity-in Render the returned repository display identity in Scope rows
@@ -66,3 +66,4 @@ Follow-up derived from T-081-retire-v01-repository-snapshot-aggregation's verifi
 - Sequence after T-081. `Scope` retains the requested spelling by construction,
   so honouring the returned spelling means giving `Scope` or `ScopeAggregate` a
   place for it rather than re-deriving one at render time.
+- 2026-09-08T20:16:39Z: verification pass

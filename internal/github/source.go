@@ -82,8 +82,7 @@ type Source struct {
 }
 
 // RepositoryActivity is the successful result for one Scope entry. It aliases the
-// domain aggregation input, so a refresh needs no conversion step, and the FR-002
-// display identity rule stays documented with the domain type.
+// domain aggregation input, so a refresh needs no conversion step.
 type RepositoryActivity = domain.RepositoryActivity
 
 // Refresh is one completely successful multi-repository refresh. Repositories
@@ -170,10 +169,7 @@ func (s Source) fetch(ctx context.Context, repository domain.Repository) (Reposi
 	if err != nil {
 		return RepositoryActivity{}, 0, s.failure(repository, response.Header, false, err)
 	}
-	return RepositoryActivity{
-		Repository: displayIdentity(repository, events),
-		Events:     events,
-	}, pollInterval(response.Header), nil
+	return RepositoryActivity{Events: events}, pollInterval(response.Header), nil
 }
 
 // drainBody consumes a bounded prefix of a body the caller stopped reading, so
@@ -246,15 +242,6 @@ func (s Source) failure(repository domain.Repository, header http.Header, rateLi
 		RetryDelay: retryDelay(header, rateLimited, s.now()),
 		cause:      cause,
 	}
-}
-
-// displayIdentity returns the identity shown for a Scope entry: the first
-// matching returned spelling, or the requested spelling for an empty page.
-func displayIdentity(requested domain.Repository, events []domain.Event) domain.Repository {
-	if len(events) == 0 {
-		return requested
-	}
-	return events[0].Repository
 }
 
 func (s Source) baseURL() string {

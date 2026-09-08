@@ -460,7 +460,6 @@ func recentActivity(t *testing.T, value string) Result {
 	t.Helper()
 	repository := testRepository(t, value)
 	return Result{Repositories: []domain.RepositoryActivity{{
-		Repository: repository,
 		Events: []domain.Event{{
 			ID:          repository.Key() + "-recent",
 			OccurredAt:  fixedInstant.Add(-time.Minute),

@@ -18,7 +18,7 @@ func TestRetainBoundsTheEventSetBeforeEnrichment(t *testing.T) {
 		events = append(events, testEvent(t, "event-"+string(rune('a'+index%26))+string(rune('a'+index/26)), index, "owner/repo", domain.CategoryPush, domain.EntityCommit))
 	}
 
-	retained, truncated := domain.Retain(scope, []domain.RepositoryActivity{{Repository: repository, Events: events}})
+	retained, truncated := domain.Retain(scope, []domain.RepositoryActivity{{Events: events}})
 	if !truncated {
 		t.Fatal("Retain reported no truncation for one event beyond the bound")
 	}
@@ -41,7 +41,6 @@ func TestRetainBoundsTheEventSetBeforeEnrichment(t *testing.T) {
 // so enrichment never runs for an event the snapshot discards.
 func TestRetainDropsUnselectedRepositoriesAndDuplicates(t *testing.T) {
 	selected := mustParseRepository(t, "owner/repo")
-	other := mustParseRepository(t, "owner/other")
 	scope := mustScopeSet(t, domain.NewRepositoryScope(selected))
 
 	first := testEvent(t, "shared", 1, "owner/repo", domain.CategoryPush, domain.EntityCommit)
@@ -49,8 +48,8 @@ func TestRetainDropsUnselectedRepositoriesAndDuplicates(t *testing.T) {
 	foreign := testEvent(t, "foreign", 9, "owner/other", domain.CategoryPush, domain.EntityCommit)
 
 	retained, truncated := domain.Retain(scope, []domain.RepositoryActivity{
-		{Repository: selected, Events: []domain.Event{first, newer, first}},
-		{Repository: other, Events: []domain.Event{foreign}},
+		{Events: []domain.Event{first, newer, first}},
+		{Events: []domain.Event{foreign}},
 	})
 	if truncated {
 		t.Fatal("Retain reported truncation for a set inside the bound")

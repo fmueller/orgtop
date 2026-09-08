@@ -290,7 +290,13 @@ func TestRefreshReturnsNormalizedEventsPerScopeEntry(t *testing.T) {
 	}
 }
 
-func TestRefreshSelectsOneDisplayIdentityPerScopeEntry(t *testing.T) {
+// TestRefreshKeepsTheReturnedSpellingOnEventsPerScopeEntry guards the surviving
+// v0.1 FR-002 source-boundary rule: a returned repository identity that matches
+// the requested one case-insensitively is accepted and retained on the event,
+// and an empty page yields a result with no events. The successful result
+// carries no separate display identity, because RG-012 labels a Scope row from
+// the Scope's own retained requested spelling.
+func TestRefreshKeepsTheReturnedSpellingOnEventsPerScopeEntry(t *testing.T) {
 	server := newFixtureServer(t, map[string]stubResponse{
 		"/repos/acme/backend/events":  {body: fixtureBody(t, "repository_case_variation.json")},
 		"/repos/Acme/Frontend/events": {body: fixtureBody(t, "empty.json")},
@@ -301,11 +307,14 @@ func TestRefreshSelectsOneDisplayIdentityPerScopeEntry(t *testing.T) {
 	if err != nil {
 		t.Fatalf("refresh failed: %v", err)
 	}
-	if got, want := refresh.Repositories[0].Repository.String(), "Acme/Backend"; got != want {
-		t.Errorf("display identity = %q, want the first matching returned spelling %q", got, want)
+	if len(refresh.Repositories[0].Events) != 1 {
+		t.Fatalf("the case-varying page returned %d events, want the one accepted event", len(refresh.Repositories[0].Events))
 	}
-	if got, want := refresh.Repositories[1].Repository.String(), "Acme/Frontend"; got != want {
-		t.Errorf("display identity for an empty page = %q, want the requested spelling %q", got, want)
+	if got, want := refresh.Repositories[0].Events[0].Repository.String(), "Acme/Backend"; got != want {
+		t.Errorf("event repository identity = %q, want the returned spelling %q", got, want)
+	}
+	if got := len(refresh.Repositories[1].Events); got != 0 {
+		t.Errorf("the empty page returned %d events, want none", got)
 	}
 }
 

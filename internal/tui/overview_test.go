@@ -42,14 +42,12 @@ func testEvent(t *testing.T, id, repository string, category domain.Category, ki
 	}
 }
 
-// testActivity builds the successful repository result for the events.
+// testActivity builds the successful repository result for the events. The
+// repository name only labels the call site: the result carries no repository
+// identity of its own, because every event already carries the returned one.
 func testActivity(t *testing.T, repository string, events ...domain.Event) domain.RepositoryActivity {
 	t.Helper()
-	parsed, err := domain.ParseRepository(repository)
-	if err != nil {
-		t.Fatalf("parsing the test repository %q failed: %v", repository, err)
-	}
-	return domain.RepositoryActivity{Repository: parsed, Events: events}
+	return domain.RepositoryActivity{Events: events}
 }
 
 // scopedActivities pairs every event of the activities with the zero evidence
