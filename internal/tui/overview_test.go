@@ -295,10 +295,11 @@ func TestOverviewHasNoPlaceholderBody(t *testing.T) {
 
 // TestSharedRowHelpersMeasureWideRunesByTheirRenderedWidth guards the padding,
 // alignment, and truncation helpers the Overview and Stream rows share. The
-// Overview's own row inputs are ASCII by construction — domain.ParseRepository
-// rejects anything else and the count labels are fixed — so a wide rune cannot
-// reach them through a rendered row. The helpers are covered directly instead,
-// which is the only level at which byte-wise measurement is observable.
+// Overview's repository labels and count labels are ASCII by construction, so
+// the helpers are covered directly here, at the only level where byte-wise
+// measurement of every one of them is observable;
+// TestOverviewHoldsWideGraphemeLabelsInsideTheView covers the rendered row a
+// path Scope's arbitrary UTF-8 pattern does carry wide graphemes into.
 func TestSharedRowHelpersMeasureWideRunesByTheirRenderedWidth(t *testing.T) {
 	// Four wide runes: eight rendered cells, twelve bytes.
 	const wide = "推送提交"

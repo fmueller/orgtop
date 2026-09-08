@@ -286,3 +286,65 @@ func TestOverviewShortensLongLabelsIntoTheRowBudget(t *testing.T) {
 		})
 	}
 }
+
+// TestLabelBudgetFallsBackToTheViewWidth pins the budget arithmetic of
+// labelBudget directly: what the counts and the gap leave while the view can
+// hold them, and the view itself once they cannot, so the identity RG-012 keeps
+// first still renders and the shared body cut marks the row. A rendered case
+// cannot reach the exactly-zero and negative remainders, because the layout
+// choice sheds counts before the view runs out.
+func TestLabelBudgetFallsBackToTheViewWidth(t *testing.T) {
+	cases := []struct {
+		name        string
+		width       int
+		countsWidth int
+		want        int
+	}{
+		{name: "the counts leave the label a positive budget", width: 40, countsWidth: 10, want: 28},
+		{name: "the gap and the counts spend the view exactly", width: 12, countsWidth: 10, want: 12},
+		{name: "the counts alone exceed the view", width: 8, countsWidth: 10, want: 8},
+		{name: "an unbounded width stays unbounded", width: -1, countsWidth: 10, want: -1},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			if got := labelBudget(testCase.width, testCase.countsWidth); got != testCase.want {
+				t.Errorf("labelBudget(%d, %d) = %d, want %d",
+					testCase.width, testCase.countsWidth, got, testCase.want)
+			}
+		})
+	}
+}
+
+// TestOverviewHoldsWideGraphemeLabelsInsideTheView guards RG-012 against
+// byte-wise measurement on a rendered row: a path Scope's pattern is arbitrary
+// UTF-8, so a wide-grapheme label does reach the Overview, and it is shortened
+// on a cell boundary against the budget the chosen layout's counts leave rather
+// than pushing the counts past the view.
+func TestOverviewHoldsWideGraphemeLabelsInsideTheView(t *testing.T) {
+	api := "acme/api"
+	// Twelve wide runes: twenty-four rendered cells, thirty-six bytes.
+	const segment = "推送提交推送提交推送提交"
+	scopes := scopeSet(t, pathScope(t, api, segment))
+
+	for _, width := range []int{narrowWidth, 60} {
+		t.Run(strconv.Itoa(width), func(t *testing.T) {
+			content := renderAt(t, scopedModel(t, scopes,
+				evidenceFor(t, "member", api, 2, completeEvidence(t, segment+"/main.go"))),
+				width, wideHeight)
+
+			// assertFits holds every line to the view, and rowFor finds the row
+			// by the Scope token RG-012 keeps first.
+			assertFits(t, content, width, wideHeight)
+			row := rowFor(t, bodyLines(t, content), "P1")
+			label, _, _ := strings.Cut(row, rowGap)
+			if !strings.Contains(label, shortenedMark) {
+				t.Errorf("label %q is not shortened into the budget the counts leave", label)
+			}
+			counted := strings.TrimRight(row, " ")
+			if !strings.HasSuffix(counted, "push") && !strings.HasSuffix(counted, "pushes") {
+				t.Errorf("row %q does not end in the complete push count of its layout", row)
+			}
+		})
+	}
+}
