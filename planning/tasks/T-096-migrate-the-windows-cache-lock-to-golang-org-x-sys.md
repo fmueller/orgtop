@@ -1,12 +1,12 @@
 ---
 id: T-096-migrate-the-windows-cache-lock-to-golang-org-x-sys
 title: Migrate the Windows cache lock to golang.org/x/sys/windows
-status: todo
+status: completed
 priority: low
 spec_ref: specs/v0.2.0.md#bounded-sqlite-cache
 dependencies:
     - T-078-verify-windows-cache-ownership-and-acl-enforcement
-updated_at: "2026-09-07T10:52:28Z"
+updated_at: "2026-09-08T19:15:22Z"
 ---
 
 # T-096-migrate-the-windows-cache-lock-to-golang-org-x-sys Migrate the Windows cache lock to golang.org/x/sys/windows
@@ -39,3 +39,5 @@ maintained wrappers.
 - Record the Windows CI leg result and the six-target cross-compile evidence.
 
 ## Implementation Notes
+
+- 2026-09-08T19:15:18Z: verification pass

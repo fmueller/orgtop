@@ -34,10 +34,10 @@ var goModule = filepath.Join(repoRoot, "go.mod")
 // no module, no license, and no byte to any published artifact. It is pure Go
 // and its Windows package is build-constrained, so all six CGO_ENABLED=0
 // cross-compiles are unaffected. The alternative — hand-resolving the advapi32
-// entry points through syscall.NewLazyDLL, as internal/cache/lock_windows.go
-// does for the two kernel32 lock calls — would trade a dependency this build
+// entry points through syscall.NewLazyDLL — would trade a dependency this build
 // already carries for unsafe SID and ACE decoding that no host in this
-// repository's test matrix can exercise.
+// repository's test matrix can exercise. The cache's Windows lock takes its
+// LockFileEx and UnlockFileEx calls from the same package for that reason.
 // github.com/charmbracelet/x/ansi is the third. RG-012 names it, beside
 // lipgloss `Width`, as the pinned grapheme and terminal-cell behavior the
 // cell-safe Scope shortening is measured against, so the shell cuts labels on
