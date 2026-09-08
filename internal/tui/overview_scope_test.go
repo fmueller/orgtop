@@ -252,3 +252,37 @@ func TestOverviewKeepsMixedScopesReadableAtTheMinimumTerminal(t *testing.T) {
 		}
 	}
 }
+
+// TestOverviewShortensLongLabelsIntoTheRowBudget guards A-081/RG-012: the label
+// budget is what the selected layout's counts leave of the view, so a Scope
+// whose label would fill the width is shortened by RG-012's rule and its counts
+// still render, rather than the label pushing the counts past the body cut.
+func TestOverviewShortensLongLabelsIntoTheRowBudget(t *testing.T) {
+	api := "acme/platform-integration-services-and-adapters-extended"
+	scopes := scopeSet(t, domain.NewRepositoryScope(testRepository(t, api)))
+
+	for _, width := range []int{narrowWidth, 80} {
+		t.Run(strconv.Itoa(width), func(t *testing.T) {
+			content := renderAt(t, scopedModel(t, scopes,
+				evidenceFor(t, "member", api, 2, completeEvidence(t, "src/main.go"))),
+				width, wideHeight)
+
+			rows := bodyLines(t, content)
+			row := rowFor(t, rows, "R1")
+			if rendered := lipgloss.Width(row); rendered > width {
+				t.Errorf("row %q is %d cells wide, want at most %d", row, rendered, width)
+			}
+			if counts := countsOf(row); len(counts) != 3 {
+				t.Errorf("row %q reports %v, want the three counts of a layout", row, counts)
+			}
+			counted := strings.TrimRight(row, " ")
+			if !strings.HasSuffix(counted, "push") && !strings.HasSuffix(counted, "pushes") {
+				t.Errorf("row %q does not end in the complete push count of its layout", row)
+			}
+			label, _, _ := strings.Cut(row, rowGap)
+			if !strings.Contains(label, shortenedMark) {
+				t.Errorf("label %q is not shortened into the budget the counts leave", label)
+			}
+		})
+	}
+}

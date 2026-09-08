@@ -1,12 +1,12 @@
 ---
 id: T-098-bound-overview-scope-labels-by-the-row-budget-the
 title: Bound Overview Scope labels by the row budget the counts leave
-status: todo
+status: completed
 priority: low
 spec_ref: specs/v0.2.0.md#scope-aware-overview-and-stream
 dependencies:
     - T-085-implement-cell-safe-scope-label-shortening
-updated_at: "2026-09-07T12:26:51Z"
+updated_at: "2026-09-08T19:39:00Z"
 ---
 
 # T-098-bound-overview-scope-labels-by-the-row-budget-the Bound Overview Scope labels by the row budget the counts leave
@@ -34,3 +34,5 @@ label is shortened by RG-012's rule rather than by the body cut.
   and at a width a long label overflows.
 
 ## Implementation Notes
+
+- 2026-09-08T19:38:34Z: verification pass

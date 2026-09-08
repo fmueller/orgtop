@@ -147,22 +147,48 @@ var overviewLayouts = []rowLayout{
 
 // overviewRows renders the widest row layout that fits the width. Every
 // selected Scope keeps a row, including a zero-activity and an all-unknown one.
-// A Scope label names the same Scope in every layout, so the labels are rendered
-// once and only the counts are laid out again.
+// The layout is chosen against the labels the view alone bounds, so the choice
+// follows the counts a layout spells rather than how far its labels could be
+// shortened for it; the chosen layout then bounds the labels by what its counts
+// leave, so a long label is cut by RG-012's rule instead of pushing the counts
+// past the shared body cut.
 func overviewRows(aggregates []domain.ScopeAggregate, tokens map[domain.ScopeIdentity]string, width int) []string {
-	labels := make([]string, 0, len(aggregates))
-	for _, aggregate := range aggregates {
-		labels = append(labels, shortenScopeLabel(aggregate.Scope, tokens, width))
-	}
+	return budgetedRows(aggregates, tokens, fittingLayout(aggregates, tokens, width), width)
+}
+
+// fittingLayout returns the richest layout whose rows fit the width, and the
+// sparsest layout when none of the richer ones does. The rows are measured with
+// the labels the view alone bounds, so every layout is weighed against the same
+// labels and only the counts it spells decide.
+func fittingLayout(aggregates []domain.ScopeAggregate, tokens map[domain.ScopeIdentity]string, width int) rowLayout {
+	labels := scopeLabels(aggregates, tokens, width)
 
 	sparsest := len(overviewLayouts) - 1
 	for _, layout := range overviewLayouts[:sparsest] {
-		rows := layoutRows(aggregates, labels, layout)
-		if fits(widestWidth(rows), width) {
-			return rows
+		if fits(widestWidth(layoutRows(aggregates, labels, layout)), width) {
+			return layout
 		}
 	}
-	return layoutRows(aggregates, labels, overviewLayouts[sparsest])
+	return overviewLayouts[sparsest]
+}
+
+// budgetedRows lays the layout out again with the labels bounded by the cells
+// its own counts leave of the view.
+func budgetedRows(aggregates []domain.ScopeAggregate, tokens map[domain.ScopeIdentity]string, layout rowLayout, width int) []string {
+	countsWidth := 0
+	for _, aggregate := range aggregates {
+		countsWidth = max(countsWidth, lipgloss.Width(layout.counts(aggregate)))
+	}
+	return layoutRows(aggregates, scopeLabels(aggregates, tokens, labelBudget(width, countsWidth)), layout)
+}
+
+// scopeLabels renders the label of every Scope inside the budget of cells.
+func scopeLabels(aggregates []domain.ScopeAggregate, tokens map[domain.ScopeIdentity]string, budget int) []string {
+	labels := make([]string, 0, len(aggregates))
+	for _, aggregate := range aggregates {
+		labels = append(labels, shortenScopeLabel(aggregate.Scope, tokens, budget))
+	}
+	return labels
 }
 
 // layoutRows renders one Scope per line in the snapshot's prepared order,
@@ -174,6 +200,20 @@ func layoutRows(aggregates []domain.ScopeAggregate, labels []string, layout rowL
 		rows = append(rows, padRight(labels[index], labelWidth)+rowGap+layout.counts(aggregate))
 	}
 	return rows
+}
+
+// labelBudget returns the cells a row's label may occupy: what the view leaves
+// once the gap and the widest counts of the layout are spent, because the
+// labels share one aligned column. A view that cannot hold the counts at all
+// leaves the label bounded by the view itself, so the identity RG-012 keeps
+// first still renders and the shared body cut marks the row; an unbounded width
+// stays unbounded for the same reason.
+func labelBudget(width, countsWidth int) int {
+	budget := width - lipgloss.Width(rowGap) - countsWidth
+	if budget <= 0 {
+		return width
+	}
+	return budget
 }
 
 // padLeft pads the text with leading spaces up to the rendered width.
