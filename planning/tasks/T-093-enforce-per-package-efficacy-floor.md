@@ -1,12 +1,12 @@
 ---
 id: T-093-enforce-per-package-efficacy-floor
 title: Enforce the mutation efficacy floor per package
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.2.0.md#nfr-006-verification-quality
 dependencies:
     - T-092-floor-mutation-efficacy-repo-wide
-updated_at: "2026-09-05T12:18:21Z"
+updated_at: "2026-09-08T07:30:35Z"
 ---
 
 # T-093-enforce-per-package-efficacy-floor Enforce the mutation efficacy floor per package
@@ -68,7 +68,47 @@ close that off rather than relying on the operator remembering to clean up.
 - Prove the check fails by lowering one package's measured efficacy in a
   fixture `mutation-results.json`, and passes on the real one.
 - Record the per-package table the check prints, before and after.
-- TODO: record verification evidence paths.
+- Real gremlins report: a gate-flagged run scoped to `internal/auth`
+  (`--output-statuses lt --workers 2 --timeout-coefficient 20`, every other
+  package excluded) published 4 killed, 0 lived, 1 not covered, 100.00%
+  efficacy. `task test:mutate:floor REPORT=...` read that same JSON and
+  reported `| internal/auth | 100.00% | 4 | 0 | 0 |`, agreeing with the figure
+  gremlins published and confirming NOT COVERED stays outside the ratio.
+- Per-package table on a report carrying the T-092 figures, all above the floor
+  (accepted, exit 0):
+
+  | Package | Efficacy | Killed | Lived | Timed out |
+  |---|---:|---:|---:|---:|
+  | internal/auth | 100.00% | 120 | 0 | 2 |
+  | internal/cache | 97.10% | 268 | 8 | 2 |
+  | internal/cli | 99.00% | 297 | 3 | 2 |
+  | internal/domain | 92.59% | 250 | 20 | 2 |
+  | internal/enrichment | 100.00% | 140 | 0 | 2 |
+  | internal/github | 91.80% | 168 | 15 | 2 |
+  | internal/tui | 95.42% | 313 | 15 | 2 |
+
+- The same report with `internal/github` lowered to 6 killed / 4 lived is
+  rejected (exit 1) while every other package and the repository total stay
+  above the floor:
+  `check-mutation-floor: internal/github is at 60.00% efficacy: killed 6,
+  lived 4, timed out 2, below the 90% floor`
+- `scripts/check-mutation-floor-test.sh` covers at-and-above-floor, a single
+  thin package under the floor, timeouts outside the ratio, a package with no
+  runnable mutants (`n/a`, not a failure), a raised floor, a package just under
+  the floor whose printed figure must not round up to it, a module-root package,
+  and missing, malformed, and empty reports.
+- `TestMutationFloorIsEnforcedPerPackage` reads the enforced `--floor` value:
+  lowering it to 70 and dropping the `.claude/` exclusion fails the guard, and
+  restoring both passes it.
+- The floor is written once, in the `test:mutate:floor` target: mutation.yml's
+  summary and issue-body steps call the target instead of repeating `--floor 90`,
+  and the guard fails if a `--floor` literal reappears in the workflow. Restoring
+  the literal fails `TestMutationFloorIsEnforcedPerPackage` with `mutation.yml
+  must reach the floor through the Taskfile target, not carry its own --floor
+  value`; removing it passes.
+- `task check` equivalents run clean: `gofmt -l .`, `task vet`, `task lint`
+  (0 issues), `task test` (all packages ok), `task test:mutation-floor`,
+  `shellcheck scripts/check-mutation-floor*.sh`.
 
 ## Implementation Notes
 
@@ -81,3 +121,4 @@ close that off rather than relying on the operator remembering to clean up.
   `internal/toolchain/ci_test.go` for the Taskfile and workflow guards.
 - Keep the report grouping by directory, matching how T-091 and T-092 reported
   their tables.
+- 2026-09-08T07:30:28Z: verification pass
