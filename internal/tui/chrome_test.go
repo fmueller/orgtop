@@ -271,3 +271,90 @@ func TestHeaderRendersEveryScopeContextRung(t *testing.T) {
 		}
 	}
 }
+
+// TestHeaderDropsTheCauseBeforeTheScopeContext pins RG-012's closed header
+// priority order: Scope context outranks the stale last-success and the concise
+// sanitized error, and "if no form of a segment fits, that segment and all
+// lower-priority segments are omitted". A tightening header therefore has to
+// exhaust the Scope-context rung ladder before it keeps the cause text, so no
+// width may render the cause without the context segment it outranks.
+func TestHeaderDropsTheCauseBeforeTheScopeContext(t *testing.T) {
+	const cause = "github: request failed after three attempts"
+	scopes := mixedScopes(t)
+
+	tests := map[string]struct {
+		state State
+		// context is the ladder the cause must never outlive.
+		context []string
+		// narrowest is the first width whose header holds the cause, and
+		// below/at are the exact headers rendered one cell under it and on it.
+		// Pinning the boundary keeps the sweep from passing on a richer form
+		// that happens to survive at some wider width.
+		narrowest int
+		below, at string
+	}{
+		"error keeps the scope summary": {
+			state:     State{Scopes: scopes, Freshness: FreshnessError, Cause: cause},
+			context:   append([]string{scopeList(scopes)}, scopeContextForms(scopes)...),
+			narrowest: 77,
+			below:     "OVERVIEW · POLLING · ERROR · 2 repos · 4 scopes",
+			at:        "OVERVIEW · POLLING · ERROR · " + cause + " · 4S",
+		},
+		"stale keeps the last success": {
+			state: State{
+				Scopes:      scopes,
+				Freshness:   FreshnessStale,
+				Cause:       cause,
+				LastSuccess: fixedInstant,
+			},
+			context:   []string{scopeList(scopes), "updated " + fixedInstant.Format(clockLayout)},
+			narrowest: 91,
+			below:     "OVERVIEW · POLLING · STALE · updated 12:00:00",
+			at:        "OVERVIEW · POLLING · STALE · " + cause + " · updated 12:00:00",
+		},
+		"a selection cause yields the same way": {
+			state:     State{Scopes: scopes, Freshness: FreshnessError, SelectionCause: cause},
+			context:   append([]string{scopeList(scopes)}, scopeContextForms(scopes)...),
+			narrowest: 77,
+			below:     "OVERVIEW · POLLING · ERROR · 2 repos · 4 scopes",
+			at:        "OVERVIEW · POLLING · ERROR · " + cause + " · 4S",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			narrowest := 0
+			for width := 1; width <= 200; width++ {
+				header := ansi.Strip(renderHeader(test.state, ModeOverview, width))
+				if rendered := lipgloss.Width(header); rendered > width {
+					t.Fatalf("the header is %d cells wide at width %d:\n%s", rendered, width, header)
+				}
+				if !strings.Contains(header, cause) {
+					continue
+				}
+				if narrowest == 0 {
+					narrowest = width
+				}
+				if !slices.ContainsFunc(test.context, func(form string) bool {
+					return strings.Contains(header, form)
+				}) {
+					t.Errorf("width %d renders the cause without any of the higher-priority context forms %q:\n%s",
+						width, test.context, header)
+				}
+			}
+
+			if narrowest != test.narrowest {
+				t.Errorf("the cause first fits at width %d, want %d", narrowest, test.narrowest)
+			}
+			// One cell under the boundary the header spends its cells on the
+			// higher-priority context segment instead of the cause, and on the
+			// boundary the cause is only admitted beside a surviving rung.
+			if got := ansi.Strip(renderHeader(test.state, ModeOverview, test.narrowest-1)); got != test.below {
+				t.Errorf("the header at width %d is %q, want %q", test.narrowest-1, got, test.below)
+			}
+			if got := ansi.Strip(renderHeader(test.state, ModeOverview, test.narrowest)); got != test.at {
+				t.Errorf("the header at width %d is %q, want %q", test.narrowest, got, test.at)
+			}
+		})
+	}
+}

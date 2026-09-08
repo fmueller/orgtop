@@ -1,12 +1,12 @@
 ---
 id: T-100-scope-context-outranks-header-cause
 title: Give Scope context priority over the header cause text
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.2.0.md#scope-aware-overview-and-stream
 dependencies:
     - T-087-report-mixed-scope-context-in-the-shared-header
-updated_at: "2026-09-07T14:24:43Z"
+updated_at: "2026-09-08T09:43:26Z"
 ---
 
 # T-100-scope-context-outranks-header-cause Give Scope context priority over the header cause text
@@ -45,3 +45,4 @@ Follow-up derived from T-087-report-mixed-scope-context-in-the-shared-header's v
 - The header priority order is shared with
   T-065-implement-deterministic-responsive-overflow; keep the change to the
   candidate ladder ordering itself.
+- 2026-09-08T09:43:18Z: verification pass

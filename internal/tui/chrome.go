@@ -148,7 +148,7 @@ func headerCandidates(state State, mode Mode, overflow ...overflowRange) [][]fie
 	// The badge ladder is the outermost dimension, so every other field gives
 	// way before a secondary condition is collapsed into its status count.
 	badged := badgeForms(secondaryBadges(state))
-	perForm := 3 + len(counted) + 3*len(context)
+	perForm := 2 + len(counted) + 3*len(context)
 	layouts := make([][]field, 0, len(badged)*len(forms)*perForm)
 	// rungs appends the prefix once per rung of the surviving context ladder,
 	// so the header shortens its context field before dropping it.
@@ -171,7 +171,6 @@ func headerCandidates(state State, mode Mode, overflow ...overflowRange) [][]fie
 			}
 			rungs(title, required, cause)
 			rungs(required, cause)
-			layouts = append(layouts, slices.Concat(required, cause))
 			rungs(required)
 			layouts = append(layouts, required)
 		}
