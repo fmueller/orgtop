@@ -22,7 +22,7 @@ const (
 	// that is what keeps a fifty-times-slower runner from reporting a hang
 	// where the bound was simply met late. Nothing waits it out on a passing
 	// run — the holder is killed when the test ends — so the length is free.
-	holdDuration = 8 * time.Second
+	holdDuration = 30 * time.Second
 )
 
 // TestMain lets the concurrency proof re-execute this binary as an independent
@@ -284,11 +284,15 @@ var (
 // holderReadyWait bounds how long the proof waits for a holder that is alive
 // but has not signalled yet. It only has to cover an honest start: spawning a
 // second test binary, opening the cache, and taking the region. That is
-// hundreds of milliseconds on a loaded Windows runner, so the bound is
-// deliberately generous — a holder that cannot get that far exits instead, and
-// awaitHolderReady catches that through the exit channel rather than by
-// waiting this out.
-const holderReadyWait = 5 * time.Second
+// hundreds of milliseconds on a loaded Windows runner, which runs this package
+// roughly fifty times slower than a Linux developer host, so the bound carries
+// far more than an order of magnitude over the cost it actually covers. Like
+// holdDuration it is free: nothing waits it out on a passing run, and a holder
+// that cannot get that far exits instead, which awaitHolderReady catches
+// through the exit channel in milliseconds rather than by waiting this out. A
+// 5 s bound was measured failing all four cross-process proofs on a host
+// starved past that spread, because spawning the second binary alone outran it.
+const holderReadyWait = holdDuration
 
 // awaitHolderReady waits for the holder process's readiness marker and gives up
 // the moment the holder exits without writing it. Polling blind would wait the

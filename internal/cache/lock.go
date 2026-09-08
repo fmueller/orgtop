@@ -20,17 +20,25 @@ const retryInterval = 5 * time.Millisecond
 // most 250 ms for a busy region, matching the SQLite busy limit; an explicit
 // reset may wait two seconds.
 type waits struct {
-	// busy bounds ordinary lifecycle and admission acquisition, and is the
-	// SQLite busy timeout the driver is opened with.
+	// busy bounds ordinary lifecycle and admission acquisition. In production
+	// it equals driverBusyTimeout, but the driver is opened with that constant
+	// rather than with this field, so the test binary can shrink this bound.
 	busy time.Duration
 	// reset bounds the explicit `--reset-cache` lifecycle acquisition, which
 	// waits longer because the user asked for it.
 	reset time.Duration
 }
 
+// driverBusyTimeout is the SQLite busy limit every functional connection is
+// opened with. It is the production busy bound, but it is held separately from
+// lockWaits on purpose: the test binary shrinks the injectable lock wait, and
+// the driver must keep behaving as it does in production while a timing
+// assertion moves that wait.
+const driverBusyTimeout = 250 * time.Millisecond
+
 // defaultWaits are RG-005's closed production bounds.
 func defaultWaits() waits {
-	return waits{busy: 250 * time.Millisecond, reset: 2 * time.Second}
+	return waits{busy: driverBusyTimeout, reset: 2 * time.Second}
 }
 
 // lockWaits is the wait bound every cache lock acquisition in this process

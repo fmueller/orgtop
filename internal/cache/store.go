@@ -500,11 +500,12 @@ func verifyStructure(db *sql.DB) error {
 }
 
 // functionalDataSource builds the driver URI of the canonical database. Foreign
-// keys and the 250 ms busy limit apply to every functional connection.
+// keys and the production busy limit apply to every functional connection,
+// including the test binary's, which runs on a shorter injected lock wait.
 func functionalDataSource(path string) string {
 	return dataSource(path) +
 		"&_pragma=foreign_keys(1)" +
-		fmt.Sprintf("&_pragma=busy_timeout(%d)", lockWaits.busy.Milliseconds()) +
+		fmt.Sprintf("&_pragma=busy_timeout(%d)", driverBusyTimeout.Milliseconds()) +
 		"&_pragma=synchronous(1)" +
 		fmt.Sprintf("&_pragma=wal_autocheckpoint(%d)", walAutocheckpointPages)
 }
