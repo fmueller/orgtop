@@ -1,12 +1,12 @@
 ---
 id: T-076-retire-repository-only-scope-set-constructor
 title: Retire the repository-only Scope set constructor
-status: todo
+status: completed
 priority: low
 spec_ref: specs/v0.2.0.md#unified-repository-and-path-scopes
 dependencies:
     - T-045-implement-unified-scope-cli-parsing
-updated_at: "2026-08-31T22:16:03Z"
+updated_at: "2026-09-08T11:45:02Z"
 ---
 
 # T-076-retire-repository-only-scope-set-constructor Retire the repository-only Scope set constructor
@@ -47,3 +47,4 @@ Follow-up derived from T-045-implement-unified-scope-cli-parsing's verification 
 - Sequence this after T-047 and T-073: organization expansion may want a
   repository-list constructor, which would settle the decision the other way.
 - Do not change `ScopeSet` semantics, capacities, or identity while doing this.
+- 2026-09-08T11:44:58Z: verification pass

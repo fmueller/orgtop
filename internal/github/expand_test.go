@@ -561,10 +561,7 @@ func TestExpansionAllocatesFairlyWithinTheRemainingRepositoryCapacity(t *testing
 	for index := range 18 {
 		exact = append(exact, fmt.Sprintf("exact/repo-%02d", index))
 	}
-	set, err := domain.NewRepositoryScopeSet(exact)
-	if err != nil {
-		t.Fatalf("building the exact selection failed: %v", err)
-	}
+	set := mustScope(t, exact...)
 	source, _ := newListingSource(t, map[string]listingPage{
 		orgPage("a", 1): {body: sourceListing("a/a1", "a/a2")},
 		orgPage("b", 1): {body: sourceListing("b/b1", "b/b2")},
@@ -592,10 +589,7 @@ func TestExpansionAllocatesFairlyWithinTheRemainingRepositoryCapacity(t *testing
 }
 
 func TestExpansionExactDuplicateGainsProvenanceWithoutASecondScope(t *testing.T) {
-	set, err := domain.NewRepositoryScopeSet([]string{"Acme/API"})
-	if err != nil {
-		t.Fatalf("building the exact selection failed: %v", err)
-	}
+	set := mustScope(t, "Acme/API")
 	source, _ := newListingSource(t, map[string]listingPage{
 		orgPage("acme", 1): {body: sourceListing("acme/api", "acme/zeta")},
 	})
@@ -823,10 +817,7 @@ func TestExpansionWithoutEligibleRepositoriesSucceedsEmpty(t *testing.T) {
 }
 
 func TestExpansionWithoutSelectorsKeepsTheExactSelectionAndSpendsNothing(t *testing.T) {
-	set, err := domain.NewRepositoryScopeSet([]string{"acme/api"})
-	if err != nil {
-		t.Fatalf("building the exact selection failed: %v", err)
-	}
+	set := mustScope(t, "acme/api")
 	source, client := newListingSource(t, map[string]listingPage{})
 
 	expansion, err := source.Expand(context.Background(), github.ExpansionRequest{Exact: set})

@@ -178,23 +178,6 @@ func NewScopeSet(scopes []Scope) (ScopeSet, error) {
 	return set, nil
 }
 
-// NewRepositoryScopeSet validates repository identifiers and returns the
-// repository-only selection they describe.
-func NewRepositoryScopeSet(values []string) (ScopeSet, error) {
-	if len(values) == 0 {
-		return ScopeSet{}, ErrEmptyScope
-	}
-	scopes := make([]Scope, 0, len(values))
-	for _, value := range values {
-		repository, err := ParseRepository(value)
-		if err != nil {
-			return ScopeSet{}, err
-		}
-		scopes = append(scopes, NewRepositoryScope(repository))
-	}
-	return NewScopeSet(scopes)
-}
-
 // Scopes returns the selected Scopes in request order.
 func (s ScopeSet) Scopes() []Scope { return slices.Clone(s.scopes) }
 

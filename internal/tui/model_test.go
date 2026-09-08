@@ -31,7 +31,15 @@ var fixedInstant = time.Date(2026, time.August, 22, 12, 0, 0, 0, time.UTC)
 
 func testScope(t *testing.T, values ...string) domain.ScopeSet {
 	t.Helper()
-	scope, err := domain.NewRepositoryScopeSet(values)
+	scopes := make([]domain.Scope, 0, len(values))
+	for _, value := range values {
+		repository, err := domain.ParseRepository(value)
+		if err != nil {
+			t.Fatalf("ParseRepository(%q) failed: %v", value, err)
+		}
+		scopes = append(scopes, domain.NewRepositoryScope(repository))
+	}
+	scope, err := domain.NewScopeSet(scopes)
 	if err != nil {
 		t.Fatalf("building the test scope %v failed: %v", values, err)
 	}

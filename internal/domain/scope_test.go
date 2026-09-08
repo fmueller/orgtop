@@ -20,13 +20,15 @@ func mustParseRepository(t *testing.T, value string) domain.Repository {
 	return repo
 }
 
+// mustNewScopeSet builds a repository-only selection through the unified
+// construction path the CLI uses.
 func mustNewScopeSet(t *testing.T, values ...string) domain.ScopeSet {
 	t.Helper()
-	scopes, err := domain.NewRepositoryScopeSet(values)
-	if err != nil {
-		t.Fatalf("NewRepositoryScopeSet(%v) returned error: %v", values, err)
+	scopes := make([]domain.Scope, 0, len(values))
+	for _, value := range values {
+		scopes = append(scopes, domain.NewRepositoryScope(mustParseRepository(t, value)))
 	}
-	return scopes
+	return mustScopeSet(t, scopes...)
 }
 
 func mustPathScope(t *testing.T, repository string, tokens ...domain.MatcherToken) domain.Scope {
@@ -299,10 +301,11 @@ func TestNewScopeSetRejectsAnUnconstructedScope(t *testing.T) {
 	}
 }
 
-// TestNewRepositoryScopeSetKeepsV01Behavior guards FR-001: repository-only
-// selections keep their v0.1 validation, deduplication, spelling retention, and
-// request order.
-func TestNewRepositoryScopeSetKeepsV01Behavior(t *testing.T) {
+// TestNewScopeSetKeepsV01RepositoryOnlyBehavior guards FR-001 on the unified
+// construction path: a repository-only selection keeps its v0.1 deduplication,
+// spelling retention, and request order now that the repository-only
+// constructor is retired.
+func TestNewScopeSetKeepsV01RepositoryOnlyBehavior(t *testing.T) {
 	tests := []struct {
 		name   string
 		values []string
@@ -331,46 +334,6 @@ func TestNewRepositoryScopeSetKeepsV01Behavior(t *testing.T) {
 				}
 			}
 		})
-	}
-}
-
-func TestNewRepositoryScopeSetRejectsInvalidInput(t *testing.T) {
-	tests := []struct {
-		name   string
-		values []string
-	}{
-		{name: "nil", values: nil},
-		{name: "empty slice", values: []string{}},
-		{name: "invalid identifier", values: []string{"owner/repo", "not-a-repo"}},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if _, err := domain.NewRepositoryScopeSet(tt.values); err == nil {
-				t.Fatal("NewRepositoryScopeSet returned no error, want error")
-			}
-		})
-	}
-}
-
-func TestNewRepositoryScopeSetInvalidIdentifierWrapsErrInvalidRepository(t *testing.T) {
-	_, err := domain.NewRepositoryScopeSet([]string{"owner/repo", "owner/"})
-	if !errors.Is(err, domain.ErrInvalidRepository) {
-		t.Fatalf("error %v does not match ErrInvalidRepository", err)
-	}
-}
-
-// TestNewRepositoryScopeSetInvalidIdentifierKeepsTheParseReason pins the domain
-// error as the standalone parse reason: it names the rejected value and why it
-// failed, and adds no scope prefix for callers to stack their own context on.
-func TestNewRepositoryScopeSetInvalidIdentifierKeepsTheParseReason(t *testing.T) {
-	_, want := domain.ParseRepository("acme/*")
-	_, err := domain.NewRepositoryScopeSet([]string{"owner/repo", "acme/*"})
-	if err == nil {
-		t.Fatal("NewRepositoryScopeSet returned no error, want error")
-	}
-	if got := err.Error(); got != want.Error() {
-		t.Errorf("NewRepositoryScopeSet error = %q, want %q", got, want.Error())
 	}
 }
 

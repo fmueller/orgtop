@@ -50,7 +50,11 @@ func sentinelCredential(t *testing.T) auth.Credential {
 
 func mustScope(t *testing.T, values ...string) domain.ScopeSet {
 	t.Helper()
-	scope, err := domain.NewRepositoryScopeSet(values)
+	scopes := make([]domain.Scope, 0, len(values))
+	for _, value := range values {
+		scopes = append(scopes, domain.NewRepositoryScope(mustParseRepository(t, value)))
+	}
+	scope, err := domain.NewScopeSet(scopes)
 	if err != nil {
 		t.Fatalf("building the scope %v failed: %v", values, err)
 	}
