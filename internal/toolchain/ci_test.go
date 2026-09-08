@@ -456,7 +456,7 @@ func TestMutationTiersSplitTheMutatorSet(t *testing.T) {
 	// thresholds the repository total rather than each package, so the gate
 	// enforces the floor in aggregate and the per-package figures are read
 	// from the run's own report.
-	if threshold := thresholdEfficacy(t, gate); threshold < 90 {
+	if threshold := flagValue(t, gate, "--threshold-efficacy"); threshold < 90 {
 		t.Errorf("the weekly gate thresholds efficacy at %g%%, want at least the 90%% floor NFR-006 expects of every package", threshold)
 	}
 	// The cache suite waits out its retry bounds under mutation. At the default
@@ -474,30 +474,61 @@ func TestMutationTiersSplitTheMutatorSet(t *testing.T) {
 	}
 }
 
-// thresholdEfficacy reports the percentage the gate's --threshold-efficacy flag
-// carries, so the guard reads the enforced floor rather than only its presence.
-func thresholdEfficacy(t *testing.T, command string) float64 {
-	t.Helper()
+// TestMutationFloorIsEnforcedPerPackage guards the half of NFR-006's floor that
+// gremlins cannot express. --threshold-efficacy reds the run on the repository
+// total only, so with the repository near 95% a single thin package could fall
+// to roughly 60% before the aggregate crossed 90 — the blind spot the widened
+// threshold was meant to remove. The per-package check closes it from the report
+// the gate already writes, and this reads the floor it enforces rather than
+// merely the presence of the step.
+func TestMutationFloorIsEnforcedPerPackage(t *testing.T) {
+	t.Parallel()
 
-	fields := strings.Fields(command)
-	for index, field := range fields {
-		if field != "--threshold-efficacy" || index+1 >= len(fields) {
-			continue
-		}
-		threshold, err := strconv.ParseFloat(fields[index+1], 64)
-		if err != nil {
-			t.Fatalf("--threshold-efficacy %q is not a number: %v", fields[index+1], err)
-		}
-		return threshold
+	command := taskCommand(t, "test:mutate:floor")
+	if !strings.Contains(command, "scripts/check-mutation-floor.sh") {
+		t.Fatalf("the per-package floor target must run the floor guard, got: %s", command)
 	}
-	t.Fatalf("the command carries no --threshold-efficacy value: %s", command)
-	return 0
+	if floor := flagValue(t, command, "--floor"); floor < 90 {
+		t.Errorf("the per-package check enforces a %g%% floor, want at least the 90%% NFR-006 expects of every package", floor)
+	}
+	if strings.Contains(command, "gremlins") {
+		t.Error("the per-package check must read the gate's report, not run gremlins a second time")
+	}
+
+	// The check has to red the workflow, not only print a table beside it.
+	workflow := loadYAML(t, mutationWorkflow)
+	var enforced bool
+	for _, step := range jobStepValues(workflow, "mutation-tests", "run") {
+		if strings.Contains(step, "test:mutate:floor") {
+			enforced = true
+		}
+	}
+	if !enforced {
+		t.Error("mutation.yml must run the per-package floor target")
+	}
+	if !strings.Contains(readFile(t, mutationWorkflow), "steps.floor.outcome != 'success'") {
+		t.Error("the mutation gate must fail when the per-package floor fails; a reported-only check gates nothing")
+	}
+	// The floor lives in the Taskfile target alone. A copy in the workflow's
+	// reporting steps could drift from the enforced one, and the run would then
+	// publish a table measured against a floor nothing gates.
+	if strings.Contains(readFile(t, mutationWorkflow), "--floor") {
+		t.Error("mutation.yml must reach the floor through the Taskfile target, not carry its own --floor value")
+	}
+
+	// A nested worktree checkout is a second copy of the source under the module
+	// directory gremlins walks, and it reported 11.34% against a true 91.85%
+	// once. Excluding it keeps the published figures independent of local state.
+	gate := mutationCommand(t, "test:mutate:gate")
+	if !strings.Contains(gate, `--exclude-files '\.claude/.*'`) {
+		t.Errorf("the weekly gate must exclude nested worktree checkouts under .claude/, got: %s", gate)
+	}
 }
 
-// mutationCommand returns the gremlins invocation a mutation target runs, with
-// the target's own `vars` expanded so a flag list held in a variable reads the
-// same as one written inline.
-func mutationCommand(t *testing.T, target string) string {
+// taskCommands returns the shell commands a Taskfile target runs, with the
+// target's own `vars` expanded so a value held in a variable reads the same as
+// one written inline.
+func taskCommands(t *testing.T, target string) []string {
 	t.Helper()
 
 	task := nodeAt(loadYAML(t, taskfile), "tasks", target)
@@ -505,19 +536,59 @@ func mutationCommand(t *testing.T, target string) string {
 	if cmds == nil || len(cmds.Content) == 0 {
 		t.Fatalf("Taskfile.yml must declare a %q target", target)
 	}
-
 	vars := child(task, "vars")
-	for _, command := range cmds.Content {
-		if !strings.Contains(command.Value, "gremlins") {
-			continue
-		}
 
-		expanded := command.Value
+	commands := make([]string, 0, len(cmds.Content))
+	for _, cmd := range cmds.Content {
+		expanded := cmd.Value
 		for i := 0; vars != nil && i+1 < len(vars.Content); i += 2 {
 			reference := "{{." + vars.Content[i].Value + "}}"
 			expanded = strings.ReplaceAll(expanded, reference, vars.Content[i+1].Value)
 		}
-		return expanded
+		commands = append(commands, expanded)
+	}
+	return commands
+}
+
+// taskCommand returns the single shell command a Taskfile target runs.
+func taskCommand(t *testing.T, target string) string {
+	t.Helper()
+
+	commands := taskCommands(t, target)
+	if len(commands) != 1 {
+		t.Fatalf("Taskfile.yml must declare a %q target with exactly one command", target)
+	}
+	return commands[0]
+}
+
+// flagValue reports the percentage a command's flag carries, so a guard reads
+// the enforced figure rather than only the presence of the flag.
+func flagValue(t *testing.T, command, flag string) float64 {
+	t.Helper()
+
+	fields := strings.Fields(command)
+	for index, field := range fields {
+		if field != flag || index+1 >= len(fields) {
+			continue
+		}
+		value, err := strconv.ParseFloat(fields[index+1], 64)
+		if err != nil {
+			t.Fatalf("%s %q is not a number: %v", flag, fields[index+1], err)
+		}
+		return value
+	}
+	t.Fatalf("the command carries no %s value: %s", flag, command)
+	return 0
+}
+
+// mutationCommand returns the gremlins invocation a mutation target runs.
+func mutationCommand(t *testing.T, target string) string {
+	t.Helper()
+
+	for _, command := range taskCommands(t, target) {
+		if strings.Contains(command, "gremlins") {
+			return command
+		}
 	}
 
 	t.Fatalf("%q must invoke gremlins", target)

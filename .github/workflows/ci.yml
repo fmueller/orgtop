@@ -89,6 +89,9 @@ jobs:
       - name: Test the multi-channel distribution guards
         run: task test:distribution
 
+      - name: Test the per-package mutation efficacy guard
+        run: task test:mutation-floor
+
   build-test:
     needs: checks
     runs-on: ${{ matrix.runner }}

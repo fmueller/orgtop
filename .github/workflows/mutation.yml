@@ -36,6 +36,15 @@ jobs:
           GREMLINS_UNLEASH_OUTPUT: mutation-results.json
         run: task test:mutate:gate
 
+      - name: Enforce the per-package efficacy floor
+        id: floor
+        # Reads the report the gate above already wrote, so the floor costs no
+        # second run. gremlins thresholds the repository total only; without
+        # this a single package could regress to roughly 60% unnoticed.
+        if: always()
+        continue-on-error: true
+        run: task test:mutate:floor
+
       - name: Summarize mutation results
         if: always()
         # Reporting must never mask the gate verdict; the enforce step below owns
@@ -51,6 +60,8 @@ jobs:
             printf '## Mutation testing\n\n'
             printf '| Metric | Result |\n|---|---:|\n'
             jq -r '"| Test efficacy | \(.test_efficacy * 100 | round / 100)% |", "| Mutator coverage | \(.mutations_coverage * 100 | round / 100)% |", "| Killed | \(.mutants_killed) |", "| Lived | \(.mutants_lived) |", "| Timed out | \([.files[].mutations[] | select(.status == "TIMED OUT")] | length) |", "| Not covered | \(.mutants_not_covered) |"' mutation-results.json
+            printf '\n### Per-package efficacy\n\n'
+            task test:mutate:floor || true
             printf '\nCommit: `%s`\n' "$GITHUB_SHA"
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -68,12 +79,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           MUTATION_OUTCOME: ${{ steps.mutation.outcome }}
+          FLOOR_OUTCOME: ${{ steps.floor.outcome }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           title='Mutation testing gate failure'
           issue_number=$(gh issue list --state open --label github_actions --json number,title --jq "map(select(.title == \"$title\"))[0].number // empty" || true)
 
-          if [ "$MUTATION_OUTCOME" = success ]; then
+          if [ "$MUTATION_OUTCOME" = success ] && [ "$FLOOR_OUTCOME" = success ]; then
             if [ -n "$issue_number" ]; then
               gh issue close "$issue_number" --comment "Mutation testing recovered in $RUN_URL."
             fi
@@ -88,6 +100,8 @@ jobs:
               jq -r '"- Test efficacy: \(.test_efficacy * 100 | round / 100)%", "- Mutator coverage: \(.mutations_coverage * 100 | round / 100)%", "- Killed: \(.mutants_killed)", "- Lived: \(.mutants_lived)", "- Timed out: \([.files[].mutations[] | select(.status == "TIMED OUT")] | length)", "- Not covered: \(.mutants_not_covered)"' mutation-results.json
               printf '\n### Lived mutants\n\n'
               jq -r '.files[] | .file_name as $file | .mutations[] | select(.status == "LIVED") | "- `\($file):\(.line):\(.column)` \(.type)"' mutation-results.json
+              printf '\n### Per-package efficacy\n\n'
+              task test:mutate:floor 2>&1 || true
             else
               printf -- '- No JSON report was produced; inspect the workflow log.\n'
             fi
@@ -101,5 +115,5 @@ jobs:
           fi
 
       - name: Enforce mutation gate
-        if: always() && steps.mutation.outcome != 'success'
+        if: always() && (steps.mutation.outcome != 'success' || steps.floor.outcome != 'success')
         run: exit 1
