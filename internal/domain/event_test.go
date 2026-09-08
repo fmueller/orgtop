@@ -1,6 +1,7 @@
 package domain_test
 
 import (
+	"fmt"
 	"slices"
 	"testing"
 	"time"
@@ -208,4 +209,33 @@ func TestSortByRecencyDoesNotMutateInput(t *testing.T) {
 	domain.SortByRecency(input)
 
 	assertIDs(t, input, []string{"old", "new"})
+}
+
+// testEvent returns one event of the given shape at minute past the fixed test
+// hour, so callers order events by that minute alone.
+func testEvent(t *testing.T, id string, minute int, repository string, category domain.Category, kind domain.EntityKind) domain.Event {
+	t.Helper()
+	return domain.Event{
+		ID:         id,
+		OccurredAt: time.Date(2026, time.August, 22, 10, minute, 0, 0, time.UTC),
+		Repository: mustParseRepository(t, repository),
+		Category:   category,
+		EntityKind: kind,
+	}
+}
+
+// pushEvents returns count push events for the repository, one second apart, so
+// a snapshot can be built at an exact distance from the FR-006 bound.
+func pushEvents(repository domain.Repository, count int) []domain.Event {
+	events := make([]domain.Event, 0, count)
+	for index := range count {
+		events = append(events, domain.Event{
+			ID:         fmt.Sprintf("event-%04d", index),
+			OccurredAt: time.Date(2026, time.August, 22, 0, 0, index, 0, time.UTC),
+			Repository: repository,
+			Category:   domain.CategoryPush,
+			EntityKind: domain.EntityCommit,
+		})
+	}
+	return events
 }

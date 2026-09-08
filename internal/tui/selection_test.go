@@ -3,6 +3,7 @@ package tui
 import (
 	"context"
 	"errors"
+	"fmt"
 	"slices"
 	"testing"
 	"time"
@@ -122,6 +123,21 @@ func assertScopes(t *testing.T, label string, scopes domain.ScopeSet, want ...st
 	}
 }
 
+// scopeRows renders every published Scope row as its label and full direct
+// counts, so two selections can be compared without depending on the
+// ScopeAggregate struct staying comparable.
+func scopeRows(snapshot domain.ScopedSnapshot) []string {
+	rows := make([]string, 0, len(snapshot.Aggregates()))
+	for _, aggregate := range snapshot.Aggregates() {
+		rows = append(rows, fmt.Sprintf(
+			"%s activity=%d pushes=%d pr=%d notMember=%d unknown=%d evaluated=%d currentPR=%d",
+			aggregate.Scope, aggregate.Activity, aggregate.Pushes, aggregate.PullRequestActivity,
+			aggregate.NotMember, aggregate.Unknown, aggregate.Evaluated, aggregate.CurrentPR,
+		))
+	}
+	return rows
+}
+
 func TestOrganizationOnlyStartupExpandsBeforeItPollsAnything(t *testing.T) {
 	source := &fakeSource{outcomes: []outcome{{result: activity(t, "acme/backend", "acme/frontend")}}}
 	expander := &fakeExpander{attempts: []attempt{{expansion: expandedSelection(t, "acme", "acme/backend", "acme/frontend")}}}
@@ -169,7 +185,7 @@ func TestSuccessfulEmptyExpansionIsACurrentEmptySelectionThatPollsNothing(t *tes
 	if !model.state.LastSuccess.Equal(fixedInstant) {
 		t.Errorf("last success is %v after an empty expansion, want %v", model.state.LastSuccess, fixedInstant)
 	}
-	if got := len(model.state.Snapshot.Events()); got != 0 {
+	if got := len(model.state.Scoped.Events()); got != 0 {
 		t.Errorf("the published snapshot holds %d events, want 0", got)
 	}
 	if got := len(model.state.Selection.Selectors); got != 1 {
@@ -357,8 +373,8 @@ func TestEveryPollOfOneRefreshUsesTheSelectionThatRefreshExpanded(t *testing.T) 
 
 	assertScopes(t, "the polled selection", source.scopes[0], "acme/backend")
 	assertScopes(t, "the published selection", model.state.Scopes, "acme/backend")
-	aggregates := model.state.Snapshot.Aggregates()
-	if len(aggregates) != 1 || aggregates[0].Repository.String() != "acme/backend" {
+	aggregates := model.state.Scoped.Aggregates()
+	if len(aggregates) != 1 || aggregates[0].Scope.String() != "acme/backend" {
 		t.Errorf("the published snapshot aggregates %v, want it built from the selection that refresh expanded", aggregates)
 	}
 }
@@ -431,10 +447,10 @@ func TestExpandedAndExactScopesPublishIdenticalDownstreamState(t *testing.T) {
 	expanded := expanding(t, expandedSource, expander, fixedInstant, &recorder{})
 	expanded, _ = run(t, expanded, initRefresh(t, expanded))
 
-	if got, want := len(expanded.state.Snapshot.Events()), len(exact.state.Snapshot.Events()); got != want {
+	if got, want := len(expanded.state.Scoped.Events()), len(exact.state.Scoped.Events()); got != want {
 		t.Errorf("the expanded selection published %d events, want the %d an exact selection publishes", got, want)
 	}
-	if got, want := expanded.state.Snapshot.Aggregates(), exact.state.Snapshot.Aggregates(); !slices.Equal(got, want) {
+	if got, want := scopeRows(expanded.state.Scoped), scopeRows(exact.state.Scoped); !slices.Equal(got, want) {
 		t.Errorf("the expanded selection aggregates %v, want the %v an exact selection aggregates", got, want)
 	}
 	if expanded.state.Freshness != exact.state.Freshness {

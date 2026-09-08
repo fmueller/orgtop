@@ -78,9 +78,8 @@ func retainedEvidence(scopes domain.ScopeSet, activities []domain.RepositoryActi
 	return evidenceResult{retained: retained, truncated: truncated}
 }
 
-// publishSnapshots stores both snapshots one successful refresh publishes.
-func publishSnapshots(model Model, scopes domain.ScopeSet, activities []domain.RepositoryActivity) Model {
-	model.state.Snapshot = domain.NewSnapshot(scopes, activities)
+// publishSnapshot stores the snapshot one successful refresh publishes.
+func publishSnapshot(model Model, scopes domain.ScopeSet, activities []domain.RepositoryActivity) Model {
 	model.state.Scoped = domain.NewScopedSnapshot(scopes, scopedActivities(activities))
 	model.state.Freshness = FreshnessCurrent
 	return model
@@ -103,7 +102,7 @@ func populatedModel(t *testing.T) Model {
 		testActivity(t, "acme/docs"),
 	}
 
-	return publishSnapshots(newModel(t, "acme/backend", "acme/frontend", "acme/docs"), scope, activities)
+	return publishSnapshot(newModel(t, "acme/backend", "acme/frontend", "acme/docs"), scope, activities)
 }
 
 // renderAt sizes the model to the terminal and returns what it renders.
@@ -177,7 +176,7 @@ func TestOverviewLabelsEveryCountedDimension(t *testing.T) {
 
 func TestOverviewSuccessWithoutEventsStatesNoRecentActivity(t *testing.T) {
 	scope := testScope(t, "acme/backend", "acme/frontend")
-	model := publishSnapshots(newModel(t, "acme/backend", "acme/frontend"), scope, []domain.RepositoryActivity{
+	model := publishSnapshot(newModel(t, "acme/backend", "acme/frontend"), scope, []domain.RepositoryActivity{
 		testActivity(t, "acme/backend"),
 		testActivity(t, "acme/frontend"),
 	})
@@ -389,7 +388,7 @@ func numberedRepositories(t *testing.T, names []string) []domain.RepositoryActiv
 func scrollOverviewModel(t *testing.T, count int) Model {
 	t.Helper()
 	names := repositoryNames(count)
-	return publishSnapshots(newModel(t, names...), testScope(t, names...), numberedRepositories(t, names))
+	return publishSnapshot(newModel(t, names...), testScope(t, names...), numberedRepositories(t, names))
 }
 
 // overviewRowAt returns the one-based numbered repository the body line names.
@@ -458,7 +457,7 @@ func TestOverviewClampsTheWindowAfterRefreshShrinkage(t *testing.T) {
 		empty = append(empty, testActivity(t, name))
 	}
 	scope := testScope(t, names...)
-	model = publishSnapshots(model, scope, empty)
+	model = publishSnapshot(model, scope, empty)
 
 	model, _ = apply(t, model, tea.WindowSizeMsg{Width: wideWidth, Height: scrollTerminalHeight})
 	model = scrolled(t, model, "pgdown", "pgdown", "pgdown", "pgdown")

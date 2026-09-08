@@ -97,10 +97,10 @@ type ScopedSnapshot struct {
 }
 
 // NewScopedSnapshot filters the returned activity to the Scope set's
-// repositories, deduplicates, sorts, and bounds it exactly as the v0.1 snapshot
-// does, then builds the snapshot over the retained set. A refresh that enriches
-// before it aggregates retains first through Retain and publishes through
-// NewRetainedSnapshot instead.
+// repositories, deduplicates, sorts, and bounds it under FR-006 exactly as
+// Retain does, then builds the snapshot over the retained set. A refresh that
+// enriches before it aggregates retains first through Retain and publishes
+// through NewRetainedSnapshot instead.
 func NewScopedSnapshot(scope ScopeSet, activities []ScopedActivity) ScopedSnapshot {
 	outcomes := make(map[string]EvidenceOutcome, len(activities))
 	var candidates []Event
@@ -115,9 +115,9 @@ func NewScopedSnapshot(scope ScopeSet, activities []ScopedActivity) ScopedSnapsh
 	}
 
 	// The outcome map already kept the first evidence of a repeated source ID, so
-	// the retention below deduplicates nothing new here. It stays because the
-	// retained event set is the v0.1 pipeline's, and both paths must keep the
-	// same first-occurrence rule.
+	// the retention below deduplicates nothing new here. It stays because this
+	// entry point must retain exactly what a Retain-then-enrich refresh does,
+	// including the same first-occurrence rule.
 	bounded, truncated := retain(scope, candidates)
 	retained := make([]EventEvidence, 0, len(bounded))
 	for _, event := range bounded {

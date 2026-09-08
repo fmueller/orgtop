@@ -170,10 +170,10 @@ func TestCompleteSuccessPublishesTheSnapshotAndRecordsFreshness(t *testing.T) {
 	if model.state.Cause != "" {
 		t.Errorf("cause is %q after a success, want it cleared", model.state.Cause)
 	}
-	if got := len(model.state.Snapshot.Events()); got != 2 {
+	if got := len(model.state.Scoped.Events()); got != 2 {
 		t.Errorf("snapshot holds %d events, want 2", got)
 	}
-	if got := len(model.state.Snapshot.Aggregates()); got != 2 {
+	if got := len(model.state.Scoped.Aggregates()); got != 2 {
 		t.Errorf("snapshot holds %d aggregates, want one per selected repository", got)
 	}
 }
@@ -192,10 +192,10 @@ func TestEmptySuccessStillRecordsOneLastSuccess(t *testing.T) {
 	if !model.state.LastSuccess.Equal(at) {
 		t.Errorf("last success is %v after an empty success, want %v", model.state.LastSuccess, at)
 	}
-	if got := len(model.state.Snapshot.Events()); got != 0 {
+	if got := len(model.state.Scoped.Events()); got != 0 {
 		t.Errorf("snapshot holds %d events after an empty success, want 0", got)
 	}
-	if got := len(model.state.Snapshot.Aggregates()); got != 1 {
+	if got := len(model.state.Scoped.Aggregates()); got != 1 {
 		t.Errorf("snapshot holds %d aggregates after an empty success, want 1", got)
 	}
 }
@@ -215,7 +215,7 @@ func TestFirstFailureRendersTheErrorStateWithoutASnapshot(t *testing.T) {
 	if want := "refreshing acme/backend: github rate limit reached"; model.state.Cause != want {
 		t.Errorf("cause is %q after the first failure, want %q", model.state.Cause, want)
 	}
-	if got := len(model.state.Snapshot.Events()); got != 0 {
+	if got := len(model.state.Scoped.Events()); got != 0 {
 		t.Errorf("snapshot holds %d events after the first failure, want 0", got)
 	}
 	if content := model.View().Content; !strings.Contains(content, "ERROR") {
@@ -241,7 +241,7 @@ func TestLaterFailureKeepsTheSnapshotUnderStale(t *testing.T) {
 	if !model.state.LastSuccess.Equal(at) {
 		t.Errorf("last success is %v after a later failure, want the preserved %v", model.state.LastSuccess, at)
 	}
-	if got := len(model.state.Snapshot.Events()); got != 1 {
+	if got := len(model.state.Scoped.Events()); got != 1 {
 		t.Errorf("snapshot holds %d events after a later failure, want the preserved 1", got)
 	}
 	if model.state.Cause == "" {
@@ -270,7 +270,7 @@ func TestCompleteSuccessAfterAFailureClearsTheErrorState(t *testing.T) {
 	if model.state.Cause != "" {
 		t.Errorf("cause is %q after recovery, want it cleared", model.state.Cause)
 	}
-	if got := len(model.state.Snapshot.Events()); got != 1 {
+	if got := len(model.state.Scoped.Events()); got != 1 {
 		t.Errorf("snapshot holds %d events after recovery, want 1", got)
 	}
 }
@@ -285,10 +285,10 @@ func TestFailedRefreshNeverPublishesPartialCandidates(t *testing.T) {
 
 	model, _ = run(t, model, initRefresh(t, model))
 
-	if got := len(model.state.Snapshot.Events()); got != 0 {
+	if got := len(model.state.Scoped.Events()); got != 0 {
 		t.Errorf("snapshot holds %d events after a failed refresh, want no partial candidates", got)
 	}
-	if got := len(model.state.Snapshot.Aggregates()); got != 0 {
+	if got := len(model.state.Scoped.Aggregates()); got != 0 {
 		t.Errorf("snapshot holds %d aggregates after a failed refresh, want none published", got)
 	}
 }
@@ -418,7 +418,7 @@ func TestAPendingRefreshAfterASuccessKeepsTheSnapshotCurrent(t *testing.T) {
 	if model.state.Freshness != FreshnessCurrent {
 		t.Errorf("freshness is %v while the next refresh is pending, want the snapshot to stay current", model.state.Freshness)
 	}
-	if got := len(model.state.Snapshot.Events()); got != 1 {
+	if got := len(model.state.Scoped.Events()); got != 1 {
 		t.Errorf("snapshot holds %d events while the next refresh is pending, want the visible 1", got)
 	}
 	content := model.View().Content

@@ -198,10 +198,10 @@ func TestModeKeysAndTabSwitchViews(t *testing.T) {
 }
 
 func TestModeSwitchPreservesPerViewStateAndSnapshot(t *testing.T) {
-	snapshot := domain.NewSnapshot(testScope(t, "acme/backend"), nil)
+	snapshot := domain.NewScopedSnapshot(testScope(t, "acme/backend"), nil)
 
 	model := newModel(t, "acme/backend")
-	model.state.Snapshot = snapshot
+	model.state.Scoped = snapshot
 	model.state.Freshness = FreshnessCurrent
 	model.overview.offset = 2
 	model.stream.offset = 7
@@ -214,7 +214,7 @@ func TestModeSwitchPreservesPerViewStateAndSnapshot(t *testing.T) {
 	if model.stream.offset != 7 {
 		t.Errorf("stream offset is %d, want 7", model.stream.offset)
 	}
-	if got := len(model.state.Snapshot.Aggregates()); got != 1 {
+	if got := len(model.state.Scoped.Aggregates()); got != 1 {
 		t.Errorf("snapshot aggregates after switching is %d, want 1", got)
 	}
 }
@@ -453,7 +453,7 @@ func TestOverviewAccountsForHiddenQuietScopesAfterItsEmptyState(t *testing.T) {
 	for _, name := range names {
 		activities = append(activities, testActivity(t, name))
 	}
-	model := publishSnapshots(newModel(t, names...), testScope(t, names...), activities)
+	model := publishSnapshot(newModel(t, names...), testScope(t, names...), activities)
 	model, _ = apply(t, model, tea.WindowSizeMsg{Width: wideWidth, Height: scrollTerminalHeight})
 
 	if content := model.View().Content; !strings.Contains(content, "scopes 1-7 of 20") {

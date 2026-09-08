@@ -83,7 +83,6 @@ func streamModel(t *testing.T, events []domain.Event) Model {
 		testActivity(t, "acme/backend", backend...),
 		testActivity(t, "acme/frontend", frontend...),
 	}
-	model.state.Snapshot = domain.NewSnapshot(scope, activities)
 	model.state.Scoped = domain.NewScopedSnapshot(scope, scopedActivities(activities))
 	model.state.Freshness = FreshnessCurrent
 	model.state.LastSuccess = streamBase
@@ -352,7 +351,7 @@ func TestStreamKeepsItsPositionAcrossViewSwitches(t *testing.T) {
 	if got := topRow(t, switched); got != want {
 		t.Errorf("top row after a view switch is event %d, want %d", got, want)
 	}
-	if got := len(switched.state.Snapshot.Events()); got != scrollEvents {
+	if got := len(switched.state.Scoped.Events()); got != scrollEvents {
 		t.Errorf("snapshot after a view switch holds %d events, want %d", got, scrollEvents)
 	}
 }
@@ -1008,7 +1007,7 @@ func TestStreamReservesTheDeclaredChromeLines(t *testing.T) {
 	if want := wideHeight - streamChrome; rowHeight != want {
 		t.Errorf("stream windows its rows against %d lines, want %d", rowHeight, want)
 	}
-	if len(lines) != len(state.Snapshot.Events()) {
-		t.Errorf("stream laid out %d rows, want one per snapshot event (%d)", len(lines), len(state.Snapshot.Events()))
+	if len(lines) != len(state.Scoped.Events()) {
+		t.Errorf("stream laid out %d rows, want one per snapshot event (%d)", len(lines), len(state.Scoped.Events()))
 	}
 }

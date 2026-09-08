@@ -74,11 +74,9 @@ func (f Freshness) Marker() string {
 type State struct {
 	// Scopes is the validated selection the views render.
 	Scopes domain.ScopeSet
-	// Snapshot is the latest completely successful activity snapshot.
-	Snapshot domain.Snapshot
-	// Scoped is the prepared per-Scope snapshot of the same refresh: its
-	// retained events, their explicit per-Scope membership, and the direct
-	// aggregates the views render.
+	// Scoped is the latest completely successful refresh's prepared per-Scope
+	// snapshot: its retained events, their explicit per-Scope membership, and
+	// the direct aggregates the views render.
 	Scoped domain.ScopedSnapshot
 	// CacheDegraded is the sanitized cause of the latest refresh's skipped or
 	// failed enrichment cache work. A degraded cache never invalidates the

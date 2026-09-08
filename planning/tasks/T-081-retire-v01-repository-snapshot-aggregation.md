@@ -1,14 +1,14 @@
 ---
 id: T-081-retire-v01-repository-snapshot-aggregation
 title: Retire the v0.1 repository snapshot aggregation
-status: todo
+status: completed
 priority: low
 spec_ref: specs/v0.2.0.md#explicit-scope-membership
 dependencies:
     - T-057-render-mixed-scopes-in-overview
     - T-058-render-scope-context-in-stream
     - T-054-implement-scoped-snapshots-and-direct-aggregation
-updated_at: "2026-09-03T11:52:19Z"
+updated_at: "2026-09-08T17:19:19Z"
 ---
 
 # T-081-retire-v01-repository-snapshot-aggregation Retire the v0.1 repository snapshot aggregation
@@ -51,3 +51,4 @@ Follow-up derived from T-054-implement-scoped-snapshots-and-direct-aggregation's
 - Sequence this after T-056, T-057, and T-058; before then the TUI still consumes
   `domain.Snapshot`.
 - Do not change `ScopedSnapshot` semantics, ordering, or bounds while doing this.
+- 2026-09-08T17:19:16Z: verification pass

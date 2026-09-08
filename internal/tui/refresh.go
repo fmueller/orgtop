@@ -193,7 +193,7 @@ func (m Model) delay(message refreshedMsg) time.Duration {
 	return max(message.result.Delay, defaultDelay)
 }
 
-// published replaces the selection, both snapshots, the prepared membership, and
+// published replaces the selection, the snapshot, the prepared membership, and
 // the disclosure of the attempt atomically and clears the failure state. The
 // enrichment conditions are replaced too, so a condition the new refresh no
 // longer reports clears while the unrelated selection state it did not touch
@@ -205,7 +205,6 @@ func published(state State, selection Selection, message refreshedMsg, at time.T
 	evidence := message.evidence
 	state.Scopes = selection.Scopes
 	state.Selection = selection
-	state.Snapshot = domain.NewSnapshot(selection.Scopes, message.result.Repositories)
 	state.Scoped = domain.NewRetainedSnapshot(selection.Scopes, evidence.retained, evidence.truncated)
 	state.CacheDegraded = evidence.degraded
 	state.EnrichmentRetryAt = evidence.retryAt

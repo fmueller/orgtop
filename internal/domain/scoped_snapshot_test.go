@@ -302,26 +302,56 @@ func TestScopedSnapshotKeepsEveryConfiguredScopeRow(t *testing.T) {
 }
 
 // TestScopedSnapshotBoundsEventsAndRecordsTruncation guards FR-006: the bounded
-// snapshot keeps the newest MaxSnapshotEvents events and reports the cut.
+// snapshot keeps the newest MaxSnapshotEvents events, discards the older ones,
+// and reports the cut as a fact rather than one a view infers from the count
+// reaching the limit.
 func TestScopedSnapshotBoundsEventsAndRecordsTruncation(t *testing.T) {
-	repository := domain.NewRepositoryScope(mustParseRepository(t, "owner/repo"))
-	scope := mustScopeSet(t, repository)
-	events := pushEvents(mustParseRepository(t, "owner/repo"), domain.MaxSnapshotEvents+1)
-	evidence := make([]domain.EventEvidence, 0, len(events))
-	for _, event := range events {
-		evidence = append(evidence, evidenceOf(event, domain.UnsupportedOutcome("no evidence")))
+	cases := []struct {
+		name     string
+		returned int
+		want     bool
+	}{
+		{name: "below the bound", returned: domain.MaxSnapshotEvents - 1, want: false},
+		{name: "exactly at the bound", returned: domain.MaxSnapshotEvents, want: false},
+		{name: "one past the bound", returned: domain.MaxSnapshotEvents + 1, want: true},
 	}
 
-	snapshot := domain.NewScopedSnapshot(scope, []domain.ScopedActivity{scopedActivity(t, "owner/repo", evidence...)})
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			repository := domain.NewRepositoryScope(mustParseRepository(t, "owner/repo"))
+			scope := mustScopeSet(t, repository)
+			events := pushEvents(mustParseRepository(t, "owner/repo"), testCase.returned)
+			evidence := make([]domain.EventEvidence, 0, len(events))
+			for _, event := range events {
+				evidence = append(evidence, evidenceOf(event, domain.UnsupportedOutcome("no evidence")))
+			}
 
-	if !snapshot.Truncated() {
-		t.Error("Truncated() = false, want true past the bound")
-	}
-	if got := len(snapshot.Events()); got != domain.MaxSnapshotEvents {
-		t.Errorf("events = %d, want %d", got, domain.MaxSnapshotEvents)
-	}
-	if got := findScopeAggregate(t, snapshot, repository).Activity; got != domain.MaxSnapshotEvents {
-		t.Errorf("activity = %d, want the bounded event count", got)
+			snapshot := domain.NewScopedSnapshot(scope, []domain.ScopedActivity{scopedActivity(t, "owner/repo", evidence...)})
+
+			if got := snapshot.Truncated(); got != testCase.want {
+				t.Errorf("Truncated() = %t for %d returned events, want %t", got, testCase.returned, testCase.want)
+			}
+			kept := snapshot.Events()
+			wantKept := min(testCase.returned, domain.MaxSnapshotEvents)
+			if len(kept) != wantKept {
+				t.Fatalf("events = %d, want %d", len(kept), wantKept)
+			}
+
+			// pushEvents returns the events oldest first, so the retained set
+			// runs from the last returned event back to the oldest one the
+			// bound kept.
+			newest := events[len(events)-1]
+			oldestKept := events[len(events)-wantKept]
+			if kept[0].ID != newest.ID {
+				t.Errorf("first event = %q, want the newest %q", kept[0].ID, newest.ID)
+			}
+			if kept[len(kept)-1].ID != oldestKept.ID {
+				t.Errorf("last event = %q, want the oldest kept %q", kept[len(kept)-1].ID, oldestKept.ID)
+			}
+			if got := findScopeAggregate(t, snapshot, repository).Activity; got != wantKept {
+				t.Errorf("activity = %d, want the bounded event count %d", got, wantKept)
+			}
+		})
 	}
 }
 
