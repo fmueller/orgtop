@@ -58,6 +58,19 @@ The header shows POLLING because the data is not live.
 Wide content is shortened, and the count above the headings states what Stream
 is showing.
 
+<!-- docs:path-diagnostics -->
+## When a path value is rejected
+
+Pattern offsets are zero-based byte indexes counted from the quoted pattern, so
+a qualified value's pattern begins at byte 0. A rejected repository prefix
+quotes the prefix and carries no byte offset.
+
+- ~--path: invalid path pattern "" at byte 0: empty pattern~
+- ~--path: invalid path pattern "/src" at byte 0: empty segment~
+- ~--path: invalid path pattern "src//api" at byte 4: empty segment~
+- ~--path: invalid path pattern "src/" at byte 3: empty segment~
+- ~--path: invalid repository identifier "acme/*": repository contains an unsupported character "*"~
+
 ## Keys
 
 ~1~ ~2~ ~tab~ ~up~ ~down~ ~pgup~ ~pgdown~ ~q~ ~ctrl+c~
@@ -89,6 +102,7 @@ func TestRestructuredDocumentationSetSatisfiesEveryCheck(t *testing.T) {
 		"contributor": contributorClaimProblems(docs),
 		"flags":       versionAndHelpFlagProblems(readme),
 		"columns":     streamColumnProblems(readme),
+		"diagnostics": pathDiagnosticProblems(readme, documentedPathDiagnostics(t)),
 		"deferred":    deferredClaimProblems(readme, deferredClaims(t, "v0.2.0")),
 	} {
 		if len(problems) != 0 {
@@ -103,6 +117,7 @@ func TestChecksFailWhenAGuardedClaimIsDropped(t *testing.T) {
 	t.Parallel()
 
 	usage := documentedInvocation(t)
+	diagnostics := documentedPathDiagnostics(t)
 	for name, testCase := range map[string]struct {
 		drop  string
 		check func(string) []string
@@ -113,6 +128,14 @@ func TestChecksFailWhenAGuardedClaimIsDropped(t *testing.T) {
 		"the short help flag": {drop: "`-h`", check: versionAndHelpFlagProblems},
 		"a Stream column":     {drop: "`repository`", check: streamColumnProblems},
 		"the column section":  {drop: "<!-- docs:stream-columns -->", check: streamColumnProblems},
+		"a quoted diagnostic": {
+			drop:  `at byte 4: empty segment`,
+			check: func(readme string) []string { return pathDiagnosticProblems(readme, diagnostics) },
+		},
+		"the offset origin": {
+			drop:  "counted from",
+			check: func(readme string) []string { return pathDiagnosticProblems(readme, diagnostics) },
+		},
 		"the repeated --repo": {
 			drop:  "orgtop --repo acme/backend --repo acme/frontend",
 			check: func(readme string) []string { return invocationProblems(readme, usage) },

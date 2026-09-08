@@ -1,12 +1,12 @@
 ---
 id: T-077-document-cli-path-diagnostic-offsets
 title: Document unified CLI path diagnostic offsets
-status: todo
+status: completed
 priority: low
 spec_ref: specs/v0.2.0.md#unified-repository-and-path-scopes
 dependencies:
     - T-045-implement-unified-scope-cli-parsing
-updated_at: "2026-08-31T22:16:03Z"
+updated_at: "2026-09-08T16:08:13Z"
 ---
 
 # T-077-document-cli-path-diagnostic-offsets Document unified CLI path diagnostic offsets
@@ -47,3 +47,4 @@ Follow-up derived from T-045-implement-unified-scope-cli-parsing's verification 
   task only settles and documents the offset origin.
 - Implementation lives in `internal/cli/pattern.go`; do not move pattern text
   diagnostics into the domain.
+- 2026-09-08T16:08:06Z: verification pass

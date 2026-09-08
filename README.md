@@ -110,6 +110,26 @@ within one segment and `**` as a complete recursive segment, and escapes a
 literal `*`, `:`, or `\` with a backslash. Patterns are inclusive only; quote
 them so the shell passes them through unchanged.
 
+<!-- docs:path-diagnostics -->
+### Invalid path diagnostics
+
+A rejected `--path` value reports one cause. A rejected pattern reports it with
+a zero-based UTF-8 byte offset counted from the pattern the diagnostic quotes
+rather than from the whole value: in a qualified `OWNER/REPOSITORY:PATTERN`
+value the pattern begins at byte 0, and a bare value is its own pattern. The
+repository prefix of a qualified value is validated before the pattern, so a
+malformed prefix is reported even when the pattern is invalid too; that
+diagnostic quotes the prefix and carries no byte offset.
+
+| Value | Diagnostic |
+|---|---|
+| `--path 'acme/api:'` | `--path: invalid path pattern "" at byte 0: empty pattern` |
+| `--path 'acme/api:/src'` | `--path: invalid path pattern "/src" at byte 0: empty segment` |
+| `--path 'acme/api:src//api'` | `--path: invalid path pattern "src//api" at byte 4: empty segment` |
+| `--path 'acme/api:src/'` | `--path: invalid path pattern "src/" at byte 3: empty segment` |
+| `--path '/src'` | `--path: invalid path pattern "/src" at byte 0: empty segment` |
+| `--path 'acme/*:src//x'` | `--path: invalid repository identifier "acme/*": repository contains an unsupported character "*"` |
+
 `--no-cache` runs without opening, reading, or writing the enrichment cache.
 `--reset-cache` removes OrgTop's cached enrichment state and exits without
 resolving a credential, making a request, or starting the terminal UI; it

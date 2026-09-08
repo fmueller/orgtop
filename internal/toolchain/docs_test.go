@@ -1,6 +1,7 @@
 package toolchain
 
 import (
+	"io"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -72,6 +73,35 @@ const streamColumnsSectionID = "stream-columns"
 // quotes it, so the check cannot be satisfied by the same word used as ordinary
 // prose inside the section, such as the sentence explaining that times are ages.
 var documentedStreamColumns = []string{"`age`", "`repository`", "`category`", "`actor · description`"}
+
+// pathDiagnosticsSectionID marks the section that documents the diagnostics an
+// invalid `--path` value produces. The offset checks are scoped to it, because a
+// whole-document search for a quoted diagnostic would also be satisfied by an
+// unrelated example elsewhere in the prose.
+const pathDiagnosticsSectionID = "path-diagnostics"
+
+// pathDiagnosticExamples are the `--path` values whose diagnostic the user
+// document must quote. They are the RG-002 offset examples — empty input,
+// leading slash, repeated slash, and trailing slash — in the qualified form,
+// whose offset origin is otherwise unobservable, plus one bare value and one
+// malformed qualified repository prefix, whose pattern is invalid too so the
+// row evidences the precedence as well. Together they pin the origin the binary
+// counts from: the component the diagnostic quotes, not the whole value.
+var pathDiagnosticExamples = []string{
+	"acme/api:",
+	"acme/api:/src",
+	"acme/api:src//api",
+	"acme/api:src/",
+	"/src",
+	"acme/*:src//x",
+}
+
+// documentedOffsetOrigin are the claims the section states in prose, so the
+// origin is readable without deriving it from the quoted examples. The third
+// claim keeps the offset promise scoped: only a pattern diagnostic carries a
+// byte offset, while a malformed qualified repository prefix carries none, so
+// the prose cannot generalize past the messages the binary actually reports.
+var documentedOffsetOrigin = []string{"zero-based", "counted from", "no byte offset"}
 
 // sectionMarker is the comment that identifies a section by id.
 func sectionMarker(id string) string {
@@ -341,6 +371,48 @@ func streamColumnProblems(readme string) []string {
 	return problems
 }
 
+// documentedPathDiagnostics returns the diagnostic each example value produces,
+// derived from the parser rather than repeated, so documentation that quotes a
+// stale offset, cause, or quoted component fails here instead of misleading the
+// user who is reading it to fix an invocation.
+func documentedPathDiagnostics(t *testing.T) []string {
+	t.Helper()
+
+	diagnostics := make([]string, 0, len(pathDiagnosticExamples))
+	for _, value := range pathDiagnosticExamples {
+		_, err := cli.ParseArgs(releaseBinary, []string{"--path", value}, io.Discard)
+		if err == nil {
+			t.Fatalf("--path %q must be rejected", value)
+		}
+		diagnostics = append(diagnostics, err.Error())
+	}
+	return diagnostics
+}
+
+// pathDiagnosticProblems guards FR-011 for the RG-002 offset origin: the user
+// document states it and quotes the diagnostics the binary actually reports for
+// a qualified value, whose pattern offsets are counted from the pattern alone.
+func pathDiagnosticProblems(readme string, diagnostics []string) []string {
+	section, ok := documentSection(readme, pathDiagnosticsSectionID)
+	if !ok {
+		return []string{"there is no " + sectionMarker(pathDiagnosticsSectionID) + " section documenting the path diagnostics"}
+	}
+
+	lowered := strings.ToLower(section)
+	var problems []string
+	for _, claim := range documentedOffsetOrigin {
+		if !strings.Contains(lowered, claim) {
+			problems = append(problems, "the offset origin does not state "+claim)
+		}
+	}
+	for _, diagnostic := range diagnostics {
+		if !strings.Contains(section, diagnostic) {
+			problems = append(problems, "the diagnostic "+diagnostic+" is not documented")
+		}
+	}
+	return problems
+}
+
 // TestDocumentationDescribesTheShippedSurface runs every check over the
 // repository's own documentation set. It is the gate FR-011 and FR-012 rest on:
 // documentation that stops describing the shipped surface, or starts promising
@@ -357,6 +429,7 @@ func TestDocumentationDescribesTheShippedSurface(t *testing.T) {
 		"contributor claims":    contributorClaimProblems(docs),
 		"version and help":      versionAndHelpFlagProblems(readme),
 		"Stream columns":        streamColumnProblems(readme),
+		"path diagnostics":      pathDiagnosticProblems(readme, documentedPathDiagnostics(t)),
 		"deferred capabilities": deferredClaimProblems(readme, deferredClaims(t, activeSpecVersion(t))),
 		"stale claims":          staleClaimProblems(readme),
 	}

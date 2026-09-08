@@ -231,7 +231,9 @@ func TestParseArgsRejectsABarePathWithoutARepository(t *testing.T) {
 
 // TestParseArgsRejectsInvalidPathValues covers the RG-002 pattern diagnostics
 // the CLI owns: qualified-prefix validation precedes tokenization, and
-// tokenization reports the first cause with its zero-based byte offset.
+// tokenization reports the first cause with its zero-based byte offset. Offsets
+// are component-relative, so a qualified value's pattern is quoted and counted
+// from its own byte zero rather than from the whole value (T-077).
 func TestParseArgsRejectsInvalidPathValues(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -316,6 +318,30 @@ func TestParseArgsRejectsInvalidPathValues(t *testing.T) {
 			value:   "acme/api:src:api",
 			wantErr: domain.ErrInvalidMatcher,
 			want:    `--path: invalid path pattern "src:api" at byte 3: more than one unescaped colon`,
+		},
+		{
+			name:    "qualified empty pattern",
+			value:   "acme/api:",
+			wantErr: domain.ErrInvalidMatcher,
+			want:    `--path: invalid path pattern "" at byte 0: empty pattern`,
+		},
+		{
+			name:    "qualified leading separator counts from the pattern",
+			value:   "acme/api:/src",
+			wantErr: domain.ErrInvalidMatcher,
+			want:    `--path: invalid path pattern "/src" at byte 0: empty segment`,
+		},
+		{
+			name:    "qualified repeated separator counts from the pattern",
+			value:   "acme/api:src//api",
+			wantErr: domain.ErrInvalidMatcher,
+			want:    `--path: invalid path pattern "src//api" at byte 4: empty segment`,
+		},
+		{
+			name:    "qualified trailing separator counts from the pattern",
+			value:   "acme/api:src/",
+			wantErr: domain.ErrInvalidMatcher,
+			want:    `--path: invalid path pattern "src/" at byte 3: empty segment`,
 		},
 		{
 			name:    "nul byte",
