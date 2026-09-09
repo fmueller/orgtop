@@ -10,6 +10,7 @@ dependencies:
     - T-082-cover-contended-cache-lifecycle-reset-and-rebuild
     - T-093-enforce-per-package-efficacy-floor
     - T-094-harden-cache-timing-assertions
+    - T-103-extend-rain-windows-for-quiet-repositories
 updated_at: "2026-08-29T09:22:04Z"
 ---
 
