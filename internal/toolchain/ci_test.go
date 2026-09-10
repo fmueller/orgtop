@@ -614,28 +614,61 @@ func TestMergedReportNamesPackagesThatDidNotReport(t *testing.T) {
 // from the other or from what the repository decided.
 const mutationEfficacyFloor float64 = 85
 
-// mutationGateWorkers is how many mutants the weekly gate tests at once. Each
-// worker runs a full test binary, so this is a memory bound as much as a
-// parallelism one; see TestMutationShardsLeaveTheRunnerHeadroom.
+// mutationGateWorkers is how many mutants the weekly gate tests at once, one
+// core of a hosted runner each. It was briefly halved on the theory that four
+// concurrent test binaries exhausted the runner internal/tui kept losing, but
+// the whole package mutates at a 241MB peak and halving the workers moved the
+// reclamation from 9m22s to 8m11s, so memory was never the cause.
 //
-// Pinned rather than capped, though the memory argument alone would only bound
-// it from above: mutationShardTimeoutMinutes is calibrated against this exact
-// count, so fewer workers would buy headroom while quietly invalidating the
-// wall clock a shard is given.
-const mutationGateWorkers float64 = 2
+// Pinned rather than capped: mutationShardTimeoutMinutes is calibrated against
+// this exact count, so a change either way invalidates the wall clock a shard
+// is given.
+const mutationGateWorkers float64 = 4
 
 // mutationShardTimeoutMinutes is the wall clock a single mutation shard is
 // given. A job killed by its own timeout reports exactly as little as a
 // reclaimed one, so the bound sits well above what any shard needs.
 //
-// The slowest package, internal/tui, measured 18m38s at twice
-// mutationGateWorkers; no shard has yet run to completion at this count, so the
-// figure is headroom over an extrapolation rather than over a measurement. Part
-// of a run does not parallelize at all — gremlins takes its coverage baseline
-// once, before the workers are dealt — so halving the workers is expected to
-// cost less than double. Read the next run's actual figure against this bound
-// before trusting it.
+// The slowest package, internal/tui, measured 18m38s at mutationGateWorkers on
+// a hosted runner. The bound is roughly three times that, which also covers a
+// second attempt after a failed first one.
 const mutationShardTimeoutMinutes = 60
+
+// mutationGateAttempts is how many times a shard runs its gate before the
+// verdict stands. A reclaimed runner cancels the job outright, so no retry can
+// recover the failure that motivated this one; what it does cover is a gremlins
+// run that failed for a reason of its own — a flaked test under mutation, a
+// transient toolchain error — at the cost of running a genuine efficacy failure
+// twice.
+const mutationGateAttempts = 2
+
+// TestMutationShardRetriesItsGate pins the bounded retry. Unbounded retrying
+// would let a shard grind against a real failure until its timeout, reporting
+// nothing at all, which is the outcome the whole sharding change exists to
+// avoid.
+func TestMutationShardRetriesItsGate(t *testing.T) {
+	t.Parallel()
+
+	var gate string
+	for _, step := range jobStepValues(loadYAML(t, mutationWorkflow), "mutation-tests", "run") {
+		if strings.Contains(step, "test:mutate:gate") {
+			gate = step
+		}
+	}
+	if gate == "" {
+		t.Fatal("the mutation job must run the gate")
+	}
+
+	// The attempt list is read literally: a loop over "1 2" says how many
+	// attempts there are at the place the shell decides it.
+	attempts := "for attempt in 1 2; do"
+	if mutationGateAttempts != 2 {
+		t.Fatalf("this guard reads a two-attempt loop; update it for %d attempts", mutationGateAttempts)
+	}
+	if !strings.Contains(gate, attempts) {
+		t.Errorf("the gate step must retry a bounded number of times (%q), got: %s", attempts, gate)
+	}
+}
 
 // TestMutationShardsLeaveTheRunnerHeadroom keeps a shard inside what a hosted
 // runner will actually give it. gremlins runs one full test binary per worker,

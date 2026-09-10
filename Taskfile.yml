@@ -109,17 +109,17 @@ tasks:
         --invert-bitwise --invert-bwassign --remove-self-assignments
     cmds:
       - go clean -testcache
-      # gremlins runs one test binary per worker, so the worker count bounds the
-      # runner's memory as much as its cores. Four of the TUI suite at once on a
-      # four-core hosted runner had the runner reclaimed mid-shard, which reports
-      # nothing at all; two leaves the binaries room to run.
+      # gremlins runs one test binary per worker, so the gate takes the cores a
+      # hosted runner has. Halving them was tried against the reclamations the
+      # internal/tui shard keeps hitting and changed nothing: the package peaks
+      # at 241MB and died sooner at two workers than at four.
       # Guarded by TestMutationShardsLeaveTheRunnerHeadroom.
       #
       # gremlins walks the module directory, so a nested worktree checkout under
       # .claude/worktrees/ is scanned as a second copy of the source and reports
       # a fabricated figure. Excluding it keeps the run independent of whatever
       # an agent left on disk.
-      - go run github.com/go-gremlins/gremlins/cmd/gremlins@v0.6.0 unleash --exclude-files 'cmd/.*' --exclude-files '\.claude/.*' {{.MUTATORS}} --output-statuses lt --workers 2 --timeout-coefficient 20 --threshold-efficacy 85 '{{.PACKAGE}}'
+      - go run github.com/go-gremlins/gremlins/cmd/gremlins@v0.6.0 unleash --exclude-files 'cmd/.*' --exclude-files '\.claude/.*' {{.MUTATORS}} --output-statuses lt --workers 4 --timeout-coefficient 20 --threshold-efficacy 85 '{{.PACKAGE}}'
 
   test:mutate:floor:
     desc: Enforce the per-package mutation efficacy floor from the gate's report

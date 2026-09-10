@@ -79,7 +79,21 @@ jobs:
         continue-on-error: true
         env:
           GREMLINS_UNLEASH_OUTPUT: ${{ env.REPORT }}
-        run: task test:mutate:gate PACKAGE=${{ matrix.package }}
+        # Two attempts, not one. A reclaimed runner cancels the job outright,
+        # so this cannot recover the failure the internal/tui shard keeps
+        # hitting; it covers a gremlins run that failed on its own account, and
+        # costs a second full run when an efficacy failure is genuine. Bounded
+        # rather than open-ended: grinding against a real failure until the
+        # shard's timeout would report nothing at all. Guarded by
+        # TestMutationShardRetriesItsGate.
+        run: |
+          for attempt in 1 2; do
+            if task test:mutate:gate PACKAGE=${{ matrix.package }}; then
+              exit 0
+            fi
+            echo "mutation attempt $attempt failed for ${{ matrix.package }}" >&2
+          done
+          exit 1
 
       - name: Name the shard's files by package
         # gremlins names files relative to the path it mutated, so a shard writes
