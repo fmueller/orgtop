@@ -64,6 +64,19 @@ const (
 	versionUsage         = "print the release version and exit"
 )
 
+// The Rain window help FR-012 requires beside the flags. Rain's presets live in
+// the view that owns them, so this repeats their spelling rather than importing
+// it; internal/cli must not depend on the TUI to print a help line, and the
+// toolchain documentation gate checks both surfaces against one list. The
+// `available` line states the bound instead of implying it: the choice shows
+// the bounded snapshot the source already returned, never complete history.
+const rainWindowHelp = `Rain windows:
+  -/+ select a shorter or longer window: 15m, 30m, 60m, 6h, 24h, 7d, available
+        a session starts at 24h; each finite window drops an event at that exact age
+        available keeps every event of the last refresh, which is the newest 100
+        events per repository GitHub returned, not complete repository history
+`
+
 // Config is the validated launch configuration.
 type Config struct {
 	// Scopes is the expanded, deduplicated selection the launch renders. It is
@@ -179,4 +192,5 @@ func writeUsage(output io.Writer, name string) {
 	_, _ = fmt.Fprintf(output, "  --%s\n        %s\n", noCacheFlag, noCacheUsage)
 	_, _ = fmt.Fprintf(output, "  --%s\n        %s\n", resetCacheFlag, resetCacheUsage)
 	_, _ = fmt.Fprintf(output, "  --%s, -%s\n        %s\n", versionFlag, versionShort, versionUsage)
+	_, _ = fmt.Fprintf(output, "\n%s", rainWindowHelp)
 }

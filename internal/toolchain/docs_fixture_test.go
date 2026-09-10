@@ -161,6 +161,33 @@ func TestChecksFailWhenAGuardedClaimIsDropped(t *testing.T) {
 	}
 }
 
+// TestHelpRainWindowCheckFailsOnADroppedOrReorderedPreset keeps the help-text
+// check able to fail: a usage string that stops naming a preset, states them out
+// of preset order, or drops the honest `available` bound is rejected, while the
+// shipped usage passes.
+func TestHelpRainWindowCheckFailsOnADroppedOrReorderedPreset(t *testing.T) {
+	t.Parallel()
+
+	complete := "windows 15m, 30m, 60m, 6h, 24h, 7d, available; a session starts at 24h; " +
+		"available keeps the newest 100 events per repository, not complete repository history"
+	if problems := helpRainWindowProblems(complete); len(problems) != 0 {
+		t.Errorf("a complete help text failed the Rain window check: %v", problems)
+	}
+	for name, broken := range map[string]string{
+		"a dropped preset":    strings.Replace(complete, "7d, ", "", 1),
+		"a reordered list":    strings.Replace(complete, "15m, 30m", "30m, 15m", 1),
+		"the dropped bound":   strings.Replace(complete, "not complete repository history", "", 1),
+		"the dropped default": strings.Replace(complete, "a session starts at 24h; ", "", 1),
+	} {
+		if problems := helpRainWindowProblems(broken); len(problems) == 0 {
+			t.Errorf("%s in the help text did not fail its check", name)
+		}
+	}
+	if problems := helpRainWindowProblems(documentedInvocation(t)); len(problems) != 0 {
+		t.Errorf("the shipped help text failed the Rain window check: %v", problems)
+	}
+}
+
 // TestContributorClaimsAreSatisfiedByAnyDocument evidences the file decoupling:
 // the local gate command may live in CONTRIBUTING.md alone.
 func TestContributorClaimsAreSatisfiedByAnyDocument(t *testing.T) {

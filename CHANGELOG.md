@@ -93,6 +93,9 @@ workflow refuses to publish otherwise.
   `available`; only the selected window removes it. The no-color recency
   accounting states the old items too, as
   `recency: N new · R recent · A aging · O old` or `age N/R/A/O`.
+- `--help` now lists the Rain windows beneath the flags, with the preset a
+  session starts at and what `available` covers, so the bound is readable
+  without opening the README.
 - Rain now reports its visible Scope range and disjoint hidden Scope/item
   counts in the shared header instead of repeating them in the body context.
 - Overview and Stream now report the visible row range when terminal height

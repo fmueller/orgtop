@@ -85,6 +85,15 @@ var documentedRainWindows = []string{"`15m`", "`30m`", "`60m`", "`6h`", "`24h`",
 // the bounded snapshot the source returned.
 var documentedRainWindowClaims = []string{"defaults to `24h`", "newest 100", "not complete repository history"}
 
+// helpRainWindowClaims are the same two honest bounds stated without README's
+// markdown, so the binary's own help and the user document cannot drift apart:
+// FR-012 promises the presets and the current-snapshot meaning of `available`
+// in both surfaces, and a reader who never opens README still gets them. The
+// starting preset is claimed as the phrase rather than as the bare `24h`, which
+// the preset list already carries: help that named the presets but stopped
+// saying which one a session opens at would otherwise pass.
+var helpRainWindowClaims = []string{"starts at 24h", "newest 100", "not complete repository history"}
+
 // streamColumnsSectionID marks the section that describes Stream's columns. The
 // column checks are scoped to it, because names as ordinary as "age" and
 // "repository" also occur in the usage prose, and a whole-document search for
@@ -465,6 +474,33 @@ func rainWindowProblems(readme string) []string {
 	return problems
 }
 
+// helpRainWindowProblems guards FR-012's help-text half: the binary's usage
+// names every Rain preset, in the order `+` steps through them, and states what
+// `available` does and does not cover. It reads the same preset list the README
+// check does, so documenting a preset in one surface alone fails here.
+func helpRainWindowProblems(usage string) []string {
+	var problems []string
+	position := -1
+	for _, quoted := range documentedRainWindows {
+		window := strings.Trim(quoted, "`")
+		next := strings.Index(usage, window)
+		if next < 0 {
+			problems = append(problems, "the help text does not name the Rain "+window+" window")
+			continue
+		}
+		if next < position {
+			problems = append(problems, "the help text names the Rain "+window+" window out of preset order")
+		}
+		position = next
+	}
+	for _, claim := range helpRainWindowClaims {
+		if !strings.Contains(usage, claim) {
+			problems = append(problems, "the help text does not state "+claim)
+		}
+	}
+	return problems
+}
+
 // TestDocumentationDescribesTheShippedSurface runs every check over the
 // repository's own documentation set. It is the gate FR-011 and FR-012 rest on:
 // documentation that stops describing the shipped surface, or starts promising
@@ -482,6 +518,7 @@ func TestDocumentationDescribesTheShippedSurface(t *testing.T) {
 		"version and help":      versionAndHelpFlagProblems(readme),
 		"Stream columns":        streamColumnProblems(readme),
 		"Rain windows":          rainWindowProblems(readme),
+		"Rain window help":      helpRainWindowProblems(documentedInvocation(t)),
 		"path diagnostics":      pathDiagnosticProblems(readme, documentedPathDiagnostics(t)),
 		"deferred capabilities": deferredClaimProblems(readme, deferredClaims(t, activeSpecVersion(t))),
 		"stale claims":          staleClaimProblems(readme),

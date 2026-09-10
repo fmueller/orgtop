@@ -230,6 +230,37 @@ func TestVersionDefaultsToDev(t *testing.T) {
 	}
 }
 
+// TestUsageDocumentsTheRainWindows keeps FR-012's help-text promise: help
+// documents the Rain windows and the current-snapshot meaning of `available`,
+// so an operator who never opens README still learns what the longest preset
+// does and does not show. The presets are listed in the order `+` steps through
+// them, and the honest bound is stated rather than implied.
+func TestUsageDocumentsTheRainWindows(t *testing.T) {
+	var output bytes.Buffer
+	if _, err := cli.ParseArgs("orgtop", nil, &output); err == nil {
+		t.Fatal("parsing an empty argument list must be rejected")
+	}
+
+	usage := output.String()
+	position := -1
+	for _, preset := range []string{"15m", "30m", "60m", "6h", "24h", "7d", "available"} {
+		next := strings.Index(usage, preset)
+		if next < 0 {
+			t.Errorf("usage output does not name the Rain %s window:\n%s", preset, usage)
+			continue
+		}
+		if next < position {
+			t.Errorf("usage output names the Rain %s window before the shorter preset it follows:\n%s", preset, usage)
+		}
+		position = next
+	}
+	for _, claim := range []string{"newest 100", "not complete repository history", "-/+", "starts at 24h"} {
+		if !strings.Contains(usage, claim) {
+			t.Errorf("usage output does not state %q:\n%s", claim, usage)
+		}
+	}
+}
+
 // TestUsageDocumentsTheVersionFlag keeps usage listing every flag the parser
 // accepts, so --help names the version request a reader is looking for.
 func TestUsageDocumentsTheVersionFlag(t *testing.T) {
