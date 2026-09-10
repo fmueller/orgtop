@@ -290,18 +290,33 @@ func invocationProblems(readme, usage string) []string {
 // is stated in the order the resolver applies it, and the gh fallback a user has
 // to set up is named.
 func credentialContractProblems(readme string) []string {
+	return orderedClaimProblems(readme, []string{"GH_TOKEN", "GITHUB_TOKEN", "gh auth token", "gh auth login"},
+		func(step string) string { return step + " is not documented" },
+		func(step string) string { return step + " is documented before the step that precedes it" },
+	)
+}
+
+// orderedClaimProblems reports the claims that doc does not state, and those it
+// states out of the given order. Each claim is matched at or after the end of
+// the previous claim's match, so the check asserts the sequence of the claims
+// themselves rather than where each claim's text first happens to appear:
+// prose that names a claim ahead of the ordered list it belongs to neither
+// fails a document that is in order nor excuses one that is not. A claim that
+// is present but never after its predecessor is out of order, not missing, so
+// the two failures stay distinguishable in the diagnostic.
+func orderedClaimProblems(doc string, claims []string, missing, outOfOrder func(claim string) string) []string {
 	var problems []string
-	position := -1
-	for _, step := range []string{"GH_TOKEN", "GITHUB_TOKEN", "gh auth token", "gh auth login"} {
-		next := strings.Index(readme, step)
-		if next < 0 {
-			problems = append(problems, step+" is not documented")
-			continue
+	cursor := 0
+	for _, claim := range claims {
+		offset := strings.Index(doc[cursor:], claim)
+		switch {
+		case offset >= 0:
+			cursor += offset + len(claim)
+		case strings.Contains(doc, claim):
+			problems = append(problems, outOfOrder(claim))
+		default:
+			problems = append(problems, missing(claim))
 		}
-		if next < position {
-			problems = append(problems, step+" is documented before the step that precedes it")
-		}
-		position = next
 	}
 	return problems
 }
@@ -460,12 +475,10 @@ func rainWindowProblems(readme string) []string {
 		return []string{"there is no " + sectionMarker(rainWindowsSectionID) + " section documenting the Rain windows"}
 	}
 
-	var problems []string
-	for _, window := range documentedRainWindows {
-		if !strings.Contains(section, window) {
-			problems = append(problems, "the Rain "+window+" window is not documented")
-		}
-	}
+	problems := orderedClaimProblems(section, documentedRainWindows,
+		func(window string) string { return "the Rain " + window + " window is not documented" },
+		func(window string) string { return "the Rain " + window + " window is documented out of preset order" },
+	)
 	for _, claim := range documentedRainWindowClaims {
 		if !strings.Contains(section, claim) {
 			problems = append(problems, "the Rain windows section does not state "+claim)
@@ -479,20 +492,16 @@ func rainWindowProblems(readme string) []string {
 // `available` does and does not cover. It reads the same preset list the README
 // check does, so documenting a preset in one surface alone fails here.
 func helpRainWindowProblems(usage string) []string {
-	var problems []string
-	position := -1
+	presets := make([]string, 0, len(documentedRainWindows))
 	for _, quoted := range documentedRainWindows {
-		window := strings.Trim(quoted, "`")
-		next := strings.Index(usage, window)
-		if next < 0 {
-			problems = append(problems, "the help text does not name the Rain "+window+" window")
-			continue
-		}
-		if next < position {
-			problems = append(problems, "the help text names the Rain "+window+" window out of preset order")
-		}
-		position = next
+		presets = append(presets, strings.Trim(quoted, "`"))
 	}
+	problems := orderedClaimProblems(usage, presets,
+		func(window string) string { return "the help text does not name the Rain " + window + " window" },
+		func(window string) string {
+			return "the help text names the Rain " + window + " window out of preset order"
+		},
+	)
 	for _, claim := range helpRainWindowClaims {
 		if !strings.Contains(usage, claim) {
 			problems = append(problems, "the help text does not state "+claim)

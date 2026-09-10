@@ -318,3 +318,106 @@ out of section
 		t.Errorf("the section window ran past the next heading of equal depth: %q", section)
 	}
 }
+
+// TestOrderedClaimChecksAssertClaimSequence covers the ordering half of the
+// claim checks: a document that states the presets in order passes even though
+// its prose names a later preset ahead of the list, and one that reorders an
+// adjacent pair fails and names the preset that is out of order. Matching each
+// claim from position zero would decide both cases on where a preset's text
+// first happens to appear rather than on the sequence of the list itself.
+func TestOrderedClaimChecksAssertClaimSequence(t *testing.T) {
+	t.Parallel()
+
+	readme := restructuredDocs()["README.md"]
+	if problems := rainWindowProblems(readme); len(problems) != 0 {
+		t.Errorf("a section whose prose names `24h` before the ordered list failed: %v", problems)
+	}
+	for name, testCase := range map[string]struct {
+		from, to, named string
+	}{
+		"the first pair": {
+			from:  "`15m` `30m`",
+			to:    "`30m` `15m`",
+			named: "`30m`",
+		},
+		"a pair the prose shadows": {
+			from:  "`6h` `24h`",
+			to:    "`24h` `6h`",
+			named: "`24h`",
+		},
+	} {
+		reordered := strings.Replace(readme, testCase.from, testCase.to, 1)
+		if reordered == readme {
+			t.Fatalf("%s: the fixture no longer contains %s", name, testCase.from)
+		}
+		problems := rainWindowProblems(reordered)
+		if len(problems) == 0 {
+			t.Errorf("reordering %s of Rain presets did not fail the check", name)
+			continue
+		}
+		if !strings.Contains(strings.Join(problems, "\n"), testCase.named) {
+			t.Errorf("reordering %s did not name %s: %v", name, testCase.named, problems)
+		}
+	}
+}
+
+// TestCredentialCheckFailsOnAReorderedPrecedence keeps the credential gate's
+// ordering half able to fail, and keeps it about the precedence list rather
+// than about the whole document: a README whose prose names the fallback step
+// ahead of the list still passes while the list is in order, and still fails
+// when two steps are swapped. Matching each step from position zero would
+// reject the first document on the prose alone.
+func TestCredentialCheckFailsOnAReorderedPrecedence(t *testing.T) {
+	t.Parallel()
+
+	readme := restructuredDocs()["README.md"]
+	shadowed := strings.Replace(
+		readme,
+		"## Credentials\n",
+		"## Credentials\n\nWith no variable set, `gh auth login` is what a reader has to run.\n",
+		1,
+	)
+	if shadowed == readme {
+		t.Fatal("the fixture no longer contains the credentials heading")
+	}
+	if problems := credentialContractProblems(shadowed); len(problems) != 0 {
+		t.Errorf("prose naming `gh auth login` before the precedence list failed the check: %v", problems)
+	}
+	for name, document := range map[string]string{
+		"the precedence list":              readme,
+		"a prose-shadowed precedence list": shadowed,
+	} {
+		reordered := strings.Replace(
+			document,
+			"1. `GH_TOKEN`\n2. `GITHUB_TOKEN`",
+			"1. `GITHUB_TOKEN`\n2. `GH_TOKEN`",
+			1,
+		)
+		if reordered == document {
+			t.Fatalf("%s: the fixture no longer contains the credential precedence list", name)
+		}
+		if problems := credentialContractProblems(reordered); len(problems) == 0 {
+			t.Errorf("reordering %s did not fail the check", name)
+		}
+	}
+}
+
+// TestHelpRainWindowCheckReadsThePresetListNotTheProse pins the help-text half
+// of the same property: usage that names a later preset in prose ahead of the
+// `-/+` list passes while the list is in order, and fails when the list is
+// reordered. First-occurrence matching would reject the in-order usage because
+// `available` is mentioned before the presets that precede it.
+func TestHelpRainWindowCheckReadsThePresetListNotTheProse(t *testing.T) {
+	t.Parallel()
+
+	shadowed := "the widest choice is available. " +
+		"windows 15m, 30m, 60m, 6h, 24h, 7d, available; a session starts at 24h; " +
+		"available keeps the newest 100 events per repository, not complete repository history"
+	if problems := helpRainWindowProblems(shadowed); len(problems) != 0 {
+		t.Errorf("prose naming available before the preset list failed the check: %v", problems)
+	}
+	reordered := strings.Replace(shadowed, "15m, 30m", "30m, 15m", 1)
+	if problems := helpRainWindowProblems(reordered); len(problems) == 0 {
+		t.Error("a prose-shadowed help text with a reordered preset list did not fail the check")
+	}
+}

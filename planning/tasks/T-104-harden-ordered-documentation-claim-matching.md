@@ -1,11 +1,11 @@
 ---
 id: T-104-harden-ordered-documentation-claim-matching
 title: Harden ordered documentation claim matching
-status: todo
+status: completed
 priority: low
 spec_ref: specs/v0.2.0.md#nfr-006-verification-quality
 dependencies: []
-updated_at: "2026-09-10T08:59:54Z"
+updated_at: "2026-09-10T09:32:04Z"
 ---
 
 # T-104-harden-ordered-documentation-claim-matching Harden ordered documentation claim matching
@@ -66,3 +66,4 @@ membership half of each check unchanged.
   README, CONTRIBUTING, or the CLI usage text to work around it.
 - Found while closing T-103, whose Rain window and help-text checks reuse the
   same pattern the credential check established.
+- 2026-09-10T09:32:00Z: verification pass
