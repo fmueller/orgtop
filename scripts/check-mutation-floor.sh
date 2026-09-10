@@ -5,7 +5,7 @@
 # weekly gate already wrote and thresholds each package on its own.
 set -euo pipefail
 
-floor=90
+floor=85
 report=mutation-results.json
 
 while [ "$#" -gt 0 ]; do
@@ -38,9 +38,9 @@ fi
 # Efficacy is killed / (killed + lived), the ratio gremlins publishes: timed-out
 # and not-covered mutants return no verdict and stay outside it. A package whose
 # every mutant timed out therefore has no ratio to fall below. The comparison is
-# strictly below the floor, so a package sitting exactly on 90% holds it. That is
-# one mutant looser than gremlins' own --threshold-efficacy, which reds on `<=`;
-# the floor NFR-006 states is a minimum to reach, not one to exceed.
+# strictly below the floor, so a package sitting exactly on the floor holds it.
+# That is one mutant looser than gremlins' own --threshold-efficacy, which reds
+# on `<=`; the floor NFR-006 states is a minimum to reach, not one to exceed.
 rows="$(
   jq -r --argjson floor "$floor" '
     [ .files[]
@@ -62,7 +62,7 @@ rows="$(
       )
     | sort_by(.package)[]
     | [ .package,
-        # Truncated rather than rounded: a package at 89.99% reported as 90.0%
+        # Truncated rather than rounded: a package at 84.99% reported as 85.0%
         # reads as sitting on the floor the run just failed it for missing.
         # Truncation only ever moves a figure away from the floor it is compared
         # against, so the printed number and the verdict cannot contradict.

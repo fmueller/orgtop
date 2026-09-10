@@ -107,9 +107,10 @@ assert_accepts no-runnable-mutants \
   'internal/enrichment' 'n/a'
 
 # A package just under the floor must not print a figure that reads as at or
-# above it: rounding 89.99% to 90.0% tells the reader they are on the floor when
+# above it: rounding 84.99% to 85.0% tells the reader they are on the floor when
 # the run failed them for being under it, and the verdict has to be actionable
-# without a second run.
+# without a second run. The floor is passed explicitly here, so the case reads
+# the same whatever figure the repository currently enforces.
 assert_rejects just-under-the-floor \
   "$(report just-under-the-floor \
     'internal/github/client.go:KILLEDx8999' \
@@ -130,6 +131,28 @@ raised="$(report raised-floor \
   'internal/auth/token.go:LIVEDx1')"
 if "$checker" --floor 95 --report "$raised" >/dev/null 2>&1; then
   fail "raised-floor was accepted at 95% by a 90% package"
+fi
+
+# Invoked with no --floor, the check applies the figure the repository holds
+# every package to. Nothing else pins that default: the Taskfile always passes
+# --floor explicitly, so a change that moved the enforced figure everywhere but
+# here would leave a direct run of this script grading against the old one.
+default_floor=85
+under="$(report under-default-floor \
+  "internal/github/client.go:KILLEDx$((default_floor - 1))" \
+  "internal/github/client.go:LIVEDx$((100 - default_floor + 1))")"
+if output="$("$checker" --report "$under" 2>&1)"; then
+  fail "under-default-floor was accepted by the default floor: $output"
+fi
+if [[ "$output" != *"below the ${default_floor}% floor"* ]]; then
+  fail "the default floor is not ${default_floor}%: $output"
+fi
+
+over="$(report over-default-floor \
+  "internal/github/client.go:KILLEDx$default_floor" \
+  "internal/github/client.go:LIVEDx$((100 - default_floor))")"
+if ! output="$("$checker" --report "$over" 2>&1)"; then
+  fail "a package exactly on the default floor was rejected: $output"
 fi
 
 # A missing or unreadable report must red the gate rather than pass vacuously.
