@@ -75,9 +75,29 @@ tasks:
       - go clean -testcache
       - go run github.com/go-gremlins/gremlins/cmd/gremlins@v0.6.0 unleash --diff '{{.BASE}}' --exclude-files 'cmd/.*' --output-statuses lt --workers 2
 
+  test:mutate:packages:
+    desc: List the packages the weekly mutation gate shards across, as a JSON array
+    # One source for the shard list. mutation.yml builds its matrix from this
+    # rather than naming packages in YAML, so a package added this week is
+    # mutated this week instead of sitting outside the gate unnoticed. cmd/ is
+    # excluded here for the same reason the gate excludes it by regexp.
+    # Guarded by TestMutationGateShardsPerPackage.
+    silent: true
+    cmds:
+      - |
+        set -eu -o pipefail
+        go list -f '{{`{{if .GoFiles}}{{.Dir}}{{end}}`}}' ./... \
+          | sed "s|^{{.ROOT_DIR}}/||" \
+          | grep -v '^cmd/' \
+          | jq -Rsc 'split("\n") | map(select(length > 0))'
+
   test:mutate:gate:
-    desc: Run the full weekly mutation gate across every mutator
+    desc: Run the full weekly mutation gate across every mutator, optionally scoped to PACKAGE
     vars:
+      # The package the run mutates. The weekly workflow scopes each shard to one
+      # package so a hosted runner finishes it well inside its wall clock; the
+      # default mutates the whole module, which is what a local full run wants.
+      PACKAGE: '{{.PACKAGE | default "."}}'
       # The six mutators gremlins leaves off by default. Together they add about
       # a quarter more mutants over the default set, which only the weekly gate
       # pays for. The gate also widens the per-mutant timeout: the cache suite
@@ -89,11 +109,16 @@ tasks:
         --invert-bitwise --invert-bwassign --remove-self-assignments
     cmds:
       - go clean -testcache
+      # gremlins runs one test binary per worker. The gate owns a whole runner, so
+      # it takes every core a hosted one has; the differential lane stays at two
+      # because it shares a developer's machine with whatever else runs there.
+      # Guarded by TestMutationGateUsesEveryRunnerCore.
+      #
       # gremlins walks the module directory, so a nested worktree checkout under
       # .claude/worktrees/ is scanned as a second copy of the source and reports
       # a fabricated figure. Excluding it keeps the run independent of whatever
       # an agent left on disk.
-      - go run github.com/go-gremlins/gremlins/cmd/gremlins@v0.6.0 unleash --exclude-files 'cmd/.*' --exclude-files '\.claude/.*' {{.MUTATORS}} --output-statuses lt --workers 2 --timeout-coefficient 20 --threshold-efficacy 90
+      - go run github.com/go-gremlins/gremlins/cmd/gremlins@v0.6.0 unleash --exclude-files 'cmd/.*' --exclude-files '\.claude/.*' {{.MUTATORS}} --output-statuses lt --workers 4 --timeout-coefficient 20 --threshold-efficacy 90 '{{.PACKAGE}}'
 
   test:mutate:floor:
     desc: Enforce the per-package mutation efficacy floor from the gate's report

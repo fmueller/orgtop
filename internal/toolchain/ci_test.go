@@ -410,7 +410,6 @@ func TestGremlinsIsInstalledOnDemand(t *testing.T) {
 	tasks := readFile(t, taskfile)
 	for _, required := range []string{
 		"go run github.com/go-gremlins/gremlins/cmd/gremlins@v0.6.0 unleash",
-		"--workers 2",
 		"go clean -testcache",
 	} {
 		if !strings.Contains(tasks, required) {
@@ -471,6 +470,159 @@ func TestMutationTiersSplitTheMutatorSet(t *testing.T) {
 	}
 	if strings.Contains(differential, "--threshold-efficacy") {
 		t.Error("the differential run must report rather than gate; thresholds belong to the weekly lane")
+	}
+}
+
+// TestMutationGateShardsPerPackage keeps the weekly gate inside the wall clock a
+// hosted runner gives it. The widened mutator set measures over 40 minutes as a
+// single four-core job, and a run that long is reclaimed mid-flight: the gate
+// then reports nothing at all, because a cancelled job skips even its
+// `if: always()` reporting. One shard per package keeps each job short, lets the
+// shards run in parallel, and leaves a failed package's verdict readable on its
+// own. The shard list is derived from the module rather than written into the
+// workflow, so a new package is mutated the week it appears instead of silently
+// sitting outside the gate.
+func TestMutationGateShardsPerPackage(t *testing.T) {
+	t.Parallel()
+
+	workflow := loadYAML(t, mutationWorkflow)
+
+	matrix := nodeAt(jobAt(workflow, "mutation-tests"), "strategy", "matrix", "package")
+	if matrix == nil {
+		t.Fatal("the mutation job must shard across packages with a matrix")
+	}
+	if !strings.Contains(matrix.Value, "fromJSON(needs.") {
+		t.Errorf("the shard list must be derived from the module, not written into the workflow, got: %q", matrix.Value)
+	}
+
+	var scoped bool
+	for _, step := range jobStepValues(workflow, "mutation-tests", "run") {
+		if strings.Contains(step, "test:mutate:gate") && strings.Contains(step, "PACKAGE=") {
+			scoped = true
+		}
+	}
+	if !scoped {
+		t.Error("each shard must run the gate scoped to its own package")
+	}
+
+	// The shard list has one source: a Taskfile target, so the packages the
+	// workflow mutates are the packages a developer can list locally.
+	packages := taskCommand(t, "test:mutate:packages")
+	if !strings.Contains(packages, "go list") {
+		t.Errorf("the shard list must come from the module's own package list, got: %s", packages)
+	}
+}
+
+// TestShardReportsCarryTheirPackagePath keeps the sharded reports readable as
+// one repository report. gremlins names files relative to the path it was given,
+// so a shard scoped to internal/auth writes `credential.go` where the unscoped
+// run writes `internal/auth/credential.go`. The per-package floor derives the
+// package from that path: left alone, every shard files its mutants under one
+// nameless package, and the merged weekly table reports a single row for the
+// whole module. The shard restores the module-relative path before anything
+// reads the report, and does so whether or not its own gate passed, because a
+// failed shard's report is the one the tracking issue quotes.
+func TestShardReportsCarryTheirPackagePath(t *testing.T) {
+	t.Parallel()
+
+	steps := child(jobAt(loadYAML(t, mutationWorkflow), "mutation-tests"), "steps")
+	if steps == nil {
+		t.Fatal("the mutation job must declare steps")
+	}
+
+	normalized, floored := -1, -1
+	for index, step := range steps.Content {
+		run := child(step, "run")
+		if run == nil {
+			continue
+		}
+		if strings.Contains(run.Value, "file_name") && strings.Contains(run.Value, "matrix.package") {
+			normalized = index
+		}
+		if strings.Contains(run.Value, "test:mutate:floor") {
+			floored = index
+		}
+	}
+
+	if normalized < 0 {
+		t.Fatal("each shard must name its files by package before the report is read")
+	}
+	if floored < 0 {
+		t.Fatal("each shard must run the per-package floor")
+	}
+	if normalized > floored {
+		t.Error("the shard must name its files by package before the floor reads them, not after")
+	}
+	if always := child(steps.Content[normalized], "if"); always == nil || !strings.Contains(always.Value, "always()") {
+		t.Error("a failed shard's report is the one the tracking issue quotes, so it must be named by package too")
+	}
+}
+
+// TestShardListFailsLoudly keeps a broken package list from quietly shrinking
+// the gate. The list is a pipeline, and a shell that neither sets pipefail nor
+// checks the task's own status reports success while `go list` failed: the
+// matrix is then built from whatever survived, fewer packages are mutated than
+// exist, and nothing in the run says so. That is the same silent-pass failure
+// mode NFR-006 rules out, moved from the assertion into the list it runs over.
+func TestShardListFailsLoudly(t *testing.T) {
+	t.Parallel()
+
+	if list := taskCommand(t, "test:mutate:packages"); !strings.Contains(list, "pipefail") {
+		t.Errorf("the shard list must fail when any stage of its pipeline fails, got: %s", list)
+	}
+
+	var checked bool
+	for _, step := range jobStepValues(loadYAML(t, mutationWorkflow), "packages", "run") {
+		if strings.Contains(step, "test:mutate:packages") && strings.Contains(step, "pipefail") {
+			checked = true
+		}
+	}
+	if !checked {
+		t.Error("the workflow must fail when the shard list command fails, not publish whatever it printed")
+	}
+}
+
+// TestMergedReportNamesPackagesThatDidNotReport keeps the merged weekly report
+// honest about what it covers. A shard that is cancelled or times out skips its
+// own `if: always()` upload, so its package leaves no report behind; merging
+// whatever arrived then publishes a per-package table that looks complete while
+// a package is missing from it. The merge measures what arrived against the
+// shard list and names the gap.
+func TestMergedReportNamesPackagesThatDidNotReport(t *testing.T) {
+	t.Parallel()
+
+	var compared bool
+	for _, step := range jobStepValues(loadYAML(t, mutationWorkflow), "report", "run") {
+		if strings.Contains(step, "missing") && strings.Contains(step, "PACKAGES") {
+			compared = true
+		}
+	}
+	if !compared {
+		t.Error("the merge must name the packages whose shard reported nothing")
+	}
+
+	workflow := readFile(t, mutationWorkflow)
+	if !strings.Contains(workflow, "needs.packages.outputs.packages") {
+		t.Error("the merge must measure the reports it received against the shard list the run planned")
+	}
+}
+
+// TestMutationGateUsesEveryRunnerCore keeps the sharded gate from leaving half
+// the runner idle. gremlins runs one test binary per worker, so a four-core
+// runner held at two workers doubles a shard's wall clock for no reason. The
+// differential lane stays narrower: it shares a developer's machine with
+// whatever else is running on it.
+func TestMutationGateUsesEveryRunnerCore(t *testing.T) {
+	t.Parallel()
+
+	gate := flagValue(t, mutationCommand(t, "test:mutate:gate"), "--workers")
+	differential := flagValue(t, mutationCommand(t, "test:mutate"), "--workers")
+
+	if gate < 4 {
+		t.Errorf("the weekly gate runs %g workers, want at least the 4 cores a hosted runner offers", gate)
+	}
+	if differential >= gate {
+		t.Errorf("the differential lane runs %g workers against the gate's %g; the per-change loop must stay the cheaper one", differential, gate)
 	}
 }
 

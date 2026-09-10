@@ -17,11 +17,54 @@ permissions:
   issues: write
 
 jobs:
-  mutation-tests:
+  packages:
+    # The shard list is derived from the module rather than written here, so a
+    # package added this week is mutated this week. Guarded by
+    # TestMutationGateShardsPerPackage.
     runs-on: ubuntu-latest
-    # The widened mutator set and the timeout coefficient the cache suite needs
-    # put a full run near 40 minutes on a four-core runner.
-    timeout-minutes: 90
+    timeout-minutes: 10
+    outputs:
+      packages: ${{ steps.list.outputs.packages }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup toolchain
+        uses: ./.github/actions/setup
+
+      - name: List the packages to mutate
+        id: list
+        # The task's own status is checked rather than only its output: a list
+        # that failed halfway would otherwise publish whatever it printed, and
+        # the matrix would mutate fewer packages than the module has without
+        # anything going red. Guarded by TestShardListFailsLoudly.
+        run: |
+          set -euo pipefail
+          packages="$(task test:mutate:packages)"
+          if [ "$packages" = '[]' ]; then
+            echo "the shard list is empty; the gate would mutate nothing" >&2
+            exit 1
+          fi
+          printf 'packages=%s\n' "$packages" >> "$GITHUB_OUTPUT"
+
+  mutation-tests:
+    needs: packages
+    runs-on: ubuntu-latest
+    # One package rather than the whole module, on every core the runner has.
+    # The unsharded gate measured over 40 minutes and was reclaimed mid-run,
+    # which loses the report as well as the verdict: a cancelled job skips even
+    # its `if: always()` steps.
+    timeout-minutes: 45
+    strategy:
+      # A package that fails the floor must not stop the rest from reporting
+      # theirs; the run's verdict is the whole matrix, not its first failure.
+      fail-fast: false
+      matrix:
+        package: ${{ fromJSON(needs.packages.outputs.packages) }}
+    env:
+      # Named by shard so the reports merge without colliding. Written once here
+      # because the gate, the floor, and the upload must all name the same file.
+      REPORT: mutation-results-${{ strategy.job-index }}.json
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -33,8 +76,22 @@ jobs:
         id: mutation
         continue-on-error: true
         env:
-          GREMLINS_UNLEASH_OUTPUT: mutation-results.json
-        run: task test:mutate:gate
+          GREMLINS_UNLEASH_OUTPUT: ${{ env.REPORT }}
+        run: task test:mutate:gate PACKAGE=${{ matrix.package }}
+
+      - name: Name the shard's files by package
+        # gremlins names files relative to the path it mutated, so a shard writes
+        # `credential.go` where an unscoped run writes
+        # `internal/auth/credential.go`. The floor and the merged report both
+        # derive the package from that path. Runs even when the gate failed: a
+        # failed shard's report is the one the tracking issue quotes. Guarded by
+        # TestShardReportsCarryTheirPackagePath.
+        if: always()
+        run: |
+          [ -f "$REPORT" ] || exit 0
+          jq --arg package '${{ matrix.package }}' \
+            '.files |= map(.file_name |= "\($package)/\(.)")' "$REPORT" > "$REPORT.named"
+          mv "$REPORT.named" "$REPORT"
 
       - name: Enforce the per-package efficacy floor
         id: floor
@@ -43,13 +100,99 @@ jobs:
         # this a single package could regress to roughly 60% unnoticed.
         if: always()
         continue-on-error: true
-        run: task test:mutate:floor
+        run: task test:mutate:floor REPORT="$REPORT"
+
+      - name: Upload mutation report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mutation-results-${{ github.sha }}-${{ strategy.job-index }}
+          path: ${{ env.REPORT }}
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Enforce mutation gate
+        if: always() && (steps.mutation.outcome != 'success' || steps.floor.outcome != 'success')
+        run: exit 1
+
+  report:
+    needs: [packages, mutation-tests]
+    # Reporting must never mask the shards' verdict, and must still run when a
+    # shard fails: the merged report and the tracking issue are what a failed
+    # week is read from.
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup toolchain
+        uses: ./.github/actions/setup
+
+      - name: Download the shard reports
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        continue-on-error: true
+        with:
+          pattern: mutation-results-${{ github.sha }}-*
+          merge-multiple: true
+          path: shards
+
+      - name: Merge the shard reports
+        id: merge
+        # One report for the repository, recomputed from the shards rather than
+        # averaged: efficacy is killed over killed plus lived, so summing the
+        # counts first is the only way the total means what a single run's did.
+        env:
+          PACKAGES: ${{ needs.packages.outputs.packages }}
+        run: |
+          set -euo pipefail
+          if ! ls shards/*.json >/dev/null 2>&1; then
+            echo "no shard reports were produced" >&2
+            exit 1
+          fi
+          jq -s '
+            (map(.mutants_killed) | add) as $killed
+            | (map(.mutants_lived) | add) as $lived
+            | (map(.mutants_not_covered) | add) as $not_covered
+            | {
+                go_module: (.[0].go_module),
+                mutants_killed: $killed,
+                mutants_lived: $lived,
+                mutants_not_covered: $not_covered,
+                mutants_not_viable: (map(.mutants_not_viable) | add),
+                mutants_total: (map(.mutants_total) | add),
+                mutator_statistics: (
+                  map(.mutator_statistics // {})
+                  | reduce .[] as $shard ({};
+                      reduce ($shard | keys_unsorted[]) as $mutator (.;
+                        .[$mutator] = ((.[$mutator] // 0) + $shard[$mutator])))
+                ),
+                test_efficacy: (if $killed + $lived == 0 then 0 else 100 * $killed / ($killed + $lived) end),
+                mutations_coverage: (if $killed + $lived + $not_covered == 0 then 0 else 100 * ($killed + $lived) / ($killed + $lived + $not_covered) end),
+                elapsed_time: (map(.elapsed_time) | add),
+                files: (map(.files[]))
+              }' shards/*.json > mutation-results.json
+
+          # A shard that is cancelled or times out skips its own upload, so its
+          # package leaves no report behind. Merging what arrived would then
+          # publish a per-package table that reads as complete. Guarded by
+          # TestMergedReportNamesPackagesThatDidNotReport.
+          missing="$(jq -r --argjson planned "$PACKAGES" '
+            ([.files[].file_name | sub("/[^/]*$"; "")] | unique) as $reported
+            | ($planned - $reported) | join(", ")' mutation-results.json)"
+          printf 'missing=%s\n' "$missing" >> "$GITHUB_OUTPUT"
+          if [ -n "$missing" ]; then
+            echo "no shard report arrived for: $missing" >&2
+          fi
 
       - name: Summarize mutation results
         if: always()
-        # Reporting must never mask the gate verdict; the enforce step below owns
-        # the pass/fail decision.
+        # Reporting must never mask the gate verdict; the shards own the
+        # pass/fail decision.
         continue-on-error: true
+        env:
+          MISSING: ${{ steps.merge.outputs.missing }}
         run: |
           if [ ! -f mutation-results.json ]; then
             printf '## Mutation testing\n\nNo JSON report was produced. See the job log.\n' >> "$GITHUB_STEP_SUMMARY"
@@ -62,10 +205,13 @@ jobs:
             jq -r '"| Test efficacy | \(.test_efficacy * 100 | round / 100)% |", "| Mutator coverage | \(.mutations_coverage * 100 | round / 100)% |", "| Killed | \(.mutants_killed) |", "| Lived | \(.mutants_lived) |", "| Timed out | \([.files[].mutations[] | select(.status == "TIMED OUT")] | length) |", "| Not covered | \(.mutants_not_covered) |"' mutation-results.json
             printf '\n### Per-package efficacy\n\n'
             task test:mutate:floor || true
+            if [ -n "$MISSING" ]; then
+              printf '\nNo shard report arrived for: %s\n' "$MISSING"
+            fi
             printf '\nCommit: `%s`\n' "$GITHUB_SHA"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload mutation report
+      - name: Upload the merged mutation report
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -78,14 +224,14 @@ jobs:
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
-          MUTATION_OUTCOME: ${{ steps.mutation.outcome }}
-          FLOOR_OUTCOME: ${{ steps.floor.outcome }}
+          MUTATION_OUTCOME: ${{ needs.mutation-tests.result }}
+          MISSING: ${{ steps.merge.outputs.missing }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           title='Mutation testing gate failure'
           issue_number=$(gh issue list --state open --label github_actions --json number,title --jq "map(select(.title == \"$title\"))[0].number // empty" || true)
 
-          if [ "$MUTATION_OUTCOME" = success ] && [ "$FLOOR_OUTCOME" = success ]; then
+          if [ "$MUTATION_OUTCOME" = success ]; then
             if [ -n "$issue_number" ]; then
               gh issue close "$issue_number" --comment "Mutation testing recovered in $RUN_URL."
             fi
@@ -96,6 +242,10 @@ jobs:
           {
             printf 'The weekly mutation gate failed for `%s`.\n\n' "$GITHUB_SHA"
             printf -- '- Workflow run: %s\n' "$RUN_URL"
+            printf -- '- Shard outcome: %s\n' "$MUTATION_OUTCOME"
+            if [ -n "$MISSING" ]; then
+              printf -- '- No shard report arrived for: %s\n' "$MISSING"
+            fi
             if [ -f mutation-results.json ]; then
               jq -r '"- Test efficacy: \(.test_efficacy * 100 | round / 100)%", "- Mutator coverage: \(.mutations_coverage * 100 | round / 100)%", "- Killed: \(.mutants_killed)", "- Lived: \(.mutants_lived)", "- Timed out: \([.files[].mutations[] | select(.status == "TIMED OUT")] | length)", "- Not covered: \(.mutants_not_covered)"' mutation-results.json
               printf '\n### Lived mutants\n\n'
@@ -103,7 +253,7 @@ jobs:
               printf '\n### Per-package efficacy\n\n'
               task test:mutate:floor 2>&1 || true
             else
-              printf -- '- No JSON report was produced; inspect the workflow log.\n'
+              printf -- '- No merged report was produced; inspect the workflow log.\n'
             fi
             printf '\nRun `task test:mutate:gate` locally, fix or classify survivors, then manually dispatch this workflow.\n'
           } > "$body"
@@ -113,7 +263,3 @@ jobs:
           else
             gh issue create --title "$title" --label github_actions --body-file "$body"
           fi
-
-      - name: Enforce mutation gate
-        if: always() && (steps.mutation.outcome != 'success' || steps.floor.outcome != 'success')
-        run: exit 1
