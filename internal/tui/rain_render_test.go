@@ -80,8 +80,8 @@ func TestRainRetainsFieldStateAndDataAcrossViewSwitches(t *testing.T) {
 
 	model, _ = apply(t, model, press("-"), press("p"))
 	window, paused := model.rain.window, model.rain.paused
-	if window != rainWindow(1) || !paused {
-		t.Fatalf("Rain is at window %s paused=%v, want 30m paused", window, paused)
+	if window != rainWindow6h || !paused {
+		t.Fatalf("Rain is at window %s paused=%v, want 6h paused", window, paused)
 	}
 
 	model, _ = apply(t, model, press("1"), press("2"), press("3"))
@@ -178,8 +178,63 @@ func TestRainRendersMixedScopeColumnsAndGlyphs(t *testing.T) {
 	if !strings.Contains(content, categoryGlyph(domain.CategoryPush, charsetUTF8)) {
 		t.Errorf("the Rain field draws no shared push glyph:\n%s", content)
 	}
-	if !strings.Contains(content, "window 60m") {
+	if !strings.Contains(content, "window 24h") {
 		t.Errorf("the Rain context does not report its window:\n%s", content)
+	}
+}
+
+// TestRainLabelsTheAvailableWindowExactly guards A-054 and FR-008: stepping to
+// the longest preset renders the exact `window available` label, never `all` or
+// any complete-history wording, and the selection survives a view change and a
+// resize.
+func TestRainLabelsTheAvailableWindowExactly(t *testing.T) {
+	repository := "acme/api"
+	scopes := scopeSet(t, domain.NewRepositoryScope(testRepository(t, repository)))
+	model := rainModel(t, scopes, []domain.EventEvidence{rainEvidence(t, "one", repository, 30*24*time.Hour)}, 120, 20)
+
+	model, _ = apply(t, model, press("+"), press("+"))
+	content := model.View().Content
+	if !strings.Contains(content, "window available") {
+		t.Errorf("the longest preset is not labelled `window available`:\n%s", content)
+	}
+	for _, forbidden := range []string{"window all", "all history", "complete history"} {
+		if strings.Contains(content, forbidden) {
+			t.Errorf("the available window claims %q:\n%s", forbidden, content)
+		}
+	}
+	if !rainAdmits(model.rain, "one", scopes.Ordered()[0]) {
+		t.Error("the available window removed a 30-day-old confirmed membership of the current snapshot")
+	}
+
+	model, _ = apply(t, model, press("1"), press("3"), tea.WindowSizeMsg{Width: 90, Height: 16})
+	if got := model.rain.window; got != rainWindowAvailable {
+		t.Errorf("a view change and a resize left Rain at window %s, want available", got)
+	}
+	if !strings.Contains(model.View().Content, "window available") {
+		t.Errorf("the available label did not survive a view change and a resize:\n%s", model.View().Content)
+	}
+}
+
+// TestRainAvailableWindowRestoresFromTheRetainedStaleSnapshot guards A-054 and
+// RG-004: after a failed refresh has left the view `STALE`, selecting
+// `available` reconciles against the retained stale snapshot rather than
+// against nothing, so a quiet repository keeps an ambient field while its
+// source is unreachable.
+func TestRainAvailableWindowRestoresFromTheRetainedStaleSnapshot(t *testing.T) {
+	repository := "acme/api"
+	scopes := scopeSet(t, domain.NewRepositoryScope(testRepository(t, repository)))
+	model := rainModel(t, scopes, []domain.EventEvidence{rainEvidence(t, "ancient", repository, 30*24*time.Hour)}, 120, 20)
+	model.state.Freshness = FreshnessStale
+	if rainAdmits(model.rain, "ancient", scopes.Ordered()[0]) {
+		t.Fatal("the default 24h window admitted a 30-day-old event")
+	}
+
+	model, _ = apply(t, model, press("+"), press("+"))
+	if !rainAdmits(model.rain, "ancient", scopes.Ordered()[0]) {
+		t.Error("selecting available while stale restored nothing from the retained snapshot")
+	}
+	if !strings.Contains(model.View().Content, "window available") {
+		t.Errorf("a stale Rain does not report the selected window:\n%s", model.View().Content)
 	}
 }
 
@@ -278,12 +333,16 @@ func TestRainWithoutIntensityReportsRecencyCounts(t *testing.T) {
 		rainEvidence(t, "fresh", repository, time.Minute),
 		rainEvidence(t, "older", repository, 10*time.Minute),
 		rainEvidence(t, "oldest", repository, 20*time.Minute),
+		rainEvidence(t, "ancient", repository, 90*time.Minute),
 	}
 
 	plain := rainModel(t, scopes, retained, 120, 20)
 	plain.capability = capabilityNoColor
 	content := plain.View().Content
-	if !strings.Contains(content, "recency: 1 new · 1 recent · 1 aging") {
+	// The `old` count is stated too: the default 24-hour window keeps an item
+	// that crossed the 60-minute style threshold, so accounting that stopped at
+	// `aging` would silently under-report the visible page.
+	if !strings.Contains(content, "recency: 1 new · 1 recent · 1 aging · 1 old") {
 		t.Errorf("a no-color Rain does not report its recency counts:\n%s", content)
 	}
 	glyph := categoryGlyph(domain.CategoryPush, plain.charset)
@@ -319,7 +378,7 @@ func TestNarrowRainShortensTheRecencyCounts(t *testing.T) {
 	model.capability = capabilityNoColor
 
 	content := model.View().Content
-	if !strings.Contains(content, "age 1/0/0") {
+	if !strings.Contains(content, "age 1/0/0/0") {
 		t.Errorf("a narrow no-color Rain drops its recency counts entirely:\n%s", content)
 	}
 }
@@ -359,7 +418,7 @@ func TestRainAtTheNarrowFloorKeepsRequiredContext(t *testing.T) {
 
 	content := model.View().Content
 	assertFits(t, content, narrowWidth, narrowHeight)
-	for _, want := range []string{ModeRain.Label(), transportLabel, "q quit", "window 60m"} {
+	for _, want := range []string{ModeRain.Label(), transportLabel, "q quit", "window 24h"} {
 		if !strings.Contains(content, want) {
 			t.Errorf("the 40x10 Rain render does not contain %q:\n%s", want, content)
 		}

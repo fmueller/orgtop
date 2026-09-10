@@ -121,7 +121,7 @@ type rain struct {
 }
 
 // newRain returns Rain before its first successful snapshot: the default
-// 60-minute window, no cursor, and no field.
+// 24-hour window, no cursor, and no field.
 func newRain() rain { return rain{window: defaultRainWindow} }
 
 // resized applies new field dimensions. Resize recomputes columns and the fixed
@@ -228,7 +228,7 @@ func (r rain) advanced(at time.Time) rain {
 	items := make([]rainItem, 0, len(r.items))
 	for _, item := range r.items {
 		item.age += elapsed
-		if item.age >= r.window.duration() {
+		if !r.window.admits(item.age) {
 			continue
 		}
 		if r.height > 0 {
@@ -390,7 +390,7 @@ func (r rain) candidate(event domain.Event, membership domain.ScopeMembership, r
 		}
 		item.age = age
 	}
-	return item, item.age < r.window.duration()
+	return item, r.window.admits(item.age)
 }
 
 // compareRainCandidates orders one Scope's candidates by event timestamp newest

@@ -1,12 +1,12 @@
 ---
 id: T-103-extend-rain-windows-for-quiet-repositories
 title: Extend Rain windows for quiet repositories
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#ambient-rain-view
 dependencies:
     - T-090-move-rain-page-range-and-hidden-counts-into-the
-updated_at: "2026-09-09T21:32:58Z"
+updated_at: "2026-09-10T07:48:57Z"
 ---
 
 # T-103-extend-rain-windows-for-quiet-repositories Extend Rain windows for quiet repositories
@@ -68,3 +68,4 @@ honest current-snapshot `available` choice, and make 24 hours the default.
   persistence, a new cache responsibility, or any unbounded state.
 - Preserve the fixed 15-minute `Interesting Now` window independently of the Rain
   field selection.
+- 2026-09-10T07:48:53Z: verification pass

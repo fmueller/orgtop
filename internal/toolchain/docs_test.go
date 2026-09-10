@@ -61,8 +61,29 @@ var deferredClaimsBySpec = map[string][]string{
 // included. Documentation that stops naming one of them misdescribes the shipped
 // shell to the operator who reads it.
 var documentedControls = []string{
-	"`1`", "`2`", "`tab`", "`up`", "`down`", "`pgup`", "`pgdown`", "`q`", "`ctrl+c`",
+	"`1`", "`2`", "`3`", "`tab`", "`up`", "`down`", "`pgup`", "`pgdown`",
+	"`-`", "`+`", "`p`", "`[`", "`]`", "`q`", "`ctrl+c`",
 }
+
+// rainWindowsSectionID marks the section that documents Rain's recency windows.
+// The preset checks are scoped to it, because durations as ordinary as `6h` also
+// occur in unrelated prose, and a whole-document search would pass whether or
+// not the windows are documented at all.
+const rainWindowsSectionID = "rain-windows"
+
+// documentedRainWindows are the presets Rain offers, in the order `+` steps
+// through them. Like documentedControls this repeats the shipped spelling
+// rather than deriving it, because the context line is internal to internal/tui;
+// documentation that stops naming a preset misdescribes the field an operator is
+// looking at (FR-008, FR-012).
+var documentedRainWindows = []string{"`15m`", "`30m`", "`60m`", "`6h`", "`24h`", "`7d`", "`available`"}
+
+// documentedRainWindowClaims are the claims the section states in prose: which
+// preset a session starts at, and what `available` does and does not mean. The
+// last two keep the honest bound RG-006 requires, so the documentation cannot
+// quietly promise complete repository history for a window that only ever shows
+// the bounded snapshot the source returned.
+var documentedRainWindowClaims = []string{"defaults to `24h`", "newest 100", "not complete repository history"}
 
 // streamColumnsSectionID marks the section that describes Stream's columns. The
 // column checks are scoped to it, because names as ordinary as "age" and
@@ -420,6 +441,30 @@ func pathDiagnosticProblems(readme string, diagnostics []string) []string {
 	return problems
 }
 
+// rainWindowProblems guards FR-008 and FR-012 for the surface T-103 changed:
+// the Rain windows are named in their own section with the preset the session
+// starts at, and `available` is described as the bounded current snapshot
+// rather than as complete history.
+func rainWindowProblems(readme string) []string {
+	section, ok := documentSection(readme, rainWindowsSectionID)
+	if !ok {
+		return []string{"there is no " + sectionMarker(rainWindowsSectionID) + " section documenting the Rain windows"}
+	}
+
+	var problems []string
+	for _, window := range documentedRainWindows {
+		if !strings.Contains(section, window) {
+			problems = append(problems, "the Rain "+window+" window is not documented")
+		}
+	}
+	for _, claim := range documentedRainWindowClaims {
+		if !strings.Contains(section, claim) {
+			problems = append(problems, "the Rain windows section does not state "+claim)
+		}
+	}
+	return problems
+}
+
 // TestDocumentationDescribesTheShippedSurface runs every check over the
 // repository's own documentation set. It is the gate FR-011 and FR-012 rest on:
 // documentation that stops describing the shipped surface, or starts promising
@@ -436,6 +481,7 @@ func TestDocumentationDescribesTheShippedSurface(t *testing.T) {
 		"contributor claims":    contributorClaimProblems(docs),
 		"version and help":      versionAndHelpFlagProblems(readme),
 		"Stream columns":        streamColumnProblems(readme),
+		"Rain windows":          rainWindowProblems(readme),
 		"path diagnostics":      pathDiagnosticProblems(readme, documentedPathDiagnostics(t)),
 		"deferred capabilities": deferredClaimProblems(readme, deferredClaims(t, activeSpecVersion(t))),
 		"stale claims":          staleClaimProblems(readme),

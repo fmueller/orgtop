@@ -49,12 +49,14 @@ type rainColumn struct {
 	recencies rainRecencies
 }
 
-// rainRecencies counts admitted items by their prepared discrete state. Expiry
-// removes an item, so no expired count exists to report.
+// rainRecencies counts admitted items by their prepared discrete state. Every
+// state is counted, including `old`: visual recency never removes an item, so
+// a longer window keeps old ones in the field the counts account for (RG-008).
 type rainRecencies struct {
 	fresh  int
 	recent int
 	aging  int
+	old    int
 }
 
 // counted adds one item's state to the totals.
@@ -66,13 +68,20 @@ func (r rainRecencies) counted(state recency) rainRecencies {
 		r.recent++
 	case recencyAging:
 		r.aging++
+	case recencyOld:
+		r.old++
 	}
 	return r
 }
 
 // plus merges another column's totals into these.
 func (r rainRecencies) plus(other rainRecencies) rainRecencies {
-	return rainRecencies{fresh: r.fresh + other.fresh, recent: r.recent + other.recent, aging: r.aging + other.aging}
+	return rainRecencies{
+		fresh:  r.fresh + other.fresh,
+		recent: r.recent + other.recent,
+		aging:  r.aging + other.aging,
+		old:    r.old + other.old,
+	}
 }
 
 // rainField is the complete prepared page state rendering consumes. Rendering

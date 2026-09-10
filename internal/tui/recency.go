@@ -12,39 +12,36 @@ import (
 // renderer reads the host clock (RG-008).
 type recency int
 
-// The discrete states, newest first.
+// The discrete states, newest first. None of them removes a Rain item: the
+// selected RG-006 window alone decides that, so an item may be `old` and still
+// visible under a longer window.
 const (
 	recencyNew recency = iota
 	recencyRecent
 	recencyAging
-	recencyExpired
+	recencyOld
 )
 
 // The half-open thresholds the states start at: `new` for `0 <= age < 5m`,
-// `recent` for `5m <= age < 15m`, `aging` for `15m <= age < 60m`, and `expired`
+// `recent` for `5m <= age < 15m`, `aging` for `15m <= age < 60m`, and `old`
 // for `age >= 60m` (RG-008).
 const (
-	recentAge  = 5 * time.Minute
-	agingAge   = 15 * time.Minute
-	expiredAge = time.Hour
+	recentAge = 5 * time.Minute
+	agingAge  = 15 * time.Minute
+	oldAge    = time.Hour
 )
 
 // recencyNames spells the states as RG-008 names them, so a legend, a
 // diagnostic, and a test state the one shared word.
 var recencyNames = map[recency]string{
-	recencyNew:     "new",
-	recencyRecent:  "recent",
-	recencyAging:   "aging",
-	recencyExpired: "expired",
+	recencyNew:    "new",
+	recencyRecent: "recent",
+	recencyAging:  "aging",
+	recencyOld:    "old",
 }
 
 // String returns the shared name of the state.
 func (r recency) String() string { return recencyNames[r] }
-
-// removesRainItem reports whether the state removes a Rain item rather than
-// merely hiding it. Expiry removes; it never deletes a normalized snapshot
-// event or independently removes a Stream row (RG-008).
-func (r recency) removesRainItem() bool { return r == recencyExpired }
 
 // recencyAt returns the state of a prepared event age. A negative age is an
 // event stamped after its applicable reference and clamps to zero, because an
@@ -55,10 +52,10 @@ func recencyAt(age time.Duration) recency {
 		return recencyNew
 	case age < agingAge:
 		return recencyRecent
-	case age < expiredAge:
+	case age < oldAge:
 		return recencyAging
 	default:
-		return recencyExpired
+		return recencyOld
 	}
 }
 
@@ -114,8 +111,9 @@ type recencyEmphasis struct {
 // The accents. They are their own semantic role, distinct from the chrome
 // colors that mean transport, freshness, and errors, and deliberately outside
 // conventional success/error coloring: an event carries no outcome. The two
-// oldest states share one neutral, reduced-intensity presentation, because they
-// differ in Rain removal rather than in emphasis.
+// oldest states share one neutral, reduced-intensity presentation, because
+// neither carries more emphasis than the other once an item has stopped being
+// recent.
 const (
 	strongestAccent = "#e6a8ff"
 	normalAccent    = "#a855c7"
@@ -129,10 +127,10 @@ const (
 // recencyStyles is the closed shared style table every view emphasizes a state
 // through, so one prepared vocabulary answers for all of them (RG-008).
 var recencyStyles = map[recency]recencyEmphasis{
-	recencyNew:     {truecolor: strongestAccent, ansi: strongestANSI, bold: true},
-	recencyRecent:  {truecolor: normalAccent, ansi: normalANSI},
-	recencyAging:   {truecolor: neutralAccent, ansi: neutralANSI, faint: true},
-	recencyExpired: {truecolor: neutralAccent, ansi: neutralANSI, faint: true},
+	recencyNew:    {truecolor: strongestAccent, ansi: strongestANSI, bold: true},
+	recencyRecent: {truecolor: normalAccent, ansi: normalANSI},
+	recencyAging:  {truecolor: neutralAccent, ansi: neutralANSI, faint: true},
+	recencyOld:    {truecolor: neutralAccent, ansi: neutralANSI, faint: true},
 }
 
 // style returns the prepared style of the state at the given color capability:

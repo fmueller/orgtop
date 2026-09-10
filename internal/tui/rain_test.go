@@ -37,7 +37,16 @@ func rainSnapshot(scopes domain.ScopeSet, retained ...domain.EventEvidence) doma
 // startedRain returns Rain after its first successful snapshot at the fixture
 // base, sized to the given field, which is where a Rain cursor first exists.
 func startedRain(scopes domain.ScopeSet, snapshot domain.ScopedSnapshot, width, height int) rain {
-	return newRain().resized(width, height).reconciled(scopes, snapshot, rainBase)
+	return startedRainAt(defaultRainWindow, scopes, snapshot, width, height)
+}
+
+// startedRainAt is startedRain under one explicitly selected window, which a
+// fixture stating a finite boundary needs because the session starts at the
+// 24-hour preset.
+func startedRainAt(window rainWindow, scopes domain.ScopeSet, snapshot domain.ScopedSnapshot, width, height int) rain {
+	field := newRain().resized(width, height)
+	field.window = window
+	return field.reconciled(scopes, snapshot, rainBase)
 }
 
 // rainItemOf returns the admitted item of one event/Scope identity.
@@ -185,24 +194,33 @@ func TestRainRefreshBeforeTheCursorAdvancesNothing(t *testing.T) {
 }
 
 // TestRainRemovesItemsAtTheExactWindowBoundary guards RG-006's half-open
-// lifetime: an item is eligible while its effective age is below the selected
-// window and the exact boundary removes it, in one delayed transition too.
+// lifetime at every finite preset: an item is eligible while its effective age
+// is below the selected window and the exact boundary removes it, in one
+// delayed transition too. The fixture is asymmetric on purpose, so a preset
+// that removed at the wrong length would keep or drop the wrong event.
 func TestRainRemovesItemsAtTheExactWindowBoundary(t *testing.T) {
 	repository := "acme/api"
 	scopes := scopeSet(t, domain.NewRepositoryScope(testRepository(t, repository)))
 	scope := scopes.Ordered()[0]
-	inside := rainEvidence(t, "inside", repository, time.Hour-time.Nanosecond)
-	boundary := rainEvidence(t, "boundary", repository, time.Hour)
-	field := startedRain(scopes, rainSnapshot(scopes, inside, boundary), 40, 4)
-	if !rainAdmits(field, "inside", scope) {
-		t.Error("an item one nanosecond inside the window is not admitted")
-	}
-	if rainAdmits(field, "boundary", scope) {
-		t.Error("an item at the exact window boundary is still admitted")
-	}
-	field = field.ticked(field.chain, rainAt(time.Nanosecond))
-	if rainAdmits(field, "inside", scope) {
-		t.Error("a delayed transition past the boundary did not remove the item")
+	for _, preset := range rainWindowContract {
+		if preset.bound == 0 {
+			continue
+		}
+		t.Run(preset.name, func(t *testing.T) {
+			inside := rainEvidence(t, "inside", repository, preset.bound-time.Nanosecond)
+			boundary := rainEvidence(t, "boundary", repository, preset.bound)
+			field := startedRainAt(preset.window, scopes, rainSnapshot(scopes, inside, boundary), 40, 4)
+			if !rainAdmits(field, "inside", scope) {
+				t.Error("an item one nanosecond inside the window is not admitted")
+			}
+			if rainAdmits(field, "boundary", scope) {
+				t.Error("an item at the exact window boundary is still admitted")
+			}
+			field = field.ticked(field.chain, rainAt(time.Nanosecond))
+			if rainAdmits(field, "inside", scope) {
+				t.Error("a delayed transition past the boundary did not remove the item")
+			}
+		})
 	}
 }
 
@@ -545,26 +563,116 @@ func TestRainResumeRebasesOnARefreshReference(t *testing.T) {
 	}
 }
 
-// TestRainWindowStepsThroughTheClosedPresets guards A-054: Rain starts at 60m,
-// `-` steps through 30m and 15m and stops, and `+` reverses and stops at 60m.
+// TestRainWindowStepsThroughTheClosedPresets guards A-054: Rain starts at 24h,
+// `-` steps down through 6h, 60m, 30m, and 15m and stops, and `+` reverses and
+// stops at `available`.
 func TestRainWindowStepsThroughTheClosedPresets(t *testing.T) {
 	scopes := scopeSet(t, domain.NewRepositoryScope(testRepository(t, "acme/api")))
 	empty := rainSnapshot(scopes)
 	field := startedRain(scopes, empty, 40, 7)
-	if got, want := field.window.String(), "60m"; got != want {
+	if got, want := field.window.String(), "24h"; got != want {
 		t.Fatalf("Rain starts at window %s, want %s", got, want)
 	}
-	for _, want := range []string{"30m", "15m", "15m"} {
+	for _, want := range []string{"6h", "60m", "30m", "15m", "15m"} {
 		field = field.windowed(-1, scopes, empty)
 		if got := field.window.String(); got != want {
 			t.Fatalf("shortening reached window %s, want %s", got, want)
 		}
 	}
-	for _, want := range []string{"30m", "60m", "60m"} {
+	for _, want := range []string{"30m", "60m", "6h", "24h", "7d", "available", "available"} {
 		field = field.windowed(1, scopes, empty)
 		if got := field.window.String(); got != want {
 			t.Fatalf("lengthening reached window %s, want %s", got, want)
 		}
+	}
+}
+
+// TestRainAvailableWindowUnderPauseFollowsTheSnapshot guards A-054 with
+// RG-006's pause rules: while paused the `available` field still loses a
+// representation the newer snapshot no longer returns, and a newly confirmed
+// membership older than every finite preset is queued rather than admitted,
+// so `available` never becomes an unbounded history of its own.
+func TestRainAvailableWindowUnderPauseFollowsTheSnapshot(t *testing.T) {
+	repository := "acme/api"
+	scopes := scopeSet(t, domain.NewRepositoryScope(testRepository(t, repository)))
+	scope := scopes.Ordered()[0]
+	standing := rainEvidence(t, "standing", repository, 30*24*time.Hour)
+	field := startedRainAt(rainWindowAvailable, scopes, rainSnapshot(scopes, standing), 40, 7)
+	if !rainAdmits(field, "standing", scope) {
+		t.Fatal("the available window did not admit the 30-day-old membership")
+	}
+
+	field = field.toggledPause()
+	ancient := rainEvidence(t, "ancient", repository, 90*24*time.Hour)
+	field = field.reconciled(scopes, rainSnapshot(scopes, standing, ancient), rainAt(time.Minute))
+	if !queuedHas(field, "ancient", scope) {
+		t.Error("a paused available refresh did not queue the newly confirmed old membership")
+	}
+	if rainAdmits(field, "ancient", scope) {
+		t.Error("a paused available refresh admitted an arrival into the frozen field")
+	}
+
+	field = field.reconciled(scopes, rainSnapshot(scopes), rainAt(2*time.Minute))
+	if rainAdmits(field, "standing", scope) {
+		t.Error("a paused available refresh kept a representation the snapshot no longer returns")
+	}
+	if queuedHas(field, "ancient", scope) {
+		t.Error("a paused available refresh kept a queued arrival the snapshot no longer returns")
+	}
+}
+
+// TestRainKeepsAnOldItemInsideALongerWindow guards A-083: crossing RG-008's
+// 60-minute `old` threshold changes an item's visual state alone. The default
+// 24-hour window keeps it, and selecting `60m` is what removes it.
+func TestRainKeepsAnOldItemInsideALongerWindow(t *testing.T) {
+	repository := "acme/api"
+	scopes := scopeSet(t, domain.NewRepositoryScope(testRepository(t, repository)))
+	scope := scopes.Ordered()[0]
+	snapshot := rainSnapshot(scopes, rainEvidence(t, "one", repository, 59*time.Minute))
+	field := startedRain(scopes, snapshot, 40, 7)
+
+	field = field.ticked(field.chain, rainAt(time.Minute))
+	item := rainItemOf(t, field, "one", scope)
+	if got := recencyAt(item.age); got != recencyOld {
+		t.Errorf("the item at age %s is %q, want %q", item.age, got, recencyOld)
+	}
+
+	shorter := field.windowed(-1, scopes, snapshot).windowed(-1, scopes, snapshot)
+	if got := shorter.window.String(); got != "60m" {
+		t.Fatalf("shortening twice reached window %s, want 60m", got)
+	}
+	if rainAdmits(shorter, "one", scope) {
+		t.Error("the 60m window kept an item that reached its exact boundary")
+	}
+}
+
+// TestRainAvailableWindowAdmitsEveryAgeAndFollowsTheSnapshot guards A-054: the
+// `available` window admits a confirmed membership older than every finite
+// preset, and a later successful snapshot that no longer returns that event
+// removes it, because eligibility is bounded snapshot membership rather than
+// retained history.
+func TestRainAvailableWindowAdmitsEveryAgeAndFollowsTheSnapshot(t *testing.T) {
+	repository := "acme/api"
+	scopes := scopeSet(t, domain.NewRepositoryScope(testRepository(t, repository)))
+	scope := scopes.Ordered()[0]
+	ancient := rainEvidence(t, "ancient", repository, 30*24*time.Hour)
+	snapshot := rainSnapshot(scopes, ancient)
+	field := startedRain(scopes, snapshot, 40, 7)
+	if rainAdmits(field, "ancient", scope) {
+		t.Fatal("the 24h window admitted an event 30 days old")
+	}
+
+	field = field.windowed(1, scopes, snapshot).windowed(1, scopes, snapshot)
+	if got := field.window.String(); got != "available" {
+		t.Fatalf("lengthening twice reached window %s, want available", got)
+	}
+	if !rainAdmits(field, "ancient", scope) {
+		t.Fatal("the available window removed a confirmed membership of the current snapshot")
+	}
+
+	field = field.reconciled(scopes, rainSnapshot(scopes), rainAt(time.Minute))
+	if rainAdmits(field, "ancient", scope) {
+		t.Error("the available window kept an event the newer snapshot no longer returns")
 	}
 }
 
@@ -578,7 +686,7 @@ func TestRainWindowReconcilesAgainstTheCurrentSnapshot(t *testing.T) {
 	young := rainEvidence(t, "young", repository, time.Minute)
 	old := rainEvidence(t, "old", repository, 20*time.Minute)
 	snapshot := rainSnapshot(scopes, young, old)
-	field := startedRain(scopes, snapshot, 40, 7)
+	field := startedRainAt(rainWindow30m, scopes, snapshot, 40, 7)
 	field = field.ticked(field.chain, rainAt(500*time.Millisecond))
 	phase := rainItemOf(t, field, "young", scope).rowPhase
 
@@ -635,7 +743,7 @@ func TestRainZeroHeightKeepsPhaseAndStillExpires(t *testing.T) {
 	scope := scopes.Ordered()[0]
 	expiring := rainEvidence(t, "expiring", repository, time.Hour-time.Second)
 	surviving := rainEvidence(t, "surviving", repository, 0)
-	field := startedRain(scopes, rainSnapshot(scopes, expiring, surviving), 40, 0)
+	field := startedRainAt(rainWindow60m, scopes, rainSnapshot(scopes, expiring, surviving), 40, 0)
 	phase := rainItemOf(t, field, "surviving", scope).rowPhase
 
 	field = field.ticked(field.chain, rainAt(time.Second))
@@ -749,7 +857,7 @@ func TestRainPausedWindowChangeRestoresHistoricalItemsToTheField(t *testing.T) {
 	old := rainEvidence(t, "old", repository, 20*time.Minute)
 	snapshot := rainSnapshot(scopes, young, old)
 
-	field := startedRain(scopes, snapshot, 40, 7)
+	field := startedRainAt(rainWindow30m, scopes, snapshot, 40, 7)
 	field = field.windowed(-1, scopes, snapshot).windowed(-1, scopes, snapshot)
 	if rainAdmits(field, "old", scope) {
 		t.Fatal("shortening to 15m kept the out-of-window item")
@@ -781,7 +889,7 @@ func TestRainPausedWindowChangeReconcilesQueueEligibility(t *testing.T) {
 	repository := "acme/api"
 	scopes := scopeSet(t, domain.NewRepositoryScope(testRepository(t, repository)))
 	scope := scopes.Ordered()[0]
-	field := startedRain(scopes, rainSnapshot(scopes), 40, 7).toggledPause()
+	field := startedRainAt(rainWindow30m, scopes, rainSnapshot(scopes), 40, 7).toggledPause()
 
 	fresh := rainEvidence(t, "fresh", repository, time.Minute)
 	stale := rainEvidence(t, "stale", repository, 20*time.Minute)

@@ -102,7 +102,7 @@ func TestRainRenderYieldsItsChromeInPriorityOrder(t *testing.T) {
 				present bool
 			}{
 				{what: "the Scope headings", marker: "R1 acme/api", present: testCase.headings},
-				{what: "the context line", marker: "window 60m", present: testCase.context},
+				{what: "the context line", marker: "window 24h", present: testCase.context},
 				{what: "the legend", marker: firstLegendEntry(), present: testCase.legend},
 			} {
 				if got := strings.Contains(body, want.marker); got != want.present {

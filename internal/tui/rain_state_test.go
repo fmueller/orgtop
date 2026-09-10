@@ -139,7 +139,7 @@ func TestRainExpiryRemovesOnlyTheOutOfWindowItem(t *testing.T) {
 		rainPathEvidence(t, "old", first, 55*time.Minute),
 		rainPathEvidence(t, "fresh", second, 0),
 	)
-	field := startedRain(scopes, snapshot, 40, 7)
+	field := startedRainAt(rainWindow60m, scopes, snapshot, 40, 7)
 	ordered := scopes.Ordered()
 	if !rainAdmits(field, "old", ordered[0]) || !rainAdmits(field, "fresh", ordered[1]) {
 		t.Fatalf("the first snapshot admitted %d items, want both", len(field.items))
@@ -150,7 +150,7 @@ func TestRainExpiryRemovesOnlyTheOutOfWindowItem(t *testing.T) {
 		t.Errorf("the item past the 60m window is still admitted")
 	}
 	if !rainAdmits(field, "fresh", ordered[1]) {
-		t.Errorf("the in-window item of the next Scope was removed with the expired one")
+		t.Errorf("the in-window item of the next Scope was removed with the out-of-window one")
 	}
 }
 
@@ -163,7 +163,7 @@ func TestRainWindowKeyBeforeTheFirstSnapshotBuildsNoField(t *testing.T) {
 	snapshot := rainSnapshot(scopes, rainEvidence(t, "one", repository, 0))
 
 	field := newRain().resized(40, 7).windowed(-1, scopes, snapshot)
-	if got, want := field.window.String(), "30m"; got != want {
+	if got, want := field.window.String(), "6h"; got != want {
 		t.Errorf("`-` before the first snapshot selected window %s, want %s", got, want)
 	}
 	if field.started {
@@ -234,7 +234,7 @@ func TestRainSkipsOutOfWindowScopesOfTheSameEvent(t *testing.T) {
 	evidence := rainPathEvidence(t, "one", name, 0, "src/main.go")
 
 	only := scopeSet(t, path)
-	field := startedRain(only, rainSnapshot(only, evidence), 40, 7)
+	field := startedRainAt(rainWindow60m, only, rainSnapshot(only, evidence), 40, 7)
 	field = field.toggledPause().toggledPause()
 
 	both := scopeSet(t, repository, path)
@@ -243,7 +243,7 @@ func TestRainSkipsOutOfWindowScopesOfTheSameEvent(t *testing.T) {
 		t.Errorf("the representation older than the 60m window is admitted")
 	}
 	if !rainAdmits(field, "one", path) {
-		t.Errorf("the surviving frozen-age representation was removed with the expired one")
+		t.Errorf("the surviving frozen-age representation was removed with the out-of-window one")
 	}
 }
 
@@ -291,7 +291,7 @@ func TestRainWindowChangeWhilePausedOmitsNoArrival(t *testing.T) {
 	}
 
 	field = field.windowed(-1, scopes, snapshot)
-	if got, want := field.window.String(), "30m"; got != want {
+	if got, want := field.window.String(), "6h"; got != want {
 		t.Fatalf("the paused window change selected %s, want %s", got, want)
 	}
 	if !queuedHas(field, "arrival", scope) {
@@ -341,36 +341,70 @@ func TestRainStoresAdmittedItemsInScopeThenCandidateOrder(t *testing.T) {
 	}
 }
 
+// rainWindowContract is RG-006's closed preset list, transcribed from the spec
+// rather than from the implementation, shortest first with the honest
+// current-snapshot choice last. A finite preset removes an item at its exact
+// boundary; `available` has no finite lifetime at all.
+var rainWindowContract = []struct {
+	window rainWindow
+	name   string
+	bound  time.Duration
+}{
+	{window: rainWindow15m, name: "15m", bound: 15 * time.Minute},
+	{window: rainWindow30m, name: "30m", bound: 30 * time.Minute},
+	{window: rainWindow60m, name: "60m", bound: time.Hour},
+	{window: rainWindow6h, name: "6h", bound: 6 * time.Hour},
+	{window: rainWindow24h, name: "24h", bound: 24 * time.Hour},
+	{window: rainWindow7d, name: "7d", bound: 7 * 24 * time.Hour},
+	{window: rainWindowAvailable, name: "available"},
+}
+
 // TestRainWindowStepsBetweenPresetsAndStopsAtBothEndpoints guards RG-006's
 // closed preset list: `-` selects the next shorter preset and `+` the next
-// longer one, and either key at its endpoint is a no-op.
+// longer one, either key at its endpoint is a no-op, and Rain starts at 24h.
 func TestRainWindowStepsBetweenPresetsAndStopsAtBothEndpoints(t *testing.T) {
-	cases := []struct {
-		name  string
-		from  rainWindow
-		step  int
-		want  rainWindow
-		named string
-	}{
-		{name: "shortest stays at its endpoint", from: 0, step: -1, want: 0, named: "15m"},
-		{name: "shortest steps longer", from: 0, step: 1, want: 1, named: "30m"},
-		{name: "middle steps shorter", from: 1, step: -1, want: 0, named: "15m"},
-		{name: "middle steps longer", from: 1, step: 1, want: 2, named: "60m"},
-		{name: "longest steps shorter", from: 2, step: -1, want: 1, named: "30m"},
-		{name: "longest stays at its endpoint", from: 2, step: 1, want: 2, named: "60m"},
-	}
-	for _, step := range cases {
-		got := step.from.stepped(step.step)
-		if got != step.want {
-			t.Errorf("%s: stepping %s by %d selected %s, want %s",
-				step.name, step.from, step.step, got, step.want)
+	last := len(rainWindowContract) - 1
+	for index, preset := range rainWindowContract {
+		if got := preset.window.String(); got != preset.name {
+			t.Errorf("preset %d is named %s, want %s", index, got, preset.name)
 		}
-		if got.String() != step.named {
-			t.Errorf("%s: the selected preset is named %s, want %s", step.name, got, step.named)
+		shorter, longer := rainWindowContract[max(index-1, 0)], rainWindowContract[min(index+1, last)]
+		if got := preset.window.stepped(-1); got != shorter.window {
+			t.Errorf("shortening from %s selected %s, want %s", preset.name, got, shorter.name)
+		}
+		if got := preset.window.stepped(1); got != longer.window {
+			t.Errorf("lengthening from %s selected %s, want %s", preset.name, got, longer.name)
 		}
 	}
-	if defaultRainWindow.String() != "60m" || defaultRainWindow.duration() != time.Hour {
-		t.Errorf("Rain defaults to %s, want the 60m preset", defaultRainWindow)
+	if defaultRainWindow != rainWindow24h || defaultRainWindow.String() != "24h" {
+		t.Errorf("Rain defaults to %s, want the 24h preset", defaultRainWindow)
+	}
+}
+
+// TestRainWindowAdmitsUpToItsExactBoundary guards RG-006: every finite preset
+// admits an effective age below its length and removes it at the exact
+// boundary, while `available` admits every age because its eligibility is
+// bounded snapshot membership alone.
+func TestRainWindowAdmitsUpToItsExactBoundary(t *testing.T) {
+	for _, preset := range rainWindowContract {
+		if preset.bound == 0 {
+			for _, age := range []time.Duration{0, time.Hour, 7 * 24 * time.Hour, 100 * 24 * time.Hour} {
+				if !preset.window.admits(age) {
+					t.Errorf("window %s removed an item at age %s, want every age admitted", preset.name, age)
+				}
+			}
+			continue
+		}
+		for _, admitted := range []time.Duration{0, preset.bound - time.Nanosecond} {
+			if !preset.window.admits(admitted) {
+				t.Errorf("window %s removed an item at age %s, want it admitted", preset.name, admitted)
+			}
+		}
+		for _, removed := range []time.Duration{preset.bound, preset.bound + time.Nanosecond} {
+			if preset.window.admits(removed) {
+				t.Errorf("window %s admitted an item at age %s, want it removed", preset.name, removed)
+			}
+		}
 	}
 }
 
@@ -379,19 +413,15 @@ func TestRainWindowStepsBetweenPresetsAndStopsAtBothEndpoints(t *testing.T) {
 // and stepping from one stays inside the closed list.
 func TestRainWindowClampsACorruptedIndexToARealPreset(t *testing.T) {
 	cases := []struct {
-		window   rainWindow
-		duration time.Duration
-		named    string
-		stepped  string
+		window  rainWindow
+		named   string
+		stepped string
 	}{
-		{window: rainWindow(-5), duration: 15 * time.Minute, named: "15m", stepped: "30m"},
-		{window: rainWindow(3), duration: time.Hour, named: "60m", stepped: "60m"},
-		{window: rainWindow(97), duration: time.Hour, named: "60m", stepped: "60m"},
+		{window: rainWindow(-5), named: "15m", stepped: "30m"},
+		{window: rainWindow(7), named: "available", stepped: "available"},
+		{window: rainWindow(97), named: "available", stepped: "available"},
 	}
 	for _, corrupted := range cases {
-		if got := corrupted.window.duration(); got != corrupted.duration {
-			t.Errorf("window index %d has duration %s, want %s", int(corrupted.window), got, corrupted.duration)
-		}
 		if got := corrupted.window.String(); got != corrupted.named {
 			t.Errorf("window index %d is named %s, want %s", int(corrupted.window), got, corrupted.named)
 		}

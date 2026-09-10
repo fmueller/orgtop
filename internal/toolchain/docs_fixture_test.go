@@ -73,7 +73,16 @@ quotes the prefix and carries no byte offset.
 
 ## Keys
 
-~1~ ~2~ ~tab~ ~up~ ~down~ ~pgup~ ~pgdown~ ~q~ ~ctrl+c~
+~1~ ~2~ ~3~ ~tab~ ~up~ ~down~ ~pgup~ ~pgdown~ ~-~ ~+~ ~p~ ~[~ ~]~ ~q~ ~ctrl+c~
+
+<!-- docs:rain-windows -->
+## The Rain field
+
+Rain keeps an event while it is inside the selected window and defaults to ~24h~.
+
+- ~15m~ ~30m~ ~60m~ ~6h~ ~24h~ ~7d~
+- ~available~ shows the newest 100 events per repository the last refresh
+  returned, which is not complete repository history.
 
 A rate-limit constraint applies, and research into restraint and training continues.
 `),
@@ -96,14 +105,15 @@ func TestRestructuredDocumentationSetSatisfiesEveryCheck(t *testing.T) {
 	docs := restructuredDocs()
 	readme := docs["README.md"]
 	for name, problems := range map[string][]string{
-		"invocation":  invocationProblems(readme, documentedInvocation(t)),
-		"credentials": credentialContractProblems(readme),
-		"polling":     pollingAndControlProblems(readme),
-		"contributor": contributorClaimProblems(docs),
-		"flags":       versionAndHelpFlagProblems(readme),
-		"columns":     streamColumnProblems(readme),
-		"diagnostics": pathDiagnosticProblems(readme, documentedPathDiagnostics(t)),
-		"deferred":    deferredClaimProblems(readme, deferredClaims(t, "v0.2.0")),
+		"invocation":   invocationProblems(readme, documentedInvocation(t)),
+		"credentials":  credentialContractProblems(readme),
+		"polling":      pollingAndControlProblems(readme),
+		"contributor":  contributorClaimProblems(docs),
+		"flags":        versionAndHelpFlagProblems(readme),
+		"columns":      streamColumnProblems(readme),
+		"diagnostics":  pathDiagnosticProblems(readme, documentedPathDiagnostics(t)),
+		"Rain windows": rainWindowProblems(readme),
+		"deferred":     deferredClaimProblems(readme, deferredClaims(t, "v0.2.0")),
 	} {
 		if len(problems) != 0 {
 			t.Errorf("restructured documentation failed the %s checks: %v", name, problems)
@@ -127,6 +137,9 @@ func TestChecksFailWhenAGuardedClaimIsDropped(t *testing.T) {
 		"a credential step":   {drop: "GITHUB_TOKEN", check: credentialContractProblems},
 		"the short help flag": {drop: "`-h`", check: versionAndHelpFlagProblems},
 		"a Stream column":     {drop: "`repository`", check: streamColumnProblems},
+		"a Rain window":       {drop: "`7d`", check: rainWindowProblems},
+		"the available bound": {drop: "not complete repository history", check: rainWindowProblems},
+		"the window section":  {drop: "<!-- docs:rain-windows -->", check: rainWindowProblems},
 		"the column section":  {drop: "<!-- docs:stream-columns -->", check: streamColumnProblems},
 		"a quoted diagnostic": {
 			drop:  `at byte 4: empty segment`,

@@ -81,6 +81,18 @@ workflow refuses to publish otherwise.
 
 ### Changed
 
+- Rain offers the windows `15m`, `30m`, `60m`, `6h`, `24h`, `7d`, and
+  `available`, and a session now starts at `24h` instead of `60m`, so a quiet
+  repository keeps an ambient field. `-` and `+` step through the presets and
+  stop at either end. `available` keeps every event of the snapshot the last
+  refresh returned, whatever its age: that is the newest 100 events per
+  repository GitHub served, not complete repository history, and an event
+  leaves the field once a later successful refresh no longer returns it.
+- Rain visual recency and Rain removal are now separate. An event past 60
+  minutes is drawn as `old` and stays in the field under `6h`, `24h`, `7d`, and
+  `available`; only the selected window removes it. The no-color recency
+  accounting states the old items too, as
+  `recency: N new · R recent · A aging · O old` or `age N/R/A/O`.
 - Rain now reports its visible Scope range and disjoint hidden Scope/item
   counts in the shared header instead of repeating them in the body context.
 - Overview and Stream now report the visible row range when terminal height

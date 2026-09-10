@@ -315,12 +315,13 @@ func rainWindowContext(window rainWindow) string { return "window " + window.Str
 // intensity, in its full and its shortened form.
 func rainRecencyContext(recencies rainRecencies, shortened bool) string {
 	if shortened {
-		return fmt.Sprintf("age %d/%d/%d", recencies.fresh, recencies.recent, recencies.aging)
+		return fmt.Sprintf("age %d/%d/%d/%d", recencies.fresh, recencies.recent, recencies.aging, recencies.old)
 	}
-	return fmt.Sprintf("recency: %d %s%s%d %s%s%d %s",
+	return fmt.Sprintf("recency: %d %s%s%d %s%s%d %s%s%d %s",
 		recencies.fresh, recencyNew, separator,
 		recencies.recent, recencyRecent, separator,
-		recencies.aging, recencyAging)
+		recencies.aging, recencyAging, separator,
+		recencies.old, recencyOld)
 }
 
 // rainOmitted totals the capacity rejections, which are only that: an omission

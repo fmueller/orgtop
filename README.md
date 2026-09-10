@@ -210,15 +210,54 @@ events it lists and, when the 500-event bound discarded older activity, that
 the list stops at that limit. Content too wide for the terminal
 ends in `…`, marking that row as shortened rather than complete.
 
+<!-- docs:rain-windows -->
+### Rain windows
+
+Rain draws one column per selected Scope and keeps an event in the field while
+it is inside the selected recency window. `-` selects the next shorter window
+and `+` the next longer one; neither wraps at its end. The context line under
+the field states the selection as `window 24h`.
+
+| Window | Keeps an event for |
+|---|---|
+| `15m` | 15 minutes |
+| `30m` | 30 minutes |
+| `60m` | 60 minutes |
+| `6h` | 6 hours |
+| `24h` | 24 hours |
+| `7d` | 7 days |
+| `available` | As long as the last refresh still returned it |
+
+A session defaults to `24h`, so a quiet repository still has an ambient field.
+Each finite window drops an event the moment it reaches that age.
+
+`available` is not a longer window but the absence of one: it shows every
+event in the snapshot the last refresh returned, whatever its age. That
+snapshot is the newest 100 events per repository GitHub's events endpoint
+serves, so `available` is not complete repository history, and an event
+disappears from it once a later successful refresh no longer returns it. A
+window change and `available` alike show only what has already been fetched;
+neither asks GitHub for more.
+
+How old an event looks is separate from how long it is kept. An event past 60
+minutes is drawn at the faintest emphasis but stays in the field under `6h`,
+`24h`, `7d`, and `available`; only the selected window removes it. A terminal
+without distinct intensity is given the same information as text, as
+`recency: 1 new · 1 recent · 1 aging · 1 old`.
+
 ### Controls
 
 | Key | Action |
 |---|---|
 | `1` | Open Overview |
 | `2` | Open Stream |
-| `tab` | Toggle between the two views |
+| `3` | Open Rain |
+| `tab` | Cycle through the three views |
 | `up` / `down` | Scroll the active view by one row |
 | `pgup` / `pgdown` | Scroll the active view by one page |
+| `-` / `+` | Select the shorter or longer Rain window |
+| `p` | Pause and resume Rain motion, without pausing polling |
+| `[` / `]` | Show the previous or next page of Rain Scope columns |
 | `q` | Quit |
 | `ctrl+c` | Quit |
 
