@@ -50,11 +50,13 @@ jobs:
   mutation-tests:
     needs: packages
     runs-on: ubuntu-latest
-    # One package rather than the whole module, on every core the runner has.
-    # The unsharded gate measured over 40 minutes and was reclaimed mid-run,
-    # which loses the report as well as the verdict: a cancelled job skips even
-    # its `if: always()` steps.
-    timeout-minutes: 45
+    # One package rather than the whole module. The unsharded gate measured over
+    # 40 minutes and was reclaimed mid-run, which loses the report as well as the
+    # verdict: a cancelled job skips even its `if: always()` steps. The bound is
+    # well above the slowest package so a shard is never killed by its own clock,
+    # which reports just as little. Guarded by
+    # TestMutationShardsLeaveTheRunnerHeadroom.
+    timeout-minutes: 60
     strategy:
       # A package that fails the floor must not stop the rest from reporting
       # theirs; the run's verdict is the whole matrix, not its first failure.

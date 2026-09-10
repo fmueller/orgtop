@@ -607,31 +607,65 @@ func TestMergedReportNamesPackagesThatDidNotReport(t *testing.T) {
 	}
 }
 
-// TestMutationGateUsesEveryRunnerCore keeps the sharded gate from leaving half
-// the runner idle. gremlins runs one test binary per worker, so a four-core
-// runner held at two workers doubles a shard's wall clock for no reason. The
-// differential lane stays narrower: it shares a developer's machine with
-// whatever else is running on it.
-func TestMutationGateUsesEveryRunnerCore(t *testing.T) {
-	t.Parallel()
-
-	gate := flagValue(t, mutationCommand(t, "test:mutate:gate"), "--workers")
-	differential := flagValue(t, mutationCommand(t, "test:mutate"), "--workers")
-
-	if gate < 4 {
-		t.Errorf("the weekly gate runs %g workers, want at least the 4 cores a hosted runner offers", gate)
-	}
-	if differential >= gate {
-		t.Errorf("the differential lane runs %g workers against the gate's %g; the per-change loop must stay the cheaper one", differential, gate)
-	}
-}
-
 // mutationEfficacyFloor is the per-package mutation efficacy this repository
 // holds every package to, in percent. NFR-006 requires verification that can
 // fail without naming a figure, so the figure lives here: the Taskfile's floor
 // and gremlins' own threshold are both read against it, and neither can drift
 // from the other or from what the repository decided.
 const mutationEfficacyFloor float64 = 85
+
+// mutationGateWorkers is how many mutants the weekly gate tests at once. Each
+// worker runs a full test binary, so this is a memory bound as much as a
+// parallelism one; see TestMutationShardsLeaveTheRunnerHeadroom.
+//
+// Pinned rather than capped, though the memory argument alone would only bound
+// it from above: mutationShardTimeoutMinutes is calibrated against this exact
+// count, so fewer workers would buy headroom while quietly invalidating the
+// wall clock a shard is given.
+const mutationGateWorkers float64 = 2
+
+// mutationShardTimeoutMinutes is the wall clock a single mutation shard is
+// given. A job killed by its own timeout reports exactly as little as a
+// reclaimed one, so the bound sits well above what any shard needs.
+//
+// The slowest package, internal/tui, measured 18m38s at twice
+// mutationGateWorkers; no shard has yet run to completion at this count, so the
+// figure is headroom over an extrapolation rather than over a measurement. Part
+// of a run does not parallelize at all — gremlins takes its coverage baseline
+// once, before the workers are dealt — so halving the workers is expected to
+// cost less than double. Read the next run's actual figure against this bound
+// before trusting it.
+const mutationShardTimeoutMinutes = 60
+
+// TestMutationShardsLeaveTheRunnerHeadroom keeps a shard inside what a hosted
+// runner will actually give it. gremlins runs one full test binary per worker,
+// and a four-core runner driving four of the TUI suite at once was reclaimed
+// mid-run twice — exit status 143, "the runner has received a shutdown signal"
+// — once at 41 minutes unsharded and once nine minutes into the internal/tui
+// shard, while the same shard had finished in 18 minutes an hour earlier. A
+// reclaimed job skips even its `if: always()` steps, so it reports nothing at
+// all: half the cores, with room left for the test binaries themselves, buys a
+// verdict that arrives.
+func TestMutationShardsLeaveTheRunnerHeadroom(t *testing.T) {
+	t.Parallel()
+
+	gate := flagValue(t, mutationCommand(t, "test:mutate:gate"), "--workers")
+	if gate != mutationGateWorkers {
+		t.Errorf("the weekly gate runs %g workers, want %g: one test binary per worker has to fit in the runner alongside the others", gate, mutationGateWorkers)
+	}
+
+	timeout := nodeAt(jobAt(loadYAML(t, mutationWorkflow), "mutation-tests"), "timeout-minutes")
+	if timeout == nil {
+		t.Fatal("the mutation shards must bound their own wall clock")
+	}
+	minutes, err := strconv.Atoi(timeout.Value)
+	if err != nil {
+		t.Fatalf("timeout-minutes %q is not a number: %v", timeout.Value, err)
+	}
+	if minutes < mutationShardTimeoutMinutes {
+		t.Errorf("a shard is bounded at %d minutes, want at least %d for the slowest package at these workers", minutes, mutationShardTimeoutMinutes)
+	}
+}
 
 // TestMutationFloorIsEnforcedPerPackage guards the half of NFR-006's floor that
 // gremlins cannot express. --threshold-efficacy reds a run on the total of
