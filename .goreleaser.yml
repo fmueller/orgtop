@@ -18,6 +18,13 @@ builds:
     ldflags:
       - -s -w
       - -X github.com/fmueller/orgtop/internal/cli.Version={{ .Version }}
+    # An archive records the mtime of the file it packs. Left to the clock, one
+    # tag rebuilt produces the same executable inside a differently hashed
+    # archive, and RG-011's retry compares digests: the raw assets would match
+    # and every archive would not. Pinning the timestamp to the tagged commit
+    # makes the archive bytes a function of the tag alone. Guarded by
+    # TestArchivesAreReproducibleAcrossRetries.
+    mod_timestamp: "{{ .CommitTimestamp }}"
 
 archives:
   # The source channel: one archive per RG-011 matrix row, holding the ordinary

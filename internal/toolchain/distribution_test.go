@@ -337,6 +337,31 @@ func TestTapStagingCreatesTheFormulaPath(t *testing.T) {
 	}
 }
 
+// TestArchivesAreReproducibleAcrossRetries keeps the retry guarantee real. An
+// archive records the modification time of the file it packs, so without a
+// pinned mod_timestamp every rebuild of one tag produces the same executable
+// inside a differently hashed archive. RG-011 requires a retry from the same
+// tag to reconcile rather than republish, and reconciliation compares digests:
+// the six raw executables would match and all six archives would not, which
+// fails the release closed at its first retry and cannot be fixed by retrying
+// again. The v0.0.1 rehearsal proved it, with six identical raw digests beside
+// six divergent archive digests.
+func TestArchivesAreReproducibleAcrossRetries(t *testing.T) {
+	t.Parallel()
+
+	builds := child(loadYAML(t, goreleaserConfig), "builds")
+	if builds == nil || len(builds.Content) == 0 {
+		t.Fatal(".goreleaser.yml must declare a build")
+	}
+
+	const want = "{{ .CommitTimestamp }}"
+	for _, build := range builds.Content {
+		if got := value(child(build, "mod_timestamp")); got != want {
+			t.Errorf(".goreleaser.yml build mod_timestamp = %q, want %q: without it each rebuild of one tag archives the executable under a new mtime, and no retry can reconcile", got, want)
+		}
+	}
+}
+
 // TestSnapshotRehearsalPublishesNothing keeps the manual dispatch a rehearsal.
 // The snapshot exists so the release path can be exercised off a tag; a `gh
 // release` or a token in that job would make the rehearsal a publication.
