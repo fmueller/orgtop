@@ -77,3 +77,22 @@ Provision and validate the external GitHub CLI extension companion and Homebrew 
 - 2026-09-18T00:15Z: T-105 records the one defect this task could not carry:
   the protected-commit poll never re-checks whether its event already landed,
   so an out-of-band merge strands the step until its bound.
+- 2026-09-18T01:00Z: v0.0.2 retry rehearsal, runs 35281659191 and 35282570875,
+  two attempts each. Proven: the tap staging fixes hold (`create mode 100644
+  Formula/orgtop.rb`, 50 insertions, on a tap carrying no Formula directory),
+  `use_existing_draft` makes a retry reuse its draft rather than create a
+  second release for the tag (draft 391100794 reused on attempt 2), and archive
+  reproducibility now survives a re-stamped working tree. Two further defects
+  found and fixed: archives still diverged with `mod_timestamp` alone, because
+  an archive records metadata for every member and a checkout restamps
+  LICENSE and README.md (1d8e658); and a retry created a second draft for the
+  same tag, because a draft is invisible to get-release-by-tag (1d8e658, with a
+  guard refusing a tag that carries anything but exactly one release).
+- 2026-09-18T01:00Z: The last open acceptance item is a retry that resumes and
+  reconciles rather than one that fails closed. It is blocked on T-107:
+  GoReleaser's publish step cannot upload create-if-absent, so a retry against
+  a draft that already holds its assets fails with `already_exists` on each,
+  and the only alternative it offers overwrites published bytes, which RG-011
+  forbids. A first publication is unaffected. v0.0.2 was never recorded in the
+  ledger and is still a free version number; every draft, tag, staging branch,
+  and staged pull request from both rehearsals is removed.
