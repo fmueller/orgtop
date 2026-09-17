@@ -173,5 +173,15 @@ workflow refuses to publish otherwise.
 - A `STALE` header now keeps the last successful refresh time when the terminal
   is too narrow to show it beside the Scope summary as well.
 
+## [0.0.1] - 2026-09-17
+
+### Added
+
+- Not a product release. This version exists only to rehearse the multi-channel
+  release path end to end against the real distribution App, and is withdrawn
+  as soon as that rehearsal is verified. It carries no OrgTop behavior of its
+  own; install v0.1.0 or later.
+
 [Unreleased]: https://github.com/fmueller/orgtop/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/fmueller/orgtop/releases/tag/v0.1.0
+[0.0.1]: https://github.com/fmueller/orgtop/releases/tag/v0.0.1

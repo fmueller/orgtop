@@ -1,12 +1,12 @@
 ---
 id: T-074-provision-and-validate-distribution-repositories
 title: Provision and validate distribution repositories
-status: blocked
+status: in_progress
 priority: high
 spec_ref: specs/v0.2.0.md#distribution-channels
 dependencies:
     - T-067-configure-multi-channel-release-workflows
-updated_at: "2026-09-07T11:47:13Z"
+updated_at: "2026-09-17T20:54:15Z"
 ---
 
 # T-074-provision-and-validate-distribution-repositories Provision and validate distribution repositories
