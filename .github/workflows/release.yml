@@ -165,14 +165,34 @@ jobs:
       # the attestation action writes is normalized to that form here, and the
       # extension draft later receives these exact lines unchanged rather than a
       # second attestation implying a second build.
+      #
+      # bundle-path holds Sigstore bundles, not the statement: the in-toto
+      # statement carrying all twelve subjects is base64 inside
+      # .dsseEnvelope.payload, so it is decoded before its subjects are split
+      # one per line. Slurping sorts every subject together even if the action
+      # ever writes more than one bundle, and jq's sort_by on the subject name
+      # is the bytewise order RG-011 requires.
       - name: Assemble the canonical provenance bundle
         env:
           BUNDLE: ${{ steps.attest.outputs.bundle-path }}
         run: |
-          jq -c '. as $statement
-            | (.subject // [])[]
-            | $statement + {subject: [.]}' "$BUNDLE" \
-            | LC_ALL=C sort -t'"' -k4,4 >"${RUNNER_TEMP}/provenance.intoto.jsonl"
+          jq -sc '[ .[]
+            | .dsseEnvelope.payload | @base64d | fromjson as $statement
+            | ($statement.subject // [])[]
+            | $statement + {subject: [.]} ]
+            | sort_by(.subject[0].name)[]' "$BUNDLE" \
+            >"${RUNNER_TEMP}/provenance.intoto.jsonl"
+
+          # An empty bundle uploads as a zero-byte asset, which the API rejects
+          # as a bad Content-Length far from the cause. The subject count is
+          # known: one statement per checksums.txt entry.
+          want="$(wc -l <dist/checksums.txt)"
+          got="$(wc -l <"${RUNNER_TEMP}/provenance.intoto.jsonl")"
+          if [ "$got" -ne "$want" ]; then
+            echo "guard: the provenance bundle split into $got subjects, want $want" >&2
+            exit 1
+          fi
+
           cp "${RUNNER_TEMP}/provenance.intoto.jsonl" dist/provenance.intoto.jsonl
 
       - name: Add the provenance bundle to the source draft

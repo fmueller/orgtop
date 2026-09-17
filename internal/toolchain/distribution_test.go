@@ -271,6 +271,36 @@ func TestReleaseWorkflowRequestsProvenancePermissions(t *testing.T) {
 	}
 }
 
+// TestProvenanceBundleIsDecodedBeforeItIsSplit keeps the canonical bundle
+// derivable from what the attestation action actually writes. Its bundle-path
+// output is a Sigstore bundle: the in-toto statement, and so every subject, is
+// base64 inside .dsseEnvelope.payload, and a jq program reading .subject off
+// the bundle itself matches nothing. That produces an empty
+// provenance.intoto.jsonl, which the upload rejects as HTTP 400 Bad
+// Content-Length after the draft already holds twelve assets, so the failure
+// arrives far from its cause and only against a real tag.
+func TestProvenanceBundleIsDecodedBeforeItIsSplit(t *testing.T) {
+	t.Parallel()
+
+	var assembled string
+	for _, command := range jobStepValues(loadYAML(t, releaseWorkflow), "release", "run") {
+		if strings.Contains(command, "provenance.intoto.jsonl") && strings.Contains(command, "jq") {
+			assembled = command
+			break
+		}
+	}
+	if assembled == "" {
+		t.Fatal("release.yml must assemble provenance.intoto.jsonl from the attestation bundle")
+	}
+
+	if !strings.Contains(assembled, "dsseEnvelope") {
+		t.Error("the bundle carries its statement in .dsseEnvelope.payload, so an assembly that never reads that field splits nothing")
+	}
+	if !strings.Contains(assembled, "@base64d") {
+		t.Error("the DSSE payload is base64, so the assembly has to decode it before it can read .subject")
+	}
+}
+
 // TestSnapshotRehearsalPublishesNothing keeps the manual dispatch a rehearsal.
 // The snapshot exists so the release path can be exercised off a tag; a `gh
 // release` or a token in that job would make the rehearsal a publication.
