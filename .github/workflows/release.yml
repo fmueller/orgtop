@@ -622,8 +622,18 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
         run: |
-          published="$(gh api "repos/${TAP_REPOSITORY}/contents/Formula/orgtop.rb?ref=main" \
-            --jq '.content' | base64 -d)"
+          # A staging-only withdrawal records a null tap_commit and leaves the
+          # default branch selecting whatever it selected before, which on a tap
+          # publishing its first formula is no formula at all. Reading an absent
+          # file 404s and decodes to nothing, so it is checked for rather than
+          # decoded blind: there is no published formula to revert, and the
+          # releases and tags still have to be deleted after this step.
+          if ! encoded="$(gh api "repos/${TAP_REPOSITORY}/contents/Formula/orgtop.rb?ref=main" \
+            --jq '.content' 2>/dev/null)" || [ -z "$encoded" ]; then
+            echo "guard: the tap default branch carries no formula; nothing to revert"
+            exit 0
+          fi
+          published="$(printf '%s' "$encoded" | base64 -d)"
           if ! grep -qxF "  version \"${VERSION}\"" <<<"$published"; then
             echo "guard: the tap default branch no longer selects ${VERSION}; the newer formula is preserved"
             exit 0

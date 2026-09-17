@@ -362,6 +362,32 @@ func TestArchivesAreReproducibleAcrossRetries(t *testing.T) {
 	}
 }
 
+// TestWithdrawalToleratesAnUnpublishedFormula keeps the staging-only
+// withdrawal a withdrawal. RG-011 names the case: a version staged but never
+// completed records a null tap_commit, and the tap default branch carries no
+// formula for it — on a tap publishing its first formula, no formula at all.
+// Reading that file unconditionally 404s, and decoding the empty body fails the
+// step, which strands the releases and tags the following steps exist to
+// delete. The v0.0.1 rehearsal stranded exactly those.
+func TestWithdrawalToleratesAnUnpublishedFormula(t *testing.T) {
+	t.Parallel()
+
+	var revert string
+	for _, command := range jobStepValues(loadYAML(t, releaseWorkflow), "withdraw", "run") {
+		if strings.Contains(command, "Formula/orgtop.rb?ref=main") {
+			revert = command
+			break
+		}
+	}
+	if revert == "" {
+		t.Fatal("release.yml must reconcile the tap formula when a version is withdrawn")
+	}
+
+	if !strings.Contains(revert, "nothing to revert") {
+		t.Error("the revert must treat an absent tap formula as nothing to revert; a 404 there fails the step and strands the releases and tags")
+	}
+}
+
 // TestSnapshotRehearsalPublishesNothing keeps the manual dispatch a rehearsal.
 // The snapshot exists so the release path can be exercised off a tag; a `gh
 // release` or a token in that job would make the rehearsal a publication.
