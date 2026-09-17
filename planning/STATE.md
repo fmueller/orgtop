@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-updated_at: "2026-09-17T21:42:57Z"
+updated_at: "2026-09-17T22:16:41Z"
 active_spec_version: v0.2.0
 active_spec_path: specs/v0.2.0.md
 current_task: T-074-provision-and-validate-distribution-repositories
@@ -51,7 +51,7 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 4
+- todo: 5
 - in_progress: 1
 - completed: 100
 - blocked: 0

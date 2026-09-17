@@ -11,6 +11,8 @@ dependencies:
     - T-093-enforce-per-package-efficacy-floor
     - T-094-harden-cache-timing-assertions
     - T-103-extend-rain-windows-for-quiet-repositories
+    - T-105-complete-the-protected-ledger-step-when-its-event
+    - T-106-test-the-v0-2-0-release-candidate-before-tagging
 updated_at: "2026-08-29T09:22:04Z"
 ---
 
