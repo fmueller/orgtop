@@ -388,6 +388,36 @@ func TestWithdrawalToleratesAnUnpublishedFormula(t *testing.T) {
 	}
 }
 
+// TestWithdrawalDeletesDraftsByIdentity keeps a never-published version
+// removable. GitHub's get-release-by-tag endpoint does not see draft releases,
+// so resolving a release by its tag name finds nothing for a version withdrawn
+// while still staged — while `gh release view` does find it, because it lists
+// releases instead. Deleting by tag therefore reports success, removes the git
+// tag, and leaves the draft and its twelve assets in place. The v0.0.1
+// withdrawal did exactly that, and the guard behind it correctly refused to
+// call the version withdrawn.
+func TestWithdrawalDeletesDraftsByIdentity(t *testing.T) {
+	t.Parallel()
+
+	var deletion string
+	for _, command := range jobStepValues(loadYAML(t, releaseWorkflow), "withdraw", "run") {
+		if strings.Contains(command, "still exists in") {
+			deletion = command
+			break
+		}
+	}
+	if deletion == "" {
+		t.Fatal("release.yml must delete the releases and tags of a withdrawn version")
+	}
+
+	if strings.Contains(deletion, "gh release delete") {
+		t.Error("the withdrawal must not delete by tag name: that resolution cannot see a draft, so it removes the tag and keeps the release")
+	}
+	if !strings.Contains(deletion, "releases/$") && !strings.Contains(deletion, "releases/${") {
+		t.Error("the withdrawal must delete the release by its own id, resolved from a listing that includes drafts")
+	}
+}
+
 // TestSnapshotRehearsalPublishesNothing keeps the manual dispatch a rehearsal.
 // The snapshot exists so the release path can be exercised off a tag; a `gh
 // release` or a token in that job would make the rehearsal a publication.

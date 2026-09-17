@@ -701,8 +701,21 @@ jobs:
             token="${GH_TOKEN}"
             if [ "$repo" = "${SOURCE_REPOSITORY}" ]; then token="${SOURCE_TOKEN}"; fi
 
-            if GH_TOKEN="$token" gh release view "v${VERSION}" --repo "$repo" >/dev/null 2>&1; then
-              GH_TOKEN="$token" gh release delete "v${VERSION}" --repo "$repo" --cleanup-tag --yes
+            # By id, from a listing that includes drafts. GitHub's
+            # get-release-by-tag endpoint does not see a draft, so deleting by
+            # tag name resolves nothing for a version withdrawn while still
+            # staged: it reports success, takes the git tag with it, and leaves
+            # the draft and its assets behind.
+            release_id="$(GH_TOKEN="$token" gh api --paginate "repos/$repo/releases" \
+              --jq ".[] | select(.tag_name == \"v${VERSION}\") | .id" | head -n1)"
+            if [ -n "$release_id" ]; then
+              GH_TOKEN="$token" gh api -X DELETE "repos/$repo/releases/$release_id"
+            fi
+
+            # The tag is its own ref, and a draft never had one. Delete it only
+            # when it exists, so a draft-only withdrawal is not a failure.
+            if GH_TOKEN="$token" gh api "repos/$repo/git/ref/tags/v${VERSION}" >/dev/null 2>&1; then
+              GH_TOKEN="$token" gh api -X DELETE "repos/$repo/git/refs/tags/v${VERSION}"
             fi
 
             if GH_TOKEN="$token" gh release view "v${VERSION}" --repo "$repo" >/dev/null 2>&1; then
