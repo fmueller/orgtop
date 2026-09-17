@@ -301,6 +301,42 @@ func TestProvenanceBundleIsDecodedBeforeItIsSplit(t *testing.T) {
 	}
 }
 
+// TestTapStagingCreatesTheFormulaPath keeps the first formula publishable. A
+// tap that has never carried one has no Formula directory, so copying into it
+// fails, and `commit -a` stages no untracked file, so the very first
+// Formula/orgtop.rb could not be committed even once the copy succeeded.
+// Neither shows up against a tap that already holds a formula, which is every
+// state after the first release.
+func TestTapStagingCreatesTheFormulaPath(t *testing.T) {
+	t.Parallel()
+
+	var staging string
+	for _, command := range jobStepValues(loadYAML(t, releaseWorkflow), "release", "run") {
+		if strings.Contains(command, "release/orgtop-") && strings.Contains(command, "Formula/orgtop.rb") {
+			staging = command
+			break
+		}
+	}
+	if staging == "" {
+		t.Fatal("release.yml must stage Formula/orgtop.rb on a tap release branch")
+	}
+
+	if !strings.Contains(staging, "mkdir -p") {
+		t.Error("tap staging must create the Formula directory; a tap without one cannot receive its first formula")
+	}
+	if !strings.Contains(staging, "add Formula/orgtop.rb") {
+		t.Error("tap staging must add Formula/orgtop.rb explicitly; `commit -a` stages no untracked file")
+	}
+	if strings.Contains(staging, "commit -am") {
+		t.Error("tap staging still commits with -a, which cannot commit the first, untracked formula")
+	}
+	// git status collapses a wholly untracked directory to `Formula/`, so the
+	// guard comparing against the formula path needs the file listed.
+	if !strings.Contains(staging, "--porcelain -uall") {
+		t.Error("the changed-path guard must read --porcelain -uall, or a new Formula directory reports as `Formula/` and fails as a staging bug")
+	}
+}
+
 // TestSnapshotRehearsalPublishesNothing keeps the manual dispatch a rehearsal.
 // The snapshot exists so the release path can be exercised off a tag; a `gh
 // release` or a token in that job would make the rehearsal a publication.

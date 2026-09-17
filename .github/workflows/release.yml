@@ -307,10 +307,15 @@ jobs:
           echo "TAP_BASE=$base" >>"$GITHUB_ENV"
 
           git -C "${RUNNER_TEMP}/tap" checkout -B "$branch" "$base"
+          # A tap that has never carried a formula has no Formula directory.
+          mkdir -p "${RUNNER_TEMP}/tap/Formula"
           cp "${RUNNER_TEMP}/orgtop.rb" "${RUNNER_TEMP}/tap/Formula/orgtop.rb"
 
           # The branch changes only the formula. Anything else is a staging bug.
-          changed="$(git -C "${RUNNER_TEMP}/tap" status --porcelain -- . | awk '{print $2}')"
+          # -uall lists untracked files individually; the default collapses a
+          # wholly untracked directory to `Formula/`, which is not the path this
+          # compares against and would fail the first formula as a staging bug.
+          changed="$(git -C "${RUNNER_TEMP}/tap" status --porcelain -uall -- . | awk '{print $2}')"
           if [ -n "$changed" ] && [ "$changed" != "Formula/orgtop.rb" ]; then
             echo "guard: the tap staging branch must change only Formula/orgtop.rb; changed: $changed" >&2
             exit 1
@@ -318,9 +323,12 @@ jobs:
           if [ -z "$changed" ]; then
             echo "guard: the tap staging branch already carries the exact formula"
           else
+            # Staged by path: the first formula is untracked, and `commit -a`
+            # would leave it out of the very release that introduces it.
+            git -C "${RUNNER_TEMP}/tap" add Formula/orgtop.rb
             git -C "${RUNNER_TEMP}/tap" -c user.name=orgtop-distribution \
               -c user.email=distribution@users.noreply.github.com \
-              commit -am "orgtop ${GITHUB_REF_NAME#v}"
+              commit -m "orgtop ${GITHUB_REF_NAME#v}"
           fi
           git -C "${RUNNER_TEMP}/tap" "${auth[@]}" push --force-with-lease origin "$branch"
 
