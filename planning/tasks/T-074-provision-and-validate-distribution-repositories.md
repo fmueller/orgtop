@@ -36,3 +36,44 @@ Provision and validate the external GitHub CLI extension companion and Homebrew 
 - Do not publish a production v0.2.0 tag in this task.
 - Keep release archives as a complete standalone path independent of GitHub CLI and Homebrew installation.
 - 2026-09-07T11:47:13Z: External authorization missing. fmueller/gh-orgtop now exists with the gh-extension topic and fmueller/homebrew-tap exists, but the distribution GitHub App is not created and gh secret list -R fmueller/orgtop returns no secrets, so DISTRIBUTION_APP_ID and DISTRIBUTION_APP_PRIVATE_KEY are unconfigured (release.yml:112-113, :527-528). App creation is a browser-only flow no agent can perform, and the draft-release rehearsal needs its installation token. RG-011 requires this to stay an explicit release blocker rather than be approximated by local dry runs. Setup steps recorded at ~/Downloads/orgtop_gh_setup_T074.md.
+- 2026-09-18T00:15Z: Provisioning complete and verified. Distribution App id
+  4982629 (`orgtop-distribution`), installation 162588282, permissions exactly
+  `contents: write`, `metadata: read`, `pull_requests: write` and no others, no
+  webhook events, `repository_selection: selected` over exactly
+  `fmueller/orgtop`, `fmueller/gh-orgtop`, `fmueller/homebrew-tap` (confirmed
+  through `/installation/repositories`, total_count 3). `DISTRIBUTION_APP_ID`
+  and `DISTRIBUTION_APP_PRIVATE_KEY` are set on `fmueller/orgtop`; no secret
+  value was read or recorded.
+- 2026-09-18T00:15Z: v0.0.1 rehearsal, runs 35274418650, 35275507747,
+  35276965201 (publish) and 35279448446, 35279637706, 35279773653, 35280447912,
+  35280683027 (withdraw). Proven: companion guard replay, App token minting,
+  source and extension drafts created and reconciled, six raw executables
+  byte-identical across independent builds, archive-to-raw equality, formula
+  staged on `release/orgtop-v0.0.1` with the tap default branch untouched,
+  staged visibility (no asset anonymously downloadable at any point), durable
+  staged ledger event through protected pull request #6, reconciliation failing
+  closed on a divergent retry, and the complete withdrawal: notice merged
+  through #7, tap staging branch deleted, both drafts and the tag deleted,
+  notice outliving them at `docs/withdrawals/v0.0.1.md`, ledger recording
+  `staged` then `withdrawn` with `publication_state: incomplete` and
+  `tap_commit: null`.
+- 2026-09-18T00:15Z: Five release-path defects found and fixed, each with a
+  test that fails without its fix: provenance assembled from the undecoded
+  Sigstore bundle (653e777); tap staging assuming an existing `Formula`
+  directory, `commit -a` unable to stage the first untracked formula, and
+  `git status --porcelain` collapsing the new directory (7be99b1); archives not
+  reproducible across a retry because no `mod_timestamp` was pinned (8f3c137);
+  withdrawal decoding an absent tap formula (f3d44d7); withdrawal deleting a
+  draft release by tag, which GitHub's get-release-by-tag endpoint cannot see
+  (125da34). Every one was invisible to `task check` and the fixture suite, and
+  the reproducibility defect would have made the first v0.2.0 retry
+  unrecoverable.
+- 2026-09-18T00:15Z: Publication itself is not yet rehearsed. v0.0.1 could not
+  be completed because its staged event pins `source_commit` 7be99b1, which
+  predates the reproducibility fix, so the rehearsal continues on v0.0.2 at a
+  commit carrying all five fixes. Still unproven: the publication transitions,
+  the completion manifests, the completed ledger event, final reconciliation,
+  and a retry that reconciles successfully rather than failing closed.
+- 2026-09-18T00:15Z: T-105 records the one defect this task could not carry:
+  the protected-commit poll never re-checks whether its event already landed,
+  so an out-of-band merge strands the step until its bound.
