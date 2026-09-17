@@ -360,6 +360,45 @@ func TestArchivesAreReproducibleAcrossRetries(t *testing.T) {
 			t.Errorf(".goreleaser.yml build mod_timestamp = %q, want %q: without it each rebuild of one tag archives the executable under a new mtime, and no retry can reconcile", got, want)
 		}
 	}
+
+	// The executable is one member. An archive records an mtime, owner, and
+	// group for each of them, and a checkout stamps the working tree with its
+	// own clock, so an unpinned LICENSE or README moves the archive bytes even
+	// while the executable stays put. v0.0.2 diverged on exactly that with
+	// mod_timestamp already pinned.
+	const wantDate = "{{ .CommitDate }}"
+	archives := child(loadYAML(t, goreleaserConfig), "archives")
+	if archives == nil || len(archives.Content) == 0 {
+		t.Fatal(".goreleaser.yml must declare an archive")
+	}
+	for _, archive := range archives.Content {
+		files := child(archive, "files")
+		if files == nil {
+			// A binary-format archive publishes the executable itself and packs
+			// no other member, so it carries no archive metadata to pin.
+			continue
+		}
+
+		if got := value(child(child(archive, "builds_info"), "mtime")); got != wantDate {
+			t.Errorf(".goreleaser.yml archive builds_info.mtime = %q, want %q", got, wantDate)
+		}
+		for _, file := range files.Content {
+			name := value(child(file, "src"))
+			if name == "" || name == "<missing>" {
+				t.Errorf(".goreleaser.yml archive packs %q as a bare path, which carries no pinned metadata", value(file))
+				continue
+			}
+			info := child(file, "info")
+			if got := value(child(info, "mtime")); got != wantDate {
+				t.Errorf(".goreleaser.yml archive file %s info.mtime = %q, want %q", name, got, wantDate)
+			}
+			for _, field := range []string{"owner", "group"} {
+				if got := value(child(info, field)); got == "" || got == "<missing>" {
+					t.Errorf(".goreleaser.yml archive file %s pins no %s, so the archive records the build account's and is not reproducible off another host", name, field)
+				}
+			}
+		}
+	}
 }
 
 // TestWithdrawalToleratesAnUnpublishedFormula keeps the staging-only
@@ -415,6 +454,59 @@ func TestWithdrawalDeletesDraftsByIdentity(t *testing.T) {
 	}
 	if !strings.Contains(deletion, "releases/$") && !strings.Contains(deletion, "releases/${") {
 		t.Error("the withdrawal must delete the release by its own id, resolved from a listing that includes drafts")
+	}
+}
+
+// TestReleaseReusesTheExistingDraft keeps a retry a retry. RG-011 requires
+// expected drafts to be reused and assets never to be overwritten, but the
+// release step resolves its release by tag, and GitHub's get-release-by-tag
+// endpoint does not see a draft. Left to that, every retry of a tag whose
+// release is still a draft creates a second draft for the same tag, which is
+// the contradictory same-version state reconciliation exists to refuse — and
+// then refuses it on a digest mismatch rather than on the duplication. The
+// v0.0.2 retry produced two drafts for one tag, holding fourteen and thirteen
+// assets.
+func TestReleaseReusesTheExistingDraft(t *testing.T) {
+	t.Parallel()
+
+	release := child(loadYAML(t, goreleaserConfig), "release")
+	if release == nil {
+		t.Fatal(".goreleaser.yml must configure the release")
+	}
+
+	if got := value(child(release, "use_existing_draft")); got != "true" {
+		t.Errorf(".goreleaser.yml release use_existing_draft = %q, want \"true\": without it a retry creates a second draft for the same tag", got)
+	}
+	if got := value(child(release, "draft")); got != "true" {
+		t.Errorf(".goreleaser.yml release draft = %q, want \"true\": nothing built may be anonymously downloadable before the publication transition", got)
+	}
+	if got := value(child(release, "mode")); got != "keep-existing" {
+		t.Errorf(".goreleaser.yml release mode = %q, want \"keep-existing\"", got)
+	}
+	// Overwriting an asset is republishing bytes under a name that already
+	// carried different ones, which no retry is allowed to do.
+	if got := value(child(release, "replace_existing_artifacts")); got == "true" {
+		t.Error(".goreleaser.yml release replace_existing_artifacts is true, so a retry would overwrite published bytes instead of comparing them")
+	}
+}
+
+// TestReleaseRefusesDuplicateSameVersionReleases keeps the duplication
+// diagnosable. Two releases for one tag is non-reconcilable same-version state
+// under RG-011, and it has to be named where it happens: found only through a
+// later digest mismatch, it reads as divergent bytes from a rebuild, which is a
+// different defect with a different fix.
+func TestReleaseRefusesDuplicateSameVersionReleases(t *testing.T) {
+	t.Parallel()
+
+	var guarded bool
+	for _, command := range jobStepValues(loadYAML(t, releaseWorkflow), "release", "run") {
+		if strings.Contains(command, "more than one release") {
+			guarded = true
+			break
+		}
+	}
+	if !guarded {
+		t.Error("release.yml must refuse a tag carrying more than one release, in the channel it built, before it reconciles digests")
 	}
 }
 

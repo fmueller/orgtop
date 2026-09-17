@@ -39,9 +39,33 @@ archives:
         formats:
           - zip
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    # mod_timestamp pins the built executable's mtime, but an archive records
+    # an mtime, owner, group, and mode for every member. actions/checkout
+    # stamps the working tree with the clone time, so LICENSE and README.md
+    # arrive with a fresh mtime on every run and the archive bytes move even
+    # though the executable does not; the owner and group are the build
+    # account's, which is not a property of the tag either. Every member's
+    # metadata is pinned here, which makes the archive bytes a function of the
+    # tagged commit alone and reproducible off any host, not just off an
+    # identical runner. Guarded by TestArchivesAreReproducibleAcrossRetries.
+    builds_info:
+      mtime: "{{ .CommitDate }}"
+      owner: root
+      group: root
+      mode: 0755
     files:
-      - LICENSE
-      - README.md
+      - src: LICENSE
+        info:
+          mtime: "{{ .CommitDate }}"
+          owner: root
+          group: root
+          mode: 0644
+      - src: README.md
+        info:
+          mtime: "{{ .CommitDate }}"
+          owner: root
+          group: root
+          mode: 0644
 
   # The GitHub CLI extension channel: the same build output, copied and renamed
   # rather than rebuilt, so the raw asset and the archived executable are the
@@ -69,6 +93,13 @@ checksum:
 release:
   draft: true
   prerelease: false
+  # A draft is invisible to GitHub's get-release-by-tag endpoint, which is how
+  # the release is resolved, so without this a retry of a tag whose release is
+  # still a draft creates a second draft for the same tag instead of reusing
+  # the first. Two releases for one tag is the contradictory same-version state
+  # RG-011 refuses, and it would surface only later, as a digest mismatch that
+  # reads like a rebuild. Guarded by TestReleaseReusesTheExistingDraft.
+  use_existing_draft: true
   # An existing draft is reused and missing assets are added; an asset already
   # present is never overwritten, so a retry of the same tag cannot replace
   # published bytes.

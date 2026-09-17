@@ -154,6 +154,22 @@ jobs:
 
       # One attestation per artifact, so every subject binds to this repository,
       # this tag's commit, and this workflow identity.
+      # Two releases for one tag is non-reconcilable same-version state, and it
+      # is named here rather than inferred later from a digest mismatch between
+      # asset sets belonging to different releases.
+      - name: Refuse a tag carrying more than one release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          count="$(gh api --paginate "repos/${SOURCE_REPOSITORY}/releases" \
+            --jq "[.[] | select(.tag_name == \"${GITHUB_REF_NAME}\")] | length" \
+            | awk '{ total += $1 } END { print total + 0 }')"
+          if [ "$count" -ne 1 ]; then
+            echo "guard: ${SOURCE_REPOSITORY} carries $count releases for ${GITHUB_REF_NAME}, want exactly 1; more than one release for one tag is non-reconcilable same-version state, and none means the draft was never created" >&2
+            exit 1
+          fi
+          echo "guard: ${SOURCE_REPOSITORY} carries exactly one release for ${GITHUB_REF_NAME}"
+
       - name: Attest the twelve build artifacts
         id: attest
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
