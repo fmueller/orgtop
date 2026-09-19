@@ -1117,7 +1117,7 @@ pr)
       esac
     done
     [ -n "$branch" ]
-    if [ "$json" = number ]; then
+    if [ "$json" = number ] || [ "$json" = state ]; then
       # No existing pull request: the production guard will create one.
       exit 1
     fi

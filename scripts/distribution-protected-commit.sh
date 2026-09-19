@@ -127,10 +127,24 @@ fi
 git "${committer[@]}" commit -m "$title"
 git "${authenticated[@]}" push --force-with-lease origin "$branch"
 
-if ! gh pr view "$branch" --json number >/dev/null 2>&1; then
+pull_request_state="$(gh pr view "$branch" --json state --jq '.state' 2>/dev/null || true)"
+case "$pull_request_state" in
+OPEN)
+  ;;
+CLOSED)
+  # A prior release attempt may have been canceled after creating its PR. The
+  # branch is force-updated above with the current exact event, so reopening
+  # that PR is the idempotent retry path; polling a closed PR can never merge.
+  gh pr reopen "$branch" >/dev/null
+  ;;
+"")
   gh pr create --base "$default_branch" --head "$branch" --title "$title" \
     --body "Records one RG-011 distribution-ledger event. Merging this pull request is a required transition of the release workflow, which is waiting for it."
-fi
+  ;;
+*)
+  die "the ledger pull request returned an unexpected state: $pull_request_state"
+  ;;
+esac
 
 # Wait for the checks to settle green and for an independent approval. The App
 # supplies neither: it is the pull request's author, and pull_request_readiness
