@@ -25,6 +25,11 @@ const streamGaps = 4
 // these are Stream's.
 const streamChrome = 2
 
+// streamFocusBlank reserves the two cells every Stream row uses for focus
+// feedback. Keeping the prefix on unfocused rows preserves the column alignment
+// while the marker moves with focus.
+const streamFocusBlank = "  "
+
 // boundedDisclosure is what Stream adds to its event count when the FR-006 bound
 // discarded older events, so a list that ends at the bound says so rather than
 // ending without explanation (FR-010).
@@ -54,16 +59,20 @@ type stream struct {
 // lines the view reserves, above the windowed event rows. Open detail replaces
 // both, because it is a bounded reading of one event rather than a pane beside
 // the list it was opened from.
-func (s stream) render(state State, width, height int) string {
+func (s stream) render(state State, set charset, width, height int) string {
 	if lines, _, open := detailContent(state, s.detail, width); open {
 		return renderBody(lines, s.detail.viewport, width, height)
 	}
-	chrome, lines, rowHeight := streamContent(state, width, height)
+	focus := -1
+	if streamStateLine(state.Freshness, len(state.Scoped.StreamEvents())) == "" {
+		focus = s.focus
+	}
+	chrome, lines, rowHeight := streamContentFor(state, width, height, focus, set)
 	rendered := make([]string, 0, len(chrome)+1)
 	for _, line := range chrome {
 		rendered = append(rendered, bodyStyle.Render(shorten(line, width)))
 	}
-	rendered = append(rendered, renderBody(lines, s.viewport, width, rowHeight))
+	rendered = append(rendered, renderStreamBody(lines, s.viewport, width, rowHeight, focus, set))
 	return strings.Join(rendered, "\n")
 }
 
@@ -125,6 +134,14 @@ func (s stream) contained(count, height int) stream {
 // event row, dropping the coverage disclosure before the column headings that
 // name what the remaining row means (FR-010, A-010).
 func streamContent(state State, width, height int) (chrome []string, lines []string, rowHeight int) {
+	return streamContentFor(state, width, height, -1, charsetASCII)
+}
+
+// streamContentFor returns Stream's content with the focused row marked when a
+// render has a focus index. Scrolling and clamp calculations pass -1 because
+// they need only the prepared row count; keeping that path independent prevents
+// visual feedback from changing navigation semantics.
+func streamContentFor(state State, width, height, focus int, set charset) (chrome []string, lines []string, rowHeight int) {
 	events := state.Scoped.StreamEvents()
 	if line := streamStateLine(state.Freshness, len(events)); line != "" {
 		return nil, []string{line}, height
@@ -132,7 +149,7 @@ func streamContent(state State, width, height int) (chrome []string, lines []str
 
 	laid := layoutFittingWidth(events, state.Scopes.Tokens(), state.LastSuccess, width)
 	if height == 0 {
-		return nil, renderStreamRows(laid.rows), 0
+		return nil, renderStreamRows(laid.rows, focus, set), 0
 	}
 	chrome = []string{streamCoverage(len(events), state.Scoped.Truncated()), laid.heading.String()}
 	// A non-positive height is unbounded and holds all of it; a bounded one
@@ -140,7 +157,7 @@ func streamContent(state State, width, height int) (chrome []string, lines []str
 	for height > 0 && len(chrome) >= height {
 		chrome = chrome[1:]
 	}
-	return chrome, renderStreamRows(laid.rows), height - len(chrome)
+	return chrome, renderStreamRows(laid.rows, focus, set), height - len(chrome)
 }
 
 // streamCoverage states how much activity the list represents: the number of
@@ -210,9 +227,10 @@ var streamLayouts = []streamLayout{
 	},
 }
 
-// streamRow is one laid-out line: the aligned age, repository, and category,
-// followed by the optional actor and description.
+// streamRow is one laid-out line: the focus prefix, aligned age, repository,
+// and category, followed by the optional actor and description.
 type streamRow struct {
+	marker  string
 	columns string
 	detail  string
 }
@@ -221,18 +239,19 @@ type streamRow struct {
 // category.
 func (r streamRow) String() string {
 	if r.detail == "" {
-		return strings.TrimRight(r.columns, " ")
+		return r.marker + strings.TrimRight(r.columns, " ")
 	}
-	return r.columns + rowGap + r.detail
+	return r.marker + r.columns + rowGap + r.detail
 }
 
 // required is the width the row needs to stay readable: its aligned columns and
 // enough of the detail to start reading it.
 func (r streamRow) required() int {
+	prefix := lipgloss.Width(r.marker)
 	if r.detail == "" {
-		return lipgloss.Width(r.columns)
+		return prefix + lipgloss.Width(r.columns)
 	}
-	return lipgloss.Width(r.columns) + lipgloss.Width(rowGap) + min(lipgloss.Width(r.detail), minDetailWidth)
+	return prefix + lipgloss.Width(r.columns) + lipgloss.Width(rowGap) + min(lipgloss.Width(r.detail), minDetailWidth)
 }
 
 // laidOutStream is one layout applied to the snapshot: the column heading row
@@ -264,13 +283,74 @@ func layoutFittingWidth(events []domain.ScopedEvent, tokens map[domain.ScopeIden
 	return layoutStream(events, tokens, lastSuccess, streamLayouts[sparsest], width)
 }
 
-// renderStreamRows renders the laid-out rows as body lines.
-func renderStreamRows(rows []streamRow) []string {
+// renderStreamRows renders the laid-out rows as body lines, replacing the
+// reserved blank prefix on the focused row with the selected character set's
+// visible marker.
+func renderStreamRows(rows []streamRow, focus int, set charset) []string {
 	lines := make([]string, 0, len(rows))
-	for _, row := range rows {
+	for index, row := range rows {
+		if index == focus {
+			row.marker = streamFocusPrefix(true, set)
+		}
 		lines = append(lines, row.String())
 	}
 	return lines
+}
+
+// streamFocusPrefix returns a visible focus marker in the launch's character
+// set, or the fixed-width blank prefix reserved by every other row.
+func streamFocusPrefix(focused bool, set charset) string {
+	if !focused {
+		return streamFocusBlank
+	}
+	if set == charsetUTF8 {
+		return "▸ "
+	}
+	return "> "
+}
+
+// renderStreamBody windows and shortens Stream rows while preserving the focus
+// marker at the smallest positive widths. The generic body renderer quite
+// correctly announces a shortened line with `…`, but that would hide the one
+// character that tells the operator which row an arrow key moved to.
+func renderStreamBody(lines []string, view viewport, width, height, focus int, set charset) string {
+	offset := view.clamped(len(lines), height)
+	visible := lines[offset:]
+	if height > 0 && len(visible) > height {
+		visible = visible[:height]
+	}
+
+	rendered := make([]string, 0, max(len(visible), height))
+	for index, line := range visible {
+		rowIndex := offset + index
+		if rowIndex == focus {
+			line = shortenFocusedStreamRow(line, width, set)
+		} else {
+			line = shorten(line, width)
+		}
+		rendered = append(rendered, bodyStyle.Render(line))
+	}
+	for len(rendered) < height {
+		rendered = append(rendered, "")
+	}
+	return strings.Join(rendered, "\n")
+}
+
+// shortenFocusedStreamRow pays the same width budget as shorten while keeping
+// the marker as the first visible cell. At one and two cells only the marker
+// (and, when possible, its spacing) can be shown; wider rows retain the same
+// marked truncation convention as every other body line.
+func shortenFocusedStreamRow(line string, limit int, set charset) string {
+	marker := streamFocusPrefix(true, set)
+	rest := strings.TrimPrefix(line, marker)
+	markerWidth := lipgloss.Width(marker)
+	if limit < 0 {
+		return line
+	}
+	if limit <= markerWidth {
+		return truncate(marker, limit)
+	}
+	return marker + shorten(rest, limit-markerWidth)
 }
 
 // layoutStream lays out the heading row and one event per row in the snapshot's
@@ -309,22 +389,27 @@ func layoutStream(events []domain.ScopedEvent, tokens map[domain.ScopeIdentity]s
 		if scopes != nil {
 			columns = append(columns, padRight(scopes[index], scopeWidth))
 		}
-		laid = append(laid, streamRow{columns: strings.Join(columns, rowGap), detail: details[index]})
+		laid = append(laid, streamRow{
+			marker:  streamFocusBlank,
+			columns: strings.Join(columns, rowGap),
+			detail:  details[index],
+		})
 	}
 	return laidOutStream{heading: laid[0], rows: laid[1:]}
 }
 
 // scopeBudget is how many cells the Scope context column may use: what the
-// width has left once the aligned columns and the gaps between all five of them
-// have taken theirs. The free-form actor and description are the row's
-// secondary detail and yield to Scope context rather than reserving cells ahead
-// of it, so a constrained row loses description before it loses membership
-// (FR-011). A non-positive width is unbounded and renders the complete context.
+// width has left once the focus prefix, aligned columns, and the gaps between
+// all five of them have taken theirs. The free-form actor and description are
+// the row's secondary detail and yield to Scope context rather than reserving
+// cells ahead of it, so a constrained row loses description before it loses
+// membership (FR-011). A non-positive width is unbounded and renders the
+// complete context.
 func scopeBudget(width, columns int) int {
 	if width <= 0 {
 		return unbounded
 	}
-	return max(0, width-columns-streamGaps*lipgloss.Width(rowGap))
+	return max(0, width-lipgloss.Width(streamFocusBlank)-columns-streamGaps*lipgloss.Width(rowGap))
 }
 
 // scopeColumn renders the column heading and each row's Scope context within

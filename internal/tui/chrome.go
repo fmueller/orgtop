@@ -326,12 +326,12 @@ var scrollFooterCandidates = footerLadder(
 	[]string{"up/down scroll"},
 )
 
-// streamFooterCandidates advertises Stream's own controls: the scrolling both
-// list views share, and the bounded event detail `enter` opens over the focused
-// event.
+// streamFooterCandidates advertises Stream's own controls: arrows move its
+// focused event, page keys move that focus by a page, and `enter` opens bounded
+// detail over the focused event.
 var streamFooterCandidates = footerLadder(
-	[]string{"up/down scroll", "pgup/pgdn page", "enter detail"},
-	[]string{"up/down scroll", "enter detail"},
+	[]string{"up/down focus", "pgup/pgdn page", "enter detail"},
+	[]string{"up/down focus", "enter detail"},
 )
 
 // detailFooterCandidates advertises the open detail's own controls: it scrolls

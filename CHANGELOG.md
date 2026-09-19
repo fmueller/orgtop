@@ -101,6 +101,9 @@ workflow refuses to publish otherwise.
 - Overview and Stream now report the visible row range when terminal height
   hides content. Stream navigation tracks a focused event and scrolls only when
   that focus crosses the viewport, preserving it across resize and refresh.
+- Stream now marks the focused event as arrow keys move within a stationary
+  viewport, with an accessible UTF-8/ASCII indicator, and documents the focus,
+  detail, and return controls.
 - Bare `--path` patterns turn their `--repo` selections into filtered path
   Scopes rather than whole-repository Scopes. Repository-only invocations keep
   their v0.1 meaning.

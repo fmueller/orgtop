@@ -1,11 +1,11 @@
 ---
 id: T-108-make-stream-arrow-key-navigation-visibly
 title: Make Stream arrow-key navigation visibly responsive before v0.2.0
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#rg-012-mixed-scope-presentation-contract
 dependencies: []
-updated_at: "2026-09-19T08:22:42Z"
+updated_at: "2026-09-19T12:42:19Z"
 ---
 
 # T-108-make-stream-arrow-key-navigation-visibly Make Stream arrow-key navigation visibly responsive before v0.2.0
@@ -85,4 +85,8 @@ detail use direct offset scrolling and do not have this specific defect.
 - Prefer making existing focus visible over unconditional viewport scrolling.
   Changing navigation semantics instead requires explicit alignment of RG-012
   and A-078 first.
-- This task records analysis only; no production fix has been applied.
+- The implementation reserves an aligned two-cell prefix on every Stream row,
+  marks the focused row with `> ` or `▸ `, and keeps that prefix in the row and
+  Scope width budgets so navigation feedback does not change layout semantics.
+- 2026-09-19T12:41:50Z: verification pass
+- 2026-09-19T12:42:19Z: Completed after verification pass. Stream focus markers are visible for ASCII/UTF-8 and no-color modes, preserve aligned width accounting and tiny/narrow bounds, and follow navigation through reversal, paging, clamps, resize, refresh, view switching, Enter, and Escape. Independent General and Go/TUI reviews plus disposition verification found no unresolved findings. Rendered-state evidence was captured and inspected manually. The aggregate task check's distribution stage remains environment-blocked because zip is unavailable in the orb.

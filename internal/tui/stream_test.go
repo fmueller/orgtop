@@ -275,6 +275,149 @@ func TestStreamScrollKeysWindowTheEventsWithinBounds(t *testing.T) {
 	}
 }
 
+func TestStreamArrowNavigationRendersTheFocusedEventBeforeScrolling(t *testing.T) {
+	model, _ := apply(t, streamModel(t, numberedEvents(t, scrollEvents)),
+		tea.WindowSizeMsg{Width: wideWidth, Height: scrollTerminalHeight})
+	before := eventRows(t, model.View().Content)
+	if !strings.HasPrefix(before[0], "> ") {
+		t.Fatalf("initially focused row is %q, want the ASCII focus marker", before[0])
+	}
+
+	moved := scrolled(t, model, "down")
+	if moved.stream.offset != model.stream.offset {
+		t.Fatalf("one down action moved the viewport from %d to %d while focus stayed in the window", model.stream.offset, moved.stream.offset)
+	}
+	after := eventRows(t, moved.View().Content)
+	if !strings.HasPrefix(after[0], "  ") || !strings.HasPrefix(after[1], "> ") {
+		t.Fatalf("focus feedback after one down action is %q and %q, want only the second row marked", after[0], after[1])
+	}
+	if strings.Join(before, "\n") == strings.Join(after, "\n") {
+		t.Fatal("one down action changed focus without changing the rendered Stream rows")
+	}
+}
+
+func TestStreamFocusMarkerUsesUTF8AndASCIIWithoutColor(t *testing.T) {
+	tests := []struct {
+		name   string
+		set    charset
+		marker string
+	}{
+		{name: "ascii", set: charsetASCII, marker: "> "},
+		{name: "utf-8", set: charsetUTF8, marker: "▸ "},
+	}
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			model := streamModel(t, numberedEvents(t, 2))
+			model.charset = testCase.set
+			model.capability = capabilityNoColor
+			sized, _ := apply(t, model, tea.WindowSizeMsg{Width: wideWidth, Height: scrollTerminalHeight})
+			row := eventRows(t, sized.View().Content)[0]
+			if !strings.HasPrefix(row, testCase.marker) {
+				t.Fatalf("focused row %q has no %s marker %q", row, testCase.name, testCase.marker)
+			}
+			if strings.Contains(row, "\x1b[") {
+				t.Fatalf("focused row %q contains color escapes in no-color mode", row)
+			}
+		})
+	}
+}
+
+func TestStreamFocusMarkerSurvivesTinyWidths(t *testing.T) {
+	for _, width := range []int{1, 2, 3, narrowWidth} {
+		t.Run(fmt.Sprintf("width-%d", width), func(t *testing.T) {
+			model := streamModel(t, numberedEvents(t, 2))
+			content := renderAt(t, model, width, 4)
+			assertFits(t, content, width, 4)
+			if !strings.Contains(content, ">") {
+				t.Fatalf("focused event is not identifiable at width %d:\n%s", width, content)
+			}
+		})
+	}
+}
+
+func TestStreamEnterOpensTheVisiblyFocusedEvent(t *testing.T) {
+	model, _ := apply(t, streamModel(t, numberedEvents(t, scrollEvents)),
+		tea.WindowSizeMsg{Width: wideWidth, Height: scrollTerminalHeight})
+	model = scrolled(t, model, "down")
+	opened, _ := apply(t, model, press("enter"))
+
+	if !opened.stream.detail.open {
+		t.Fatal("enter did not open detail for the focused Stream event")
+	}
+	if got, want := opened.stream.detail.eventID, "001"; got != want {
+		t.Fatalf("enter opened event %q, want the visibly focused event %q", got, want)
+	}
+	if !strings.Contains(opened.View().Content, "Event: 001") {
+		t.Fatalf("opened detail does not identify the focused event:\n%s", opened.View().Content)
+	}
+}
+
+// focusedStreamRow returns the one event row carrying Stream's visible focus
+// marker. Keeping this assertion at the rendered boundary catches a marker that
+// follows the wrong numeric index even when focus and offset state look right.
+func focusedStreamRow(t *testing.T, content string) string {
+	t.Helper()
+	var focused []string
+	for _, row := range eventRows(t, content) {
+		if strings.HasPrefix(row, "> ") || strings.HasPrefix(row, "▸ ") {
+			focused = append(focused, row)
+		}
+	}
+	if len(focused) != 1 {
+		t.Fatalf("rendered %d focused Stream rows, want exactly one:\n%s", len(focused), content)
+	}
+	return focused[0]
+}
+
+func TestStreamFocusMarkerFollowsNavigationAndReconciliation(t *testing.T) {
+	model, _ := apply(t, streamModel(t, numberedEvents(t, scrollEvents)),
+		tea.WindowSizeMsg{Width: wideWidth, Height: scrollTerminalHeight})
+
+	model = scrolled(t, model, "down", "down", "down", "down", "down", "down")
+	if row := focusedStreamRow(t, model.View().Content); !strings.Contains(row, "commit 07") {
+		t.Errorf("six down actions marked %q, want the seventh event", row)
+	}
+	model = scrolled(t, model, "up")
+	if row := focusedStreamRow(t, model.View().Content); !strings.Contains(row, "commit 06") {
+		t.Errorf("upward reversal marked %q, want the sixth event", row)
+	}
+	model = scrolled(t, model, "pgdown")
+	if row := focusedStreamRow(t, model.View().Content); !strings.Contains(row, "commit 12") {
+		t.Errorf("page down marked %q, want the twelfth event", row)
+	}
+	model = scrolled(t, model, "pgup")
+	if row := focusedStreamRow(t, model.View().Content); !strings.Contains(row, "commit 06") {
+		t.Errorf("page up marked %q, want the sixth event", row)
+	}
+	model = scrolled(t, model, "pgup", "pgup", "pgup")
+	if row := focusedStreamRow(t, model.View().Content); !strings.Contains(row, "commit 01") {
+		t.Errorf("top clamp marked %q, want the first event", row)
+	}
+	model = scrolled(t, model, "pgdown", "pgdown", "pgdown", "pgdown")
+	if row := focusedStreamRow(t, model.View().Content); !strings.Contains(row, "commit 20") {
+		t.Errorf("bottom clamp marked %q, want the last event", row)
+	}
+
+	resized, _ := apply(t, model, tea.WindowSizeMsg{Width: wideWidth, Height: 7})
+	if row := focusedStreamRow(t, resized.View().Content); !strings.Contains(row, "commit 20") {
+		t.Errorf("resize marked %q, want the retained last event", row)
+	}
+	switched := scrolled(t, resized, "1", "tab")
+	if row := focusedStreamRow(t, switched.View().Content); !strings.Contains(row, "commit 20") {
+		t.Errorf("view switch marked %q, want the retained last event", row)
+	}
+
+	activities := []domain.RepositoryActivity{testActivity(t, "acme/backend", numberedEvents(t, scrollEvents)...)}
+	refreshed, _ := apply(t, switched, refreshedMsg{
+		polled:   true,
+		result:   Result{Repositories: activities},
+		evidence: retainedEvidence(switched.state.Scopes, activities),
+	})
+	if row := focusedStreamRow(t, refreshed.View().Content); !strings.Contains(row, "commit 20") {
+		t.Errorf("refresh marked %q, want the retained last event", row)
+	}
+}
+
 func TestStreamPreservesFocusedIndexAcrossRepeatedResize(t *testing.T) {
 	model, _ := apply(t, streamModel(t, numberedEvents(t, scrollEvents)),
 		tea.WindowSizeMsg{Width: wideWidth, Height: scrollTerminalHeight})
@@ -508,6 +651,9 @@ var ageUnits = []string{"m", "h", "d", "w", "y"}
 // whitespace-separated field.
 func renderedAge(t *testing.T, row string) string {
 	t.Helper()
+	row = strings.TrimPrefix(row, streamFocusPrefix(true, charsetUTF8))
+	row = strings.TrimPrefix(row, streamFocusPrefix(true, charsetASCII))
+	row = strings.TrimPrefix(row, streamFocusBlank)
 	fields := strings.Fields(row)
 	if len(fields) == 0 {
 		t.Fatalf("row %q has no age column", row)
@@ -572,6 +718,9 @@ func TestStreamRightAlignsTheAgeColumn(t *testing.T) {
 
 	width := lipgloss.Width(youngestAge)
 	for index, row := range rows {
+		row = strings.TrimPrefix(row, streamFocusPrefix(true, charsetUTF8))
+		row = strings.TrimPrefix(row, streamFocusPrefix(true, charsetASCII))
+		row = strings.TrimPrefix(row, streamFocusBlank)
 		column := string([]rune(row)[:width])
 		if strings.TrimLeft(column, " ") != renderedAge(t, row) {
 			t.Errorf("row %d starts with %q, want the age right-aligned in %d columns:\n%s", index, column, width, row)

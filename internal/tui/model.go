@@ -447,7 +447,7 @@ func (m Model) budget() (width, height int) {
 func (m Model) body(width, height int) string {
 	switch m.mode {
 	case ModeStream:
-		return m.stream.render(m.state, width, height)
+		return m.stream.render(m.state, m.charset, width, height)
 	case ModeRain:
 		return m.rain.render(m.state, m.interesting, m.charset, m.capability, width, height)
 	default:

@@ -398,6 +398,12 @@ func TestStreamAdvertisesItsDetailControls(t *testing.T) {
 	if !strings.Contains(list, "enter") {
 		t.Errorf("the Stream footer %q advertises no detail control", list)
 	}
+	if !strings.Contains(list, "up/down focus") {
+		t.Errorf("the Stream footer %q does not distinguish focus navigation from scrolling", list)
+	}
+	if strings.Contains(list, "up/down scroll") {
+		t.Errorf("the Stream footer %q still describes list navigation as scrolling", list)
+	}
 	if strings.Contains(list, "esc") {
 		t.Errorf("the Stream footer %q advertises a control the closed list has no use for", list)
 	}

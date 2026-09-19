@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"charm.land/lipgloss/v2"
+
 	"github.com/fmueller/orgtop/internal/domain"
 )
 
@@ -76,7 +78,9 @@ func TestStreamDropsItsCoverageDisclosureBeforeItsHeadings(t *testing.T) {
 func TestStreamKeepsReadableDetailWhenChoosingItsLayout(t *testing.T) {
 	const (
 		sparse = 61
-		rich   = 62
+		// Stream reserves two cells for its always-aligned focus prefix, so
+		// the rich register's boundary moves with that visible column.
+		rich = 64
 	)
 	model := streamModel(t, detailedEvents(t))
 
@@ -131,6 +135,21 @@ func TestStreamSpendsNoScopeBudgetWithoutAReportedWidth(t *testing.T) {
 		if got := scopeBudget(width, 30); got != unbounded {
 			t.Errorf("a width of %d budgets %d cells of Scope context, want the unbounded %d", width, got, unbounded)
 		}
+	}
+}
+
+func TestStreamScopeBudgetAccountsForTheFocusPrefix(t *testing.T) {
+	const (
+		width   = 60
+		columns = 30
+	)
+	want := width - columns - streamGaps*lipgloss.Width(rowGap) - lipgloss.Width(streamFocusBlank)
+	for _, set := range []charset{charsetASCII, charsetUTF8} {
+		t.Run(set.String(), func(t *testing.T) {
+			if got := scopeBudget(width, columns); got != want {
+				t.Fatalf("%s Stream scope budget is %d, want %d after reserving the %d-cell focus prefix", set, got, want, lipgloss.Width(streamFocusPrefix(true, set)))
+			}
+		})
 	}
 }
 

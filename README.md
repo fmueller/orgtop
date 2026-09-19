@@ -253,8 +253,10 @@ without distinct intensity is given the same information as text, as
 | `2` | Open Stream |
 | `3` | Open Rain |
 | `tab` | Cycle through the three views |
-| `up` / `down` | Scroll the active view by one row |
-| `pgup` / `pgdown` | Scroll the active view by one page |
+| `up` / `down` | In Overview, scroll one row; in Stream, move focus one event (the viewport follows only when focus reaches an edge); in event detail, scroll one line |
+| `pgup` / `pgdown` | In Overview, scroll one page; in Stream, move focus by the visible event-row page; in event detail, scroll one page |
+| `enter` | In Stream, open detail for the visibly focused event |
+| `esc` | In Stream event detail, return to the focused event and its viewport |
 | `-` / `+` | Select the shorter or longer Rain window |
 | `p` | Pause and resume Rain motion, without pausing polling |
 | `[` / `]` | Show the previous or next page of Rain Scope columns |

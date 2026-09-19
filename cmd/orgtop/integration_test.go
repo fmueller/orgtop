@@ -942,7 +942,7 @@ func TestMultiDaySnapshotRendersAgesRatherThanClockTimes(t *testing.T) {
 
 	clock := regexp.MustCompile(`\d{1,2}:\d{2}`)
 	for index, want := range []string{"2h", "3d", "2w"} {
-		if age := strings.Fields(rows[index])[0]; age != want {
+		if age := streamAge(t, rows[index]); age != want {
 			t.Errorf("row %d is aged %q, want %q:\n%s", index, age, want, rows[index])
 		}
 		if clock.MatchString(rows[index]) {
@@ -987,9 +987,26 @@ func ages(t *testing.T, content string) []string {
 	rows := streamBody(t, content)
 	kept := make([]string, 0, len(rows))
 	for _, row := range rows {
-		kept = append(kept, strings.Fields(row)[0])
+		kept = append(kept, streamAge(t, row))
 	}
 	return kept
+}
+
+// streamAge returns the first event field after Stream's optional visible focus
+// marker. The marker is a presentation prefix, not part of the age column.
+func streamAge(t *testing.T, row string) string {
+	t.Helper()
+	fields := strings.Fields(row)
+	if len(fields) == 0 {
+		t.Fatalf("stream row %q has no fields", row)
+	}
+	if fields[0] == ">" || fields[0] == "▸" {
+		fields = fields[1:]
+	}
+	if len(fields) == 0 {
+		t.Fatalf("stream row %q has no age after its focus marker", row)
+	}
+	return fields[0]
 }
 
 // shortenedMark is the mark the shared chrome appends to content it shortened.

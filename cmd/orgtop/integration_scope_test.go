@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"strings"
 	"testing"
 	"time"
 )
@@ -155,7 +154,7 @@ func TestPinnedRepositoryOnlyFlowPreservesV01BehaviorWithoutEnrichment(t *testin
 	// The snapshot is one atomic reverse-chronological order across both
 	// repositories, so the ages read straight down the column.
 	for index, want := range []string{"1m", "30m", "2h"} {
-		if age := strings.Fields(rows[index])[0]; age != want {
+		if age := streamAge(t, rows[index]); age != want {
 			t.Errorf("row %d is aged %q, want %q:\n%s", index, age, want, rows[index])
 		}
 	}
