@@ -4,6 +4,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"gopkg.in/yaml.v3"
 )
 
 // The distribution guards, and the one Task target that exercises them. They
@@ -623,6 +625,77 @@ func TestReleaseStagesGoReleaserArtifactsForUpload(t *testing.T) {
 	for _, required := range []string{"artifacts.json", "distribution_matrix_rows", "gh-extension", "checksums_asset", "provenance_asset", "realpath -e"} {
 		if !strings.Contains(helper, required) {
 			t.Errorf("source asset staging helper must contain %q", required)
+		}
+	}
+}
+
+// TestReleaseWorkflowPreservesShellContinuations ensures the three guarded
+// commands with shell continuations are YAML literal blocks. A folded scalar
+// turns the backslash-newline into a backslash-space, making Bash pass the
+// entire continuation as one escaped argument and stopping the release before
+// any asset reconciliation.
+func TestReleaseWorkflowPreservesShellContinuations(t *testing.T) {
+	t.Parallel()
+
+	want := map[string]struct {
+		command       string
+		arguments     []string
+		continuations int
+	}{
+		"Stage source draft assets": {
+			command:       "distribution-stage-assets.sh",
+			continuations: 2,
+			arguments: []string{
+				`--version "${GITHUB_REF_NAME#v}" --dist dist`,
+				`--output "${RUNNER_TEMP}/source-upload"`,
+			},
+		},
+		"Verify staged source assets before upload": {
+			command:       "distribution-verify.sh",
+			continuations: 2,
+			arguments: []string{
+				`--dir "${RUNNER_TEMP}/source-upload"`,
+				`--version "${GITHUB_REF_NAME#v}" --channel source`,
+			},
+		},
+		"Upload or reconcile the source draft assets": {
+			command:       "distribution-upload-assets.sh",
+			continuations: 2,
+			arguments: []string{
+				`--tag "${GITHUB_REF_NAME}" --repo "${SOURCE_REPOSITORY}"`,
+				`--dir "${RUNNER_TEMP}/source-upload" --channel source`,
+			},
+		},
+	}
+	steps := child(jobAt(loadYAML(t, releaseWorkflow), "release"), "steps")
+	if steps == nil {
+		t.Fatal("release.yml must declare a `release` job with steps")
+	}
+
+	for name, expected := range want {
+		var run *yaml.Node
+		for _, step := range steps.Content {
+			if value(child(step, "name")) == name {
+				run = child(step, "run")
+				break
+			}
+		}
+		if run == nil {
+			t.Fatalf("release.yml must declare a run command for %q", name)
+		}
+		if run.Style&yaml.LiteralStyle == 0 {
+			t.Errorf("release.yml step %q must use a literal run block so shell continuations survive YAML parsing", name)
+		}
+		if !strings.Contains(run.Value, expected.command) {
+			t.Errorf("release.yml step %q must run %q, got %q", name, expected.command, run.Value)
+		}
+		for _, argument := range expected.arguments {
+			if !strings.Contains(run.Value, argument) {
+				t.Errorf("release.yml step %q must preserve argument line %q, got %q", name, argument, run.Value)
+			}
+		}
+		if got := strings.Count(run.Value, "\\\n"); got != expected.continuations {
+			t.Errorf("release.yml step %q must preserve %d shell continuations, got %d in %q", name, expected.continuations, got, run.Value)
 		}
 	}
 }

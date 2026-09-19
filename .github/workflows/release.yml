@@ -247,12 +247,14 @@ jobs:
       # and metadata into the clean directory owned by the compare-before-upload
       # guard.
       - name: Stage source draft assets
-        run: ./scripts/distribution-stage-assets.sh \
+        run: |
+          ./scripts/distribution-stage-assets.sh \
           --version "${GITHUB_REF_NAME#v}" --dist dist \
           --output "${RUNNER_TEMP}/source-upload"
 
       - name: Verify staged source assets before upload
-        run: ./scripts/distribution-verify.sh \
+        run: |
+          ./scripts/distribution-verify.sh \
           --dir "${RUNNER_TEMP}/source-upload" \
           --version "${GITHUB_REF_NAME#v}" --channel source
 
@@ -263,7 +265,8 @@ jobs:
       - name: Upload or reconcile the source draft assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./scripts/distribution-upload-assets.sh \
+        run: |
+          ./scripts/distribution-upload-assets.sh \
           --tag "${GITHUB_REF_NAME}" --repo "${SOURCE_REPOSITORY}" \
           --dir "${RUNNER_TEMP}/source-upload" --channel source
 
