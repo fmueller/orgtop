@@ -1,6 +1,7 @@
 package domain_test
 
 import (
+	"fmt"
 	"slices"
 	"testing"
 	"time"
@@ -400,6 +401,53 @@ func TestScopedSnapshotBoundsEventsAndRecordsTruncation(t *testing.T) {
 				t.Errorf("activity = %d, want the bounded event count %d", got, wantKept)
 			}
 		})
+	}
+}
+
+// TestScopedSnapshotKeepsGlobalCoverageWhenAnOlderRepositoryIsDisplaced
+// guards T-110: a zero row can be the result of the newest-500 global cut, so
+// the application needs the pre-cut unique count while preserving the direct
+// per-Scope aggregation.
+func TestScopedSnapshotKeepsGlobalCoverageWhenAnOlderRepositoryIsDisplaced(t *testing.T) {
+	busy := domain.NewRepositoryScope(mustParseRepository(t, "owner/busy"))
+	quiet := domain.NewRepositoryScope(mustParseRepository(t, "owner/quiet"))
+	scope := mustScopeSet(t, busy, quiet)
+	base := time.Date(2026, time.August, 22, 12, 0, 0, 0, time.UTC)
+
+	busyEvidence := make([]domain.EventEvidence, 0, domain.MaxSnapshotEvents)
+	for index := range domain.MaxSnapshotEvents {
+		busyEvidence = append(busyEvidence, evidenceOf(domain.Event{
+			ID:         fmt.Sprintf("busy-%03d", index),
+			OccurredAt: base.Add(time.Duration(index+1) * time.Second),
+			Repository: busy.Repository(),
+			Category:   domain.CategoryPush,
+			EntityKind: domain.EntityCommit,
+		}, domain.CompleteOutcome(domain.ProvenanceEventTime, nil)))
+	}
+	quietEvidence := evidenceOf(domain.Event{
+		ID:         "quiet-only",
+		OccurredAt: base,
+		Repository: quiet.Repository(),
+		Category:   domain.CategoryPush,
+		EntityKind: domain.EntityCommit,
+	}, domain.CompleteOutcome(domain.ProvenanceEventTime, nil))
+
+	snapshot := domain.NewScopedSnapshot(scope, []domain.ScopedActivity{
+		{Events: busyEvidence},
+		{Events: []domain.EventEvidence{quietEvidence}},
+	})
+
+	if !snapshot.Truncated() {
+		t.Fatal("snapshot did not record the global retention cut")
+	}
+	if got := snapshot.RetainedEvents(); got != domain.MaxSnapshotEvents {
+		t.Errorf("RetainedEvents() = %d, want %d", got, domain.MaxSnapshotEvents)
+	}
+	if got := snapshot.TotalEvents(); got != domain.MaxSnapshotEvents+1 {
+		t.Errorf("TotalEvents() = %d, want %d", got, domain.MaxSnapshotEvents+1)
+	}
+	if got := findScopeAggregate(t, snapshot, quiet).Activity; got != 0 {
+		t.Errorf("displaced quiet Scope activity = %d, want 0", got)
 	}
 }
 

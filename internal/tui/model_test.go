@@ -7,12 +7,14 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/fmueller/orgtop/internal/domain"
 )
@@ -686,6 +688,82 @@ func TestStaleHeaderKeepsTheLastSuccessTimeOverScopeContext(t *testing.T) {
 	for _, want := range []string{"STALE", "updated 12:34:56", "status 500"} {
 		if !strings.Contains(header, want) {
 			t.Errorf("stale header %q drops %q", header, want)
+		}
+	}
+}
+
+// TestStaleHeaderKeepsStaleEvidenceBeforeSourceCoverage guards RG-012: source
+// truncation is lower priority than both the stale last-success time and its
+// concise cause, so no width may disclose the source cut while dropping either.
+func TestStaleHeaderKeepsStaleEvidenceBeforeSourceCoverage(t *testing.T) {
+	state := State{
+		Scopes:      testScope(t, "acme/backend"),
+		Freshness:   FreshnessStale,
+		LastSuccess: fixedInstant,
+		Cause:       "request failed",
+	}
+	overflow := overflowRange{
+		kind:           "events",
+		first:          1,
+		last:           1,
+		total:          2,
+		sourceRetained: domain.MaxSnapshotEvents,
+		sourceTotal:    domain.MaxSnapshotEvents + 1,
+	}
+
+	sawSource := false
+	for width := 1; width <= 200; width++ {
+		header := ansi.Strip(renderHeader(state, ModeStream, width, overflow))
+		if !strings.Contains(header, "newest 500 of 501") &&
+			!strings.Contains(header, "src 500/501") &&
+			!strings.Contains(header, "+1 source") {
+			continue
+		}
+		sawSource = true
+		for _, want := range []string{"updated 12:00:00", state.Cause} {
+			if !strings.Contains(header, want) {
+				t.Errorf("header at width %d shows source coverage without stale evidence %q:\n%s", width, want, header)
+			}
+		}
+	}
+	if !sawSource {
+		t.Fatal("no width rendered a source-coverage form")
+	}
+}
+
+// TestConstrainedHeadersOmitUnfittingSourceCoverage guards RG-012: source
+// coverage is either one of its complete forms or absent, never a raw clipped
+// suffix that could be mistaken for a truthful qualifier.
+func TestConstrainedHeadersOmitUnfittingSourceCoverage(t *testing.T) {
+	state := combinedState(t)
+	overflow := overflowRange{
+		kind:           "scopes",
+		first:          1,
+		last:           1,
+		total:          2,
+		sourceRetained: domain.MaxSnapshotEvents,
+		sourceTotal:    domain.MaxSnapshotEvents + 1,
+	}
+	complete := []string{"newest 500 of 501", "src 500/501", "+1 source"}
+
+	for _, mode := range []Mode{ModeOverview, ModeRain} {
+		wide := ansi.Strip(renderHeader(state, mode, unbounded, overflow))
+		if !slices.ContainsFunc(complete, func(form string) bool { return strings.Contains(wide, form) }) {
+			t.Fatalf("%s header never renders a complete source form:\n%s", mode.Label(), wide)
+		}
+		for width := 1; width <= 120; width++ {
+			header := ansi.Strip(renderHeader(state, mode, width, overflow))
+			isComplete := false
+			for _, form := range complete {
+				isComplete = isComplete || strings.Contains(header, form)
+			}
+			partial := strings.Contains(header, "new") || strings.Contains(header, "src")
+			if strings.Contains(header, "+1 s") && !strings.Contains(header, "+1 status") {
+				partial = true
+			}
+			if partial && !isComplete {
+				t.Errorf("%s header at width %d clips source coverage:\n%s", mode.Label(), width, header)
+			}
 		}
 	}
 }

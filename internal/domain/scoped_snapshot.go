@@ -21,6 +21,25 @@ type ScopedActivity struct {
 	Events []EventEvidence
 }
 
+// SnapshotCoverage records the global source set before enrichment and
+// publication. Total is the number of unique normalized candidates after Scope
+// filtering and source-ID deduplication; Retained is the newest bounded prefix
+// passed to enrichment. It describes global snapshot coverage only and makes no
+// per-Scope history-completeness claim.
+type SnapshotCoverage struct {
+	Total    int
+	Retained int
+}
+
+// Retention is the bounded result of one source collection. Events are the
+// candidates enrichment may inspect, Total is their pre-bound unique count,
+// and Truncated reports whether the global newest-event bound discarded any.
+type Retention struct {
+	Events    []Event
+	Total     int
+	Truncated bool
+}
+
 // ScopedEvent is one retained event and its explicit outcome in every selected
 // Scope of its repository, in the stable Scope identity order. Rendering reads
 // these prepared outcomes; it never matches or infers membership itself.
@@ -92,6 +111,8 @@ type ScopedSnapshot struct {
 	events      []ScopedEvent
 	aggregates  []ScopeAggregate
 	truncated   bool
+	total       int
+	retained    int
 	overlapping bool
 	distinct    int
 }
@@ -118,12 +139,15 @@ func NewScopedSnapshot(scope ScopeSet, activities []ScopedActivity) ScopedSnapsh
 	// the retention below deduplicates nothing new here. It stays because this
 	// entry point must retain exactly what a Retain-then-enrich refresh does,
 	// including the same first-occurrence rule.
-	bounded, truncated := retain(scope, candidates)
-	retained := make([]EventEvidence, 0, len(bounded))
-	for _, event := range bounded {
+	retention := retain(scope, candidates)
+	retained := make([]EventEvidence, 0, len(retention.Events))
+	for _, event := range retention.Events {
 		retained = append(retained, EventEvidence{Event: event, Outcome: outcomes[event.ID]})
 	}
-	return NewRetainedSnapshot(scope, retained, truncated)
+	return NewRetainedSnapshot(scope, retained, retention.Truncated, SnapshotCoverage{
+		Total:    retention.Total,
+		Retained: len(retention.Events),
+	})
 }
 
 // Retain returns the bounded, deduplicated, reverse-chronological event set one
@@ -131,6 +155,14 @@ func NewScopedSnapshot(scope ScopeSet, activities []ScopedActivity) ScopedSnapsh
 // enriches exactly this set, so an event the bound discarded causes no cache,
 // enrichment, or matcher work (A-028). The inputs are not modified.
 func Retain(scope ScopeSet, activities []RepositoryActivity) ([]Event, bool) {
+	retention := RetainWithCoverage(scope, activities)
+	return retention.Events, retention.Truncated
+}
+
+// RetainWithCoverage returns the bounded source set and its global coverage.
+// It is the refresh path's source of truth; Retain keeps the older two-value
+// seam for callers that need only the event set and truncation fact.
+func RetainWithCoverage(scope ScopeSet, activities []RepositoryActivity) Retention {
 	var candidates []Event
 	for _, activity := range activities {
 		candidates = append(candidates, activity.Events...)
@@ -140,12 +172,12 @@ func Retain(scope ScopeSet, activities []RepositoryActivity) ([]Event, bool) {
 
 // retain applies the shared filtering, deduplication, ordering, and bound to
 // already collected candidates.
-func retain(scope ScopeSet, candidates []Event) ([]Event, bool) {
+func retain(scope ScopeSet, candidates []Event) Retention {
 	bounded := SortByRecency(Deduplicate(scope.Filter(candidates)))
 	if len(bounded) > MaxSnapshotEvents {
-		return bounded[:MaxSnapshotEvents], true
+		return Retention{Events: bounded[:MaxSnapshotEvents], Total: len(bounded), Truncated: true}
 	}
-	return bounded, false
+	return Retention{Events: bounded, Total: len(bounded)}
 }
 
 // NewRetainedSnapshot evaluates an already retained event set against every
@@ -157,7 +189,7 @@ func retain(scope ScopeSet, candidates []Event) ([]Event, bool) {
 // repository, so not-member and unknown stay countable. Canceled evidence
 // publishes no membership at all rather than a synthesized unknown, so such an
 // event is retained nowhere. The inputs are not modified.
-func NewRetainedSnapshot(scope ScopeSet, retained []EventEvidence, truncated bool) ScopedSnapshot {
+func NewRetainedSnapshot(scope ScopeSet, retained []EventEvidence, truncated bool, coverage ...SnapshotCoverage) ScopedSnapshot {
 	var events []ScopedEvent
 	for _, evidence := range retained {
 		memberships, published := scope.Evaluate(evidence.Event, evidence.Outcome)
@@ -168,10 +200,18 @@ func NewRetainedSnapshot(scope ScopeSet, retained []EventEvidence, truncated boo
 	}
 
 	distinct, overlapping := countDistinctMembership(events)
+	sourceCoverage := SnapshotCoverage{Total: len(retained), Retained: len(retained)}
+	if len(coverage) > 0 {
+		sourceCoverage = coverage[0]
+	}
+	sourceCoverage.Retained = max(sourceCoverage.Retained, len(retained))
+	sourceCoverage.Total = max(sourceCoverage.Total, sourceCoverage.Retained)
 	return ScopedSnapshot{
 		events:      events,
 		aggregates:  aggregateScopes(scope, events),
 		truncated:   truncated,
+		total:       sourceCoverage.Total,
+		retained:    sourceCoverage.Retained,
 		overlapping: overlapping,
 		distinct:    distinct,
 	}
@@ -217,6 +257,16 @@ func (s ScopedSnapshot) Aggregates() []ScopeAggregate { return slices.Clone(s.ag
 
 // Truncated reports whether the FR-006 bound discarded events.
 func (s ScopedSnapshot) Truncated() bool { return s.truncated }
+
+// TotalEvents reports the unique normalized candidates collected after Scope
+// filtering and source-ID deduplication, before the global newest-event bound.
+// A zero value is a genuinely empty source set, not an inferred page size.
+func (s ScopedSnapshot) TotalEvents() int { return s.total }
+
+// RetainedEvents reports the candidates passed through the global newest-event
+// bound. It is separate from the number of Stream rows, which omits events that
+// are only not-member for every selected Scope.
+func (s ScopedSnapshot) RetainedEvents() int { return s.retained }
 
 // DistinctActivity is the number of retained events with a member outcome in at
 // least one Scope. It is the only deduplicated activity total; summing Scope

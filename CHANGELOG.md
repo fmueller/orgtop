@@ -81,6 +81,10 @@ workflow refuses to publish otherwise.
 
 ### Changed
 
+- Overview, Stream, and Rain now qualify successful empty states and activity
+  counts by the retained snapshot. Coverage discloses the bounded newest-100
+  per-repository fetch and newest-500 global retention, without presenting a
+  quiet retained row or a Rain duration as complete history.
 - Rain offers the windows `15m`, `30m`, `60m`, `6h`, `24h`, `7d`, and
   `available`, and a session now starts at `24h` instead of `60m`, so a quiet
   repository keeps an ambient field. `-` and `+` step through the presets and

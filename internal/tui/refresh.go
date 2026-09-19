@@ -205,7 +205,10 @@ func published(state State, selection Selection, message refreshedMsg, at time.T
 	evidence := message.evidence
 	state.Scopes = selection.Scopes
 	state.Selection = selection
-	state.Scoped = domain.NewRetainedSnapshot(selection.Scopes, evidence.retained, evidence.truncated)
+	state.Scoped = domain.NewRetainedSnapshot(selection.Scopes, evidence.retained, evidence.truncated, domain.SnapshotCoverage{
+		Total:    evidence.total,
+		Retained: len(evidence.retained),
+	})
 	state.CacheDegraded = evidence.degraded
 	state.EnrichmentRetryAt = evidence.retryAt
 	state.RateLimited = false

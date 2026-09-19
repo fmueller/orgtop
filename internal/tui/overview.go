@@ -11,8 +11,8 @@ import (
 )
 
 // noRecentActivity is the explicit empty state of a completely successful
-// refresh that returned no events at all (FR-009).
-const noRecentActivity = "No recent activity"
+// refresh whose bounded retained snapshot returned no events (FR-009).
+const noRecentActivity = "No recent activity in retained snapshot"
 
 // rowGap separates a repository identity from its counts.
 const rowGap = "  "
@@ -83,7 +83,7 @@ func (c countLabel) of(count int) string {
 // confirmed member but undecided evidence has not been shown to be quiet, so it
 // never renders as the Scope that complete evidence found empty.
 const (
-	noActivity          = "No activity"
+	noActivity          = "No activity in retained snapshot"
 	noConfirmedActivity = "No confirmed activity"
 )
 

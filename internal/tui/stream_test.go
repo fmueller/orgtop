@@ -1048,7 +1048,76 @@ func TestStreamSaysTheListIsBoundedOnlyWhenTheBoundDiscardedEvents(t *testing.T)
 			if got := strings.Contains(coverage, boundedDisclosure); got != testCase.want {
 				t.Errorf("coverage disclosure %q claims the list is bounded = %t, want %t", coverage, got, testCase.want)
 			}
+			if got := strings.Contains(coverage, "newest "); got != testCase.want {
+				t.Errorf("coverage disclosure %q reports source bounds = %t, want %t", coverage, got, testCase.want)
+			}
 		})
+	}
+}
+
+// TestT110KeepsSourceCoverageSeparateFromTheQuietScopeRow guards the boundary
+// where the global newest-500 cut displaces every event from another selected
+// repository. The row remains present and bounded, while the active-view header
+// and Stream coverage explain the retained/source counts independently.
+func TestT110KeepsSourceCoverageSeparateFromTheQuietScopeRow(t *testing.T) {
+	events := numberedEvents(t, domain.MaxSnapshotEvents)
+	events = append(events, streamEvent(t, "quiet-only", "acme/frontend", streamBase.Add(-24*time.Hour), domain.CategoryPush, domain.EntityCommit, "alice", "old push"))
+	model := streamModel(t, events)
+
+	if got := model.state.Scoped.TotalEvents(); got != domain.MaxSnapshotEvents+1 {
+		t.Fatalf("snapshot TotalEvents() = %d, want %d", got, domain.MaxSnapshotEvents+1)
+	}
+	if got := model.state.Scoped.RetainedEvents(); got != domain.MaxSnapshotEvents {
+		t.Fatalf("snapshot RetainedEvents() = %d, want %d", got, domain.MaxSnapshotEvents)
+	}
+
+	model.mode = ModeOverview
+	overview := renderAt(t, model, 200, wideHeight)
+	if !strings.Contains(overview, "No activity in retained snapshot") {
+		t.Errorf("displaced repository lost its bounded empty wording:\n%s", overview)
+	}
+	if !strings.Contains(overview, "newest 500 of 501") {
+		t.Errorf("Overview omitted source truncation coverage:\n%s", overview)
+	}
+
+	model.mode = ModeStream
+	stream := renderAt(t, model, 200, wideHeight)
+	if !strings.Contains(stream, "newest 500 of 501") {
+		t.Errorf("Stream omitted source truncation coverage:\n%s", stream)
+	}
+	coverage := coverageLine(t, stream)
+	for _, want := range []string{"retained", "newest 100 per repository", "newest 500 globally"} {
+		if !strings.Contains(coverage, want) {
+			t.Errorf("Stream coverage %q omits %q", coverage, want)
+		}
+	}
+}
+
+// TestStreamCoverageNamesRetainedEventsAndBothBounds guards T-110's copy: the
+// line identifies the count as retained and names both the per-repository fetch
+// and global snapshot bounds without claiming a complete source page.
+func TestStreamCoverageNamesRetainedEventsAndBothBounds(t *testing.T) {
+	coverage := streamCoverage(domain.MaxSnapshotEvents, domain.MaxSnapshotEvents, domain.MaxSnapshotEvents+1, true)
+	for _, want := range []string{"retained", "newest 100 per repository", "newest 500 globally", "newest 500 of 501"} {
+		if !strings.Contains(coverage, want) {
+			t.Errorf("coverage %q omits %q", coverage, want)
+		}
+	}
+}
+
+// TestT110KeepsSourceCoverageWithStaleSnapshot guards atomic stale behavior:
+// a failed later refresh keeps the same source coverage alongside the retained
+// data instead of relabeling it as current or silently dropping the qualifier.
+func TestT110KeepsSourceCoverageWithStaleSnapshot(t *testing.T) {
+	events := numberedEvents(t, domain.MaxSnapshotEvents)
+	events = append(events, streamEvent(t, "quiet-only", "acme/frontend", streamBase.Add(-24*time.Hour), domain.CategoryPush, domain.EntityCommit, "alice", "old push"))
+	model := streamModel(t, events)
+	model.state.Freshness = FreshnessStale
+	model.state.Cause = "request failed"
+
+	content := renderAt(t, model, 200, wideHeight)
+	if !strings.Contains(content, "STALE") || !strings.Contains(content, "newest 500 of 501") {
+		t.Errorf("stale render lost freshness or source coverage:\n%s", content)
 	}
 }
 

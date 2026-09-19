@@ -172,6 +172,12 @@ func TestCompleteSuccessPublishesTheSnapshotAndRecordsFreshness(t *testing.T) {
 	if got := len(model.state.Scoped.Events()); got != 2 {
 		t.Errorf("snapshot holds %d events, want 2", got)
 	}
+	if got := model.state.Scoped.TotalEvents(); got != 2 {
+		t.Errorf("snapshot reports %d total source events, want 2", got)
+	}
+	if got := model.state.Scoped.RetainedEvents(); got != 2 {
+		t.Errorf("snapshot reports %d retained source events, want 2", got)
+	}
 	if got := len(model.state.Scoped.Aggregates()); got != 2 {
 		t.Errorf("snapshot holds %d aggregates, want one per selected repository", got)
 	}

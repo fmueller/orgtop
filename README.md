@@ -19,6 +19,11 @@ credential of its own.
 Overview reports direct counts from the retained normalized event snapshot for
 each repository or path Scope. `N activity` counts confirmed member events;
 `U unknown` is separate coverage that keeps that activity count a lower bound.
+These are retained snapshot event counts, not rates or fixed-window totals. A
+zero Scope row says `No activity in retained snapshot`: it is a bounded
+observation, not a claim that older repository history is empty. Each refresh
+fetches at most the newest 100 events per repository and retains the newest 500
+unique events globally, so the snapshot does not represent complete history.
 The PR-related count is labeled `PR event`/`PR events` (compactly `PR evt`/
 `PR evts`): it counts each pull-request event, review, and pull-request comment
 separately, even when they refer to the same PR. An unrelated issue comment is
@@ -225,8 +230,9 @@ row. A narrow terminal shortens the Scope column to the counts it cannot spell
 in full, so no membership disappears without being counted.
 
 Above the headings Stream states how much activity it is showing: the number of
-events it lists and, when the 500-event bound discarded older activity, that
-the list stops at that limit. Content too wide for the terminal
+retained events it lists, the newest-100-per-repository fetch and newest-500
+global retention bounds, and, when the global bound discarded older activity,
+that the list stops at that limit. Content too wide for the terminal
 ends in `…`, marking that row as shortened rather than complete.
 
 <!-- docs:rain-windows -->
@@ -251,12 +257,13 @@ A session defaults to `24h`, so a quiet repository still has an ambient field.
 Each finite window drops an event the moment it reaches that age.
 
 `available` is not a longer window but the absence of one: it shows every
-event in the snapshot the last refresh returned, whatever its age. That
-snapshot is the newest 100 events per repository GitHub's events endpoint
-serves, so `available` is not complete repository history, and an event
-disappears from it once a later successful refresh no longer returns it. A
-window change and `available` alike show only what has already been fetched;
-neither asks GitHub for more.
+event in the bounded snapshot the last refresh returned, whatever its age. The
+source fetches at most its newest 100 events per repository and the application
+retains at most the newest 500 unique events globally; this is not complete repository history,
+and a response page is not treated as proof that older
+source activity is absent. A window change and `available` alike filter only
+what has already been fetched, so a `24h` or `7d` window does not guarantee
+coverage of that whole duration and neither asks GitHub for more.
 
 How old an event looks is separate from how long it is kept. An event past 60
 minutes is drawn at the faintest emphasis but stays in the field under `6h`,

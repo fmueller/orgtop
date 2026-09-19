@@ -1,13 +1,13 @@
 ---
 id: T-110-qualify-activity-counts-and-empty-states-by
 title: Qualify activity counts and empty states by snapshot coverage
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#scope-aware-overview-and-stream
 dependencies:
     - T-054-implement-scoped-snapshots-and-direct-aggregation
     - T-087-report-mixed-scope-context-in-the-shared-header
-updated_at: "2026-09-19T08:53:27Z"
+updated_at: "2026-09-19T16:03:14Z"
 ---
 
 # T-110-qualify-activity-counts-and-empty-states-by Qualify activity counts and empty states by snapshot coverage
@@ -51,3 +51,5 @@ and inspected renders.
 
 - Required before distribution parity and final v0.2.0 release readiness.
 - Do not add pagination, persistence, or increase capacities in this task.
+- 2026-09-19T16:02:53Z: verification pass
+- 2026-09-19T16:03:14Z: Implemented retained-snapshot coverage through Overview, Stream, and Rain with truthful bounded empty states, source/viewport accounting, normative v0.2.0 amendments, strict TDD, independent review, manual renders, and full verification.

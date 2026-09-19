@@ -353,28 +353,28 @@ func (m Model) overflow(width, height int) overflowRange {
 	case ModeOverview:
 		aggregates := m.state.Scoped.Aggregates()
 		if !hasObservations(aggregates) {
-			return quietOverviewRange(m.overview.offset, len(aggregates), height)
+			return m.withSourceCoverage(quietOverviewRange(m.overview.offset, len(aggregates), height))
 		}
-		return visibleRange("scopes", m.overview.offset, len(aggregates), height)
+		return m.withSourceCoverage(visibleRange("scopes", m.overview.offset, len(aggregates), height))
 	case ModeStream:
 		// Open detail scrolls its own wrapped lines, so the header accounts for
 		// the lines it hides rather than for the events behind it.
 		if lines, clipped, open := detailContent(m.state, m.stream.detail, width); open {
 			detail := visibleRange(detailRange, m.stream.detail.offset, len(lines), height)
 			detail.clippedGraphemes = clipped
-			return detail
+			return m.withSourceCoverage(detail)
 		}
 		_, lines, rowHeight := streamContent(m.state, width, height)
 		if streamStateLine(m.state.Freshness, len(m.state.Scoped.StreamEvents())) != "" {
-			return overflowRange{}
+			return m.withSourceCoverage(overflowRange{})
 		}
-		return visibleRange("events", m.stream.offset, len(lines), rowHeight)
+		return m.withSourceCoverage(visibleRange("events", m.stream.offset, len(lines), rowHeight))
 	case ModeRain:
 		field := m.rain.field()
 		if field.scopes == 0 {
-			return overflowRange{}
+			return m.withSourceCoverage(overflowRange{})
 		}
-		return overflowRange{
+		return m.withSourceCoverage(overflowRange{
 			kind:           "scopes",
 			first:          field.first,
 			last:           field.last,
@@ -382,10 +382,19 @@ func (m Model) overflow(width, height int) overflowRange {
 			hiddenItems:    field.hiddenItems,
 			discloseHidden: true,
 			singularScope:  true,
-		}
+		})
 	default:
-		return overflowRange{}
+		return m.withSourceCoverage(overflowRange{})
 	}
+}
+
+// withSourceCoverage attaches the prepared global source accounting to the
+// active view's own range. The range and source cut remain separate forms, so
+// viewport hiding, Rain page omission, and source truncation cannot be merged.
+func (m Model) withSourceCoverage(r overflowRange) overflowRange {
+	r.sourceRetained = m.state.Scoped.RetainedEvents()
+	r.sourceTotal = m.state.Scoped.TotalEvents()
+	return r
 }
 
 // quietOverviewRange accounts only for Scope rows while the separate empty

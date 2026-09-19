@@ -190,6 +190,24 @@ func TestOverviewSuccessWithoutEventsStatesNoRecentActivity(t *testing.T) {
 	}
 }
 
+// TestOverviewUsesBoundedEmptyCopyForACompleteEmptySnapshot guards T-110's
+// empty-state qualification without conflating it with unknown membership.
+func TestOverviewUsesBoundedEmptyCopyForACompleteEmptySnapshot(t *testing.T) {
+	scope := testScope(t, "acme/backend", "acme/frontend")
+	model := publishSnapshot(newModel(t, "acme/backend", "acme/frontend"), scope, []domain.RepositoryActivity{
+		testActivity(t, "acme/backend"),
+		testActivity(t, "acme/frontend"),
+	})
+
+	content := renderAt(t, model, wideWidth, wideHeight)
+	if !strings.Contains(content, noRecentActivity) {
+		t.Fatalf("empty Overview does not use bounded empty copy %q:\n%s", noRecentActivity, content)
+	}
+	if strings.Contains(content, "No confirmed activity") {
+		t.Errorf("complete empty Overview was presented as unknown:\n%s", content)
+	}
+}
+
 func TestOverviewRendersEachFreshnessState(t *testing.T) {
 	cases := []struct {
 		name       string

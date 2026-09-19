@@ -36,6 +36,8 @@ type field struct {
 type overflowRange struct {
 	kind               string
 	first, last, total int
+	sourceRetained     int
+	sourceTotal        int
 	hiddenItems        int
 	discloseHidden     bool
 	singularScope      bool
@@ -49,7 +51,8 @@ type overflowRange struct {
 // everything outside the visible range, both above and below it. Rain adds its
 // disjoint hidden Scope/item accounting to the same required segment: the
 // minimum range already is the hidden-Scope count, so that rung does not repeat
-// the count with a second label.
+// the count with a second label. Source truncation is a lower-priority segment
+// and is attached by headerCandidates after stale evidence.
 func (r overflowRange) forms() []string {
 	if r.total <= 0 {
 		// A detail that hides no line still discloses the graphemes its width
@@ -87,6 +90,22 @@ func (r overflowRange) forms() []string {
 		forms[2] += fmt.Sprintf("%s+%di", separator, r.hiddenItems)
 	}
 	return r.withClipped(forms)
+}
+
+// sourceForms describes the global source candidates before and after the
+// newest-event retention bound. A missing total is intentionally silent: the
+// renderer never invents a pre-truncation count for a snapshot built without
+// that metadata.
+func (r overflowRange) sourceForms() []string {
+	if r.sourceRetained <= 0 || r.sourceTotal <= r.sourceRetained {
+		return nil
+	}
+	discarded := r.sourceTotal - r.sourceRetained
+	return []string{
+		fmt.Sprintf("newest %d of %d", r.sourceRetained, r.sourceTotal),
+		fmt.Sprintf("src %d/%d", r.sourceRetained, r.sourceTotal),
+		fmt.Sprintf("+%d source", discarded),
+	}
 }
 
 // withClipped appends the clipped-grapheme count to every rung of a prepared
@@ -176,9 +195,13 @@ func headerCandidates(state State, mode Mode, overflow ...overflowRange) [][]fie
 	}
 
 	forms := []string{""}
+	sourceForms := []string{""}
 	if len(overflow) > 0 {
 		if prepared := overflow[0].forms(); len(prepared) > 0 {
 			forms = prepared
+		}
+		if prepared := overflow[0].sourceForms(); len(prepared) > 0 {
+			sourceForms = append(slices.Clone(prepared), "")
 		}
 	}
 	// The badge ladder is the outermost dimension, so every other field gives
@@ -186,12 +209,29 @@ func headerCandidates(state State, mode Mode, overflow ...overflowRange) [][]fie
 	badged := badgeForms(secondaryBadges(state))
 	perForm := 2 + len(counted) + 3*len(context)
 	layouts := make([][]field, 0, len(badged)*len(forms)*perForm)
+	// appendLayout keeps source coverage below every higher-priority field. A
+	// layout that already dropped one of those fields cannot render source
+	// coverage without making the omission look like complete evidence.
+	appendLayout := func(sourceAllowed bool, prefix ...[]field) {
+		head := slices.Concat(prefix...)
+		if !sourceAllowed {
+			layouts = append(layouts, head)
+			return
+		}
+		for _, source := range sourceForms {
+			candidate := slices.Clone(head)
+			if source != "" {
+				candidate = append(candidate, field{text: source, style: contextStyle})
+			}
+			layouts = append(layouts, candidate)
+		}
+	}
 	// rungs appends the prefix once per rung of the surviving context ladder,
 	// so the header shortens its context field before dropping it.
-	rungs := func(prefix ...[]field) {
+	rungs := func(sourceAllowed bool, prefix ...[]field) {
 		head := slices.Concat(prefix...)
 		for _, summary := range context {
-			layouts = append(layouts, slices.Concat(head, summary))
+			appendLayout(sourceAllowed, head, summary)
 		}
 	}
 	for _, badges := range badged {
@@ -201,14 +241,14 @@ func headerCandidates(state State, mode Mode, overflow ...overflowRange) [][]fie
 			if form != "" {
 				required = append(required, field{text: form, style: contextStyle})
 			}
-			layouts = append(layouts, slices.Concat(title, required, cause, listed, updated))
+			appendLayout(true, title, required, cause, listed, updated)
 			for _, summary := range counted {
-				layouts = append(layouts, slices.Concat(title, required, cause, summary, updated))
+				appendLayout(true, title, required, cause, summary, updated)
 			}
-			rungs(title, required, cause)
-			rungs(required, cause)
-			rungs(required)
-			layouts = append(layouts, required)
+			rungs(true, title, required, cause)
+			rungs(true, required, cause)
+			rungs(len(cause) == 0, required)
+			appendLayout(len(cause) == 0 && len(context) == 1 && len(context[0]) == 0, required)
 		}
 	}
 	return withSelection(layouts, selectionForms(state.Selection))

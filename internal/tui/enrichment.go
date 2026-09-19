@@ -44,6 +44,7 @@ type Enricher interface {
 // the secondary conditions the coordination reported.
 type evidenceResult struct {
 	retained  []domain.EventEvidence
+	total     int
 	truncated bool
 	degraded  string
 	retryAt   time.Time
@@ -59,14 +60,21 @@ type evidenceResult struct {
 // the failure explicitly, and a missing coordination or a short result settles
 // as incomplete. None of them is converted into member or not-member (FR-004).
 func (m Model) enrich(ctx context.Context, scopes domain.ScopeSet, activities []domain.RepositoryActivity) evidenceResult {
-	events, truncated := domain.Retain(scopes, activities)
+	retention := domain.RetainWithCoverage(scopes, activities)
+	events := retention.Events
 	outcomes, degraded, retryAt := m.settle(ctx, scopes, events)
 
 	retained := make([]domain.EventEvidence, 0, len(events))
 	for index, event := range events {
 		retained = append(retained, domain.EventEvidence{Event: event, Outcome: outcomes[index]})
 	}
-	return evidenceResult{retained: retained, truncated: truncated, degraded: degraded, retryAt: retryAt}
+	return evidenceResult{
+		retained:  retained,
+		total:     retention.Total,
+		truncated: retention.Truncated,
+		degraded:  degraded,
+		retryAt:   retryAt,
+	}
 }
 
 // settle returns one outcome per retained event plus the secondary conditions

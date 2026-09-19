@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -151,7 +152,7 @@ func streamContentFor(state State, width, height, focus int, set charset) (chrom
 	if height == 0 {
 		return nil, renderStreamRows(laid.rows, focus, set), 0
 	}
-	chrome = []string{streamCoverage(len(events), state.Scoped.Truncated()), laid.heading.String()}
+	chrome = []string{streamCoverage(len(events), state.Scoped.RetainedEvents(), state.Scoped.TotalEvents(), state.Scoped.Truncated()), laid.heading.String()}
 	// A non-positive height is unbounded and holds all of it; a bounded one
 	// gives up chrome lines, the disclosure first, to keep one event row.
 	for height > 0 && len(chrome) >= height {
@@ -160,16 +161,21 @@ func streamContentFor(state State, width, height, focus int, set charset) (chrom
 	return chrome, renderStreamRows(laid.rows, focus, set), height - len(chrome)
 }
 
-// streamCoverage states how much activity the list represents: the number of
-// events the snapshot holds, and whether the FR-006 bound discarded older ones.
-// Without it a short list cannot be told from a bounded one, and scrolling to
-// the bottom cannot be told from having seen everything (FR-010).
-func streamCoverage(count int, truncated bool) string {
-	showing := "showing " + eventCount.of(count)
-	if !truncated {
-		return showing
+// streamCoverage states how much activity the list represents. The visible row
+// count is separate from the retained source count because Stream omits events
+// that are only not-member for every selected Scope. The source wording names
+// the per-repository fetch and global retention bounds without claiming either
+// a full source page or complete history.
+func streamCoverage(count, retained, total int, truncated bool) string {
+	showing := "showing " + eventCount.of(count) + " (retained)"
+	bounds := "newest 100 per repository" + separator + "newest 500 globally"
+	if total > retained && retained > 0 {
+		return showing + separator + boundedDisclosure + separator + fmt.Sprintf("newest %d of %d", retained, total) + separator + bounds
 	}
-	return showing + separator + boundedDisclosure
+	if truncated {
+		return showing + separator + boundedDisclosure
+	}
+	return showing
 }
 
 // streamStateLine returns the single explicit line Stream renders in place of
