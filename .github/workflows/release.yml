@@ -52,15 +52,11 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
-# The repository token publishes the source release only. Every companion
-# repository mutation uses the installation token minted below, which carries
-# metadata read plus contents write — and, on this repository and the tap,
-# pull-requests write — and nothing else. id-token and attestations are the
-# OIDC build provenance this repository issues for its own artifacts.
+# The default token is read-only. The release job narrows its elevated
+# contents/OIDC/provenance permissions to the tag publication path below;
+# snapshot and withdrawal therefore do not inherit write or attestation power.
 permissions:
-  contents: write
-  id-token: write
-  attestations: write
+  contents: read
 
 env:
   SOURCE_REPOSITORY: fmueller/orgtop
@@ -74,6 +70,10 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -152,8 +152,6 @@ jobs:
           CGO_ENABLED: "0"
         run: goreleaser release --clean --release-notes="${RUNNER_TEMP}/release-notes.md"
 
-      # One attestation per artifact, so every subject binds to this repository,
-      # this tag's commit, and this workflow identity.
       # Two releases for one tag is non-reconcilable same-version state, and it
       # is named here rather than inferred later from a digest mismatch between
       # asset sets belonging to different releases.
@@ -170,7 +168,42 @@ jobs:
           fi
           echo "guard: ${SOURCE_REPOSITORY} carries exactly one release for ${GITHUB_REF_NAME}"
 
+      # An existing source provenance asset is authoritative for a retry. The
+      # attestation action records its invocation identity, so rerunning it for
+      # the same tag would create different bytes and turn an extension-only
+      # failure into a source digest mismatch. A failed inventory read is
+      # closed before either path can upload anything.
+      - name: Inspect or reuse source provenance
+        id: source-provenance
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          assets="${RUNNER_TEMP}/source-asset-names"
+          if ! gh release view "${GITHUB_REF_NAME}" --repo "${SOURCE_REPOSITORY}" \
+            --json assets --jq '.assets[].name' >"$assets"; then
+            echo "guard: could not read the ${SOURCE_REPOSITORY} asset inventory" >&2
+            exit 1
+          fi
+
+          if grep -qxF provenance.intoto.jsonl "$assets"; then
+            rm -f "${RUNNER_TEMP}/provenance.intoto.jsonl"
+            if ! gh release download "${GITHUB_REF_NAME}" --repo "${SOURCE_REPOSITORY}" \
+              --pattern provenance.intoto.jsonl --output "${RUNNER_TEMP}/provenance.intoto.jsonl"; then
+              echo "guard: could not download the existing source provenance asset" >&2
+              exit 1
+            fi
+            echo "exists=true" >>"$GITHUB_OUTPUT"
+            echo "guard: reusing the existing source provenance asset"
+          else
+            echo "exists=false" >>"$GITHUB_OUTPUT"
+            echo "guard: no source provenance asset exists; attesting this build"
+          fi
+
+      # One attestation per artifact, so every subject binds to this repository,
+      # this tag's commit, and this workflow identity. It is skipped when the
+      # exact source provenance asset was already created by an earlier attempt.
       - name: Attest the twelve build artifacts
+        if: steps.source-provenance.outputs.exists != 'true'
         id: attest
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
@@ -189,6 +222,7 @@ jobs:
       # ever writes more than one bundle, and jq's sort_by on the subject name
       # is the bytewise order RG-011 requires.
       - name: Assemble the canonical provenance bundle
+        if: steps.source-provenance.outputs.exists != 'true'
         env:
           BUNDLE: ${{ steps.attest.outputs.bundle-path }}
         run: |
@@ -209,12 +243,35 @@ jobs:
             exit 1
           fi
 
-          cp "${RUNNER_TEMP}/provenance.intoto.jsonl" dist/provenance.intoto.jsonl
+      - name: Stage the source provenance asset
+        run: cp "${RUNNER_TEMP}/provenance.intoto.jsonl" dist/provenance.intoto.jsonl
 
-      - name: Add the provenance bundle to the source draft
+      # GoReleaser keeps binary-format artifacts under target directories on
+      # disk, even though their release names are the six gh-orgtop-* assets.
+      # The staging helper selects those exact paths from artifacts.json,
+      # canonicalizes them beneath dist, and copies them alongside the archives
+      # and metadata into the clean directory owned by the compare-before-upload
+      # guard.
+      - name: Stage source draft assets
+        run: ./scripts/distribution-stage-assets.sh \
+          --version "${GITHUB_REF_NAME#v}" --dist dist \
+          --output "${RUNNER_TEMP}/source-upload"
+
+      - name: Verify staged source assets before upload
+        run: ./scripts/distribution-verify.sh \
+          --dir "${RUNNER_TEMP}/source-upload" \
+          --version "${GITHUB_REF_NAME#v}" --channel source
+
+      # GoReleaser created or reused the draft but did not upload anything:
+      # every expected asset now crosses one compare-before-upload boundary.
+      # This includes the provenance bundle, so a retry never uses clobber or
+      # asks GoReleaser to re-upload an already attached name.
+      - name: Upload or reconcile the source draft assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "${GITHUB_REF_NAME}" dist/provenance.intoto.jsonl --clobber
+        run: ./scripts/distribution-upload-assets.sh \
+          --tag "${GITHUB_REF_NAME}" --repo "${SOURCE_REPOSITORY}" \
+          --dir "${RUNNER_TEMP}/source-upload" --channel source
 
       # Reconciliation reads what the draft actually holds, downloaded through
       # authenticated URLs, rather than what the build believes it produced.
@@ -248,6 +305,11 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
         run: |
+          # Reuse the same strict matrix validation as the staging and upload
+          # guards; a successful six-line producer is not enough if its names
+          # or channel metadata are malformed.
+          # shellcheck source=scripts/distribution-lib.sh
+          . ./scripts/distribution-lib.sh
           version="${GITHUB_REF_NAME#v}"
           staging="${RUNNER_TEMP}/extension"
           rm -rf "$staging"
@@ -256,12 +318,25 @@ jobs:
           # Matrix order is the bytewise name order both metadata assets are
           # required to be in, and the staging directory was just recreated, so
           # appending to it builds exactly the raw-only pair.
+          matrix_output=""
+          if ! matrix_output="$(distribution_matrix_rows "$version" 2>&1)"; then
+            echo "guard: distribution matrix failed: $matrix_output" >&2
+            exit 1
+          fi
+          matrix_rows="$(printf '%s\n' "$matrix_output" | awk 'NF { count++ } END { print count + 0 }')"
+          if [ "$matrix_rows" -ne 6 ]; then
+            echo "guard: distribution matrix returned $matrix_rows rows, want exactly 6" >&2
+            exit 1
+          fi
           while IFS=$'\t' read -r _ _ _ raw _; do
             cp "${RUNNER_TEMP}/source/$raw" "$staging/$raw"
             grep -F "  $raw" "${RUNNER_TEMP}/source/checksums.txt" >>"$staging/checksums.txt"
             grep -F "\"name\":\"$raw\"" "${RUNNER_TEMP}/source/provenance.intoto.jsonl" \
               >>"$staging/provenance.intoto.jsonl"
-          done < <(./scripts/distribution-matrix.sh "$version")
+          done <<<"$matrix_output"
+
+          ./scripts/distribution-verify.sh --dir "$staging" \
+            --version "$version" --channel extension --against "${RUNNER_TEMP}/source"
 
           if ! gh release view "${GITHUB_REF_NAME}" --repo "${EXTENSION_REPOSITORY}" >/dev/null 2>&1; then
             gh release create "${GITHUB_REF_NAME}" --repo "${EXTENSION_REPOSITORY}" --draft \
@@ -269,25 +344,11 @@ jobs:
               --notes "GitHub CLI extension assets for ${SOURCE_REPOSITORY} ${GITHUB_REF_NAME}. See https://github.com/${SOURCE_REPOSITORY}/releases/tag/${GITHUB_REF_NAME} for the release notes."
           fi
 
-          # Create-or-compare, never create-if-absent-by-name: an asset an earlier
-          # partial run left behind is downloaded and compared, so a stale draft
-          # fails closed here instead of publishing bytes the source never made.
-          attached="$(gh release view "${GITHUB_REF_NAME}" --repo "${EXTENSION_REPOSITORY}" \
-            --json assets --jq '.assets[].name')"
-          for asset in "$staging"/*; do
-            name="$(basename "$asset")"
-            if ! grep -qxF "$name" <<<"$attached"; then
-              gh release upload "${GITHUB_REF_NAME}" "$asset" --repo "${EXTENSION_REPOSITORY}"
-              continue
-            fi
-            published="${RUNNER_TEMP}/attached-$name"
-            gh release download "${GITHUB_REF_NAME}" --repo "${EXTENSION_REPOSITORY}" \
-              --pattern "$name" --output "$published" --clobber
-            if ! cmp -s "$asset" "$published"; then
-              echo "guard: ${EXTENSION_REPOSITORY} already carries a different $name; withdraw v$version before restaging" >&2
-              exit 1
-            fi
-          done
+          # The shared guard compares every existing name before it adds a
+          # missing one, and never replaces an attached byte.
+          ./scripts/distribution-upload-assets.sh \
+            --tag "${GITHUB_REF_NAME}" --repo "${EXTENSION_REPOSITORY}" \
+            --dir "$staging" --channel extension
 
       - name: Download the extension draft assets
         env:

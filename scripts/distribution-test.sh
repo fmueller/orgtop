@@ -13,7 +13,10 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 matrix="$script_dir/distribution-matrix.sh"
 ledger="$script_dir/distribution-ledger.sh"
 manifest="$script_dir/distribution-manifest.sh"
+manifest_asset="$script_dir/distribution-manifest-asset.sh"
 verify="$script_dir/distribution-verify.sh"
+upload="$script_dir/distribution-upload-assets.sh"
+stage_assets="$script_dir/distribution-stage-assets.sh"
 formula_script="$script_dir/distribution-formula.sh"
 append="$script_dir/distribution-ledger-append.sh"
 notice_script="$script_dir/distribution-notice.sh"
@@ -180,6 +183,394 @@ seal_checksums "$extension"
 grep -F -e '-linux-' -e '-darwin-' -e '-windows-' "$stage/provenance.intoto.jsonl" >"$extension/provenance.intoto.jsonl"
 
 assert_verifies "the exact extension asset set" --dir "$extension" --version "$version" --channel extension
+
+# ---------------------------------------------------------------------------
+# Create-if-absent release-asset uploads
+# ---------------------------------------------------------------------------
+
+# The upload guard talks to GitHub only through `gh`, so these fixtures replace
+# that command with a tiny release-asset store. The store records remote bytes,
+# not just names: a retry has to compare what the draft actually holds before it
+# writes anything, and an upload failure may leave a deterministic partial draft
+# for the next attempt to resume.
+fake_gh_bin="$tmp_dir/fake-gh-bin"
+mkdir -p "$fake_gh_bin"
+cat >"$fake_gh_bin/gh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+state="${FAKE_GH_STATE:?FAKE_GH_STATE is required}"
+assets="$state/assets"
+mkdir -p "$assets"
+log="$state/operations.log"
+
+case "${1-}" in
+release)
+  subcommand="${2-}"
+  shift 2
+  case "$subcommand" in
+  view)
+    # The fixture only needs the asset-name projection. Release/tag/repository
+    # arguments are deliberately ignored: the production guard validates the
+    # repository and tag at its own boundary, while this fake isolates the
+    # create-if-absent behavior.
+    if [ "${FAKE_GH_FAIL_VIEW:-}" = yes ]; then
+      printf 'gh-orgtop-linux-amd64\n'
+      printf 'fixture: asset inventory request failed\n' >&2
+      exit 1
+    fi
+    find "$assets" -maxdepth 1 -type f -printf '%f\n' | LC_ALL=C sort
+    ;;
+  download)
+    pattern=""
+    output=""
+    while [ "$#" -gt 0 ]; do
+      case "$1" in
+      --pattern) pattern="$2"; shift 2 ;;
+      --output) output="$2"; shift 2 ;;
+      --repo) shift 2 ;;
+      --clobber) shift ;;
+      *) shift ;;
+      esac
+    done
+    [ -n "$pattern" ] && [ -n "$output" ]
+    printf 'download %s\n' "$pattern" >>"$log"
+    [ -f "$assets/$pattern" ]
+    cp "$assets/$pattern" "$output"
+    ;;
+  upload)
+    file="${2-}" # tag and local asset path
+    shift 2
+    name="$(basename "$file")"
+    printf 'upload %s\n' "$name" >>"$log"
+    if [ "${FAKE_GH_FAIL_UPLOAD_NAME:-}" = "$name" ]; then
+      printf 'fixture: refusing upload of %s\n' "$name" >&2
+      exit 1
+    fi
+    if [ -e "$assets/$name" ]; then
+      printf 'fixture: asset %s already exists\n' "$name" >&2
+      exit 1
+    fi
+    cp "$file" "$assets/$name"
+    ;;
+  *)
+    printf 'fixture: unsupported gh release subcommand %s\n' "$subcommand" >&2
+    exit 2
+    ;;
+  esac
+  ;;
+*)
+  printf 'fixture: unsupported gh command %s\n' "${1-}" >&2
+  exit 2
+  ;;
+esac
+EOF
+chmod +x "$fake_gh_bin/gh"
+
+expected_source_assets="$(
+  {
+    artifact_names "$version" source
+    printf '%s\n%s\n' "$checksums_asset" "$provenance_asset"
+  } | LC_ALL=C sort
+)"
+expected_extension_assets="$(
+  {
+    artifact_names "$version" extension
+    printf '%s\n%s\n' "$checksums_asset" "$provenance_asset"
+  } | LC_ALL=C sort
+)"
+
+remote_assets() {
+  find "$FAKE_GH_STATE/assets" -maxdepth 1 -type f -printf '%f\n' | LC_ALL=C sort
+}
+
+new_upload_state() {
+  FAKE_GH_STATE="$tmp_dir/$1"
+  export FAKE_GH_STATE
+  rm -rf "$FAKE_GH_STATE"
+  mkdir -p "$FAKE_GH_STATE/assets"
+  : >"$FAKE_GH_STATE/operations.log"
+}
+
+copy_upload_asset() {
+  copy_upload_asset_from "$stage" "$1"
+}
+
+copy_upload_asset_from() {
+  local dir="$1" name="$2"
+  cp "$dir/$name" "$FAKE_GH_STATE/assets/$name"
+}
+
+(
+  export PATH="$fake_gh_bin:$PATH"
+
+  # Empty draft: every expected source asset is uploaded, including both
+  # metadata assets, and the final remote set is exactly the 14-item source
+  # draft. This is the first-publication path without a real tag.
+  new_upload_state upload-empty
+  "$upload" --tag "$tag" --repo fmueller/orgtop --dir "$stage" --channel source
+  assert_equal "an empty draft receives the exact source asset set" "$(remote_assets)" "$expected_source_assets"
+  assert_equal "an empty draft uploads every source asset once" \
+    "$(grep -c '^upload ' "$FAKE_GH_STATE/operations.log")" "14"
+
+  # Partial draft: existing bytes are saved before reconciliation and must be
+  # unchanged; only absent assets are uploaded. The copied bytes prove the
+  # guard does not replace an existing asset while making the set complete.
+  new_upload_state upload-partial
+  partial_names=(gh-orgtop-darwin-amd64 gh-orgtop-linux-amd64 checksums.txt)
+  for name in "${partial_names[@]}"; do copy_upload_asset "$name"; done
+  before_partial="$(sha256sum "$FAKE_GH_STATE/assets/gh-orgtop-linux-amd64" | cut -d' ' -f1)"
+  "$upload" --tag "$tag" --repo fmueller/orgtop --dir "$stage" --channel source
+  assert_equal "a partial draft is completed without replacing existing bytes" "$(remote_assets)" "$expected_source_assets"
+  assert_equal "a partial draft keeps its existing digest" \
+    "$(sha256sum "$FAKE_GH_STATE/assets/gh-orgtop-linux-amd64" | cut -d' ' -f1)" "$before_partial"
+  assert_equal "a partial draft uploads only missing assets" \
+    "$(grep -c '^upload ' "$FAKE_GH_STATE/operations.log")" "11"
+
+  # Fully populated draft: all assets compare successfully and no upload is
+  # attempted. This catches a regression to the old keep-existing behavior,
+  # which retried every upload and received an already_exists response.
+  new_upload_state upload-full
+  while IFS= read -r name; do copy_upload_asset "$name"; done <<<"$expected_source_assets"
+  "$upload" --tag "$tag" --repo fmueller/orgtop --dir "$stage" --channel source
+  assert_equal "a full draft receives no replacement uploads" \
+    "$(grep -c '^upload ' "$FAKE_GH_STATE/operations.log" || true)" "0"
+  assert_equal "a full draft remains byte-complete" "$(remote_assets)" "$expected_source_assets"
+
+  # Extension channel retries use the same immutable reconciliation rules as
+  # source assets. Keep separate fixtures so a source-only implementation
+  # cannot accidentally satisfy this contract.
+  new_upload_state upload-extension-empty
+  "$upload" --tag "$tag" --repo fmueller/orgtop --dir "$extension" --channel extension
+  assert_equal "an empty extension draft receives the exact asset set" "$(remote_assets)" "$expected_extension_assets"
+  assert_equal "an empty extension draft uploads every asset once" \
+    "$(grep -c '^upload ' "$FAKE_GH_STATE/operations.log")" "8"
+
+  new_upload_state upload-extension-partial
+  extension_partial_names=(gh-orgtop-darwin-amd64 gh-orgtop-linux-amd64 checksums.txt)
+  for name in "${extension_partial_names[@]}"; do
+    copy_upload_asset_from "$extension" "$name"
+  done
+  extension_before_partial="$(sha256sum "$FAKE_GH_STATE/assets/gh-orgtop-linux-amd64" | cut -d' ' -f1)"
+  "$upload" --tag "$tag" --repo fmueller/orgtop --dir "$extension" --channel extension
+  assert_equal "a partial extension draft is completed without replacement" "$(remote_assets)" "$expected_extension_assets"
+  assert_equal "a partial extension draft keeps its existing digest" \
+    "$(sha256sum "$FAKE_GH_STATE/assets/gh-orgtop-linux-amd64" | cut -d' ' -f1)" "$extension_before_partial"
+  assert_equal "a partial extension draft uploads only missing assets" \
+    "$(grep -c '^upload ' "$FAKE_GH_STATE/operations.log")" "5"
+
+  new_upload_state upload-extension-full
+  while IFS= read -r name; do copy_upload_asset_from "$extension" "$name"; done <<<"$expected_extension_assets"
+  "$upload" --tag "$tag" --repo fmueller/orgtop --dir "$extension" --channel extension
+  assert_equal "a full extension draft receives no replacement uploads" \
+    "$(grep -c '^upload ' "$FAKE_GH_STATE/operations.log" || true)" "0"
+  assert_equal "a full extension draft remains byte-complete" "$(remote_assets)" "$expected_extension_assets"
+
+  new_upload_state upload-extension-divergent
+  copy_upload_asset_from "$extension" gh-orgtop-linux-amd64
+  printf 'different extension bytes' >"$FAKE_GH_STATE/assets/gh-orgtop-linux-amd64"
+  extension_divergent_expected="$(sha256sum "$extension/gh-orgtop-linux-amd64" | cut -d' ' -f1)"
+  extension_divergent_actual="$(sha256sum "$FAKE_GH_STATE/assets/gh-orgtop-linux-amd64" | cut -d' ' -f1)"
+  extension_divergent_output=""
+  if extension_divergent_output="$("$upload" --tag "$tag" --repo fmueller/orgtop --dir "$extension" --channel extension 2>&1)"; then
+    fail "a digest-divergent extension draft was accepted: $extension_divergent_output"
+  fi
+  assert_contains "a divergent extension draft names the asset" "$extension_divergent_output" "gh-orgtop-linux-amd64"
+  assert_contains "a divergent extension draft names the expected digest" "$extension_divergent_output" "$extension_divergent_expected"
+  assert_contains "a divergent extension draft names the actual digest" "$extension_divergent_output" "$extension_divergent_actual"
+  assert_equal "a divergent extension draft uploads nothing" \
+    "$(grep -c '^upload ' "$FAKE_GH_STATE/operations.log" || true)" "0"
+
+  # The workflow must verify the complete staged set before it asks GitHub to
+  # create anything. A locally inconsistent checksum/provenance pair therefore
+  # fails with zero remote operations rather than publishing bad bytes and
+  # discovering the contradiction during the later reconciliation step.
+  new_upload_state upload-invalid-local
+  invalid_local="$tmp_dir/invalid-local-stage"
+  rm -rf "$invalid_local"
+  cp -r "$stage" "$invalid_local"
+  printf 'rebuilt before upload' >"$invalid_local/gh-orgtop-linux-amd64"
+  invalid_local_output=""
+  if invalid_local_output="$(
+    {
+      "$verify" --dir "$invalid_local" --version "$version" --channel source &&
+      "$upload" --tag "$tag" --repo fmueller/orgtop --dir "$invalid_local" --channel source
+    } 2>&1
+  )" 2>&1; then
+    fail "an inconsistent staged set reached upload: $invalid_local_output"
+  fi
+  assert_contains "an inconsistent staged set fails before upload" "$invalid_local_output" "checksums.txt"
+  assert_equal "an inconsistent staged set uploads nothing" \
+    "$(grep -c '^upload ' "$FAKE_GH_STATE/operations.log" || true)" "0"
+
+  # A failed release inventory must not fall through the conditional pipeline
+  # into a new manifest upload. This is a separate guard from the asset-set
+  # uploader because the completion manifest is attached after publication.
+  new_upload_state manifest-inventory-failure
+  export FAKE_GH_FAIL_VIEW=yes
+  manifest_inventory_output=""
+  if manifest_inventory_output="$("$manifest_asset" --tag "$tag" --repo fmueller/orgtop \
+    --manifest "$stage/checksums.txt" 2>&1)"; then
+    fail "a failed manifest inventory was accepted: $manifest_inventory_output"
+  fi
+  unset FAKE_GH_FAIL_VIEW
+  assert_contains "a failed manifest inventory is closed before upload" "$manifest_inventory_output" "asset inventory"
+  assert_equal "a failed manifest inventory uploads nothing" \
+    "$(grep -c '^upload ' "$FAKE_GH_STATE/operations.log" || true)" "0"
+
+  # Inventory failure: partial API output is not a trustworthy draft state.
+  # The guard must surface the read failure before it uploads any omitted name.
+  new_upload_state upload-inventory-failure
+  copy_upload_asset gh-orgtop-linux-amd64
+  export FAKE_GH_FAIL_VIEW=yes
+  assert_rejects "a failed asset inventory is closed before upload" "asset inventory" -- \
+    "$upload" --tag "$tag" --repo fmueller/orgtop --dir "$stage" --channel source
+  unset FAKE_GH_FAIL_VIEW
+  assert_equal "a failed asset inventory uploads nothing" \
+    "$(grep -c '^upload ' "$FAKE_GH_STATE/operations.log" || true)" "0"
+
+  # Divergent draft: preflight compares every existing asset before the upload
+  # phase, so a mismatched name reports both digests and leaves even the missing
+  # assets untouched. A retry cannot silently repair a published name.
+  new_upload_state upload-divergent
+  copy_upload_asset gh-orgtop-linux-amd64
+  printf 'different bytes' >"$FAKE_GH_STATE/assets/gh-orgtop-linux-amd64"
+  divergent_expected="$(sha256sum "$stage/gh-orgtop-linux-amd64" | cut -d' ' -f1)"
+  divergent_actual="$(sha256sum "$FAKE_GH_STATE/assets/gh-orgtop-linux-amd64" | cut -d' ' -f1)"
+  divergent_output=""
+  if divergent_output="$("$upload" --tag "$tag" --repo fmueller/orgtop --dir "$stage" --channel source 2>&1)"; then
+    fail "a digest-divergent draft was accepted: $divergent_output"
+  fi
+  assert_contains "a digest-divergent draft names the asset" "$divergent_output" "gh-orgtop-linux-amd64"
+  assert_contains "a digest-divergent draft names the expected digest" "$divergent_output" "$divergent_expected"
+  assert_contains "a digest-divergent draft names the actual digest" "$divergent_output" "$divergent_actual"
+  assert_equal "a digest-divergent draft uploads nothing" \
+    "$(grep -c '^upload ' "$FAKE_GH_STATE/operations.log" || true)" "0"
+  assert_equal "a digest-divergent draft keeps its unexpected bytes" \
+    "$(sha256sum "$FAKE_GH_STATE/assets/gh-orgtop-linux-amd64" | cut -d' ' -f1)" "$divergent_actual"
+
+  # Partial API failure: the first attempt may leave exact assets behind, but a
+  # later attempt compares those and uploads only the remaining names.
+  new_upload_state upload-retry
+  export FAKE_GH_FAIL_UPLOAD_NAME=orgtop_0.2.0_linux_amd64.tar.gz
+  assert_rejects "an upload failure leaves a retryable partial draft" "refusing upload" -- \
+    "$upload" --tag "$tag" --repo fmueller/orgtop --dir "$stage" --channel source
+  unset FAKE_GH_FAIL_UPLOAD_NAME
+  retry_before="$(remote_assets)"
+  "$upload" --tag "$tag" --repo fmueller/orgtop --dir "$stage" --channel source
+  assert_equal "a retry reconciles an upload-failure partial draft" "$(remote_assets)" "$expected_source_assets"
+  assert_contains "a retry preserves the partial draft" "$retry_before" "gh-orgtop-darwin-amd64"
+)
+
+# GoReleaser records raw binaries in target-specific paths. The staging helper
+# must select the six extension records by type/ID, map their dist-relative
+# paths into an arbitrary fixture directory, and copy the complete immutable
+# upload set without allowing traversal or symlink escape.
+release_dist="$tmp_dir/goreleaser-dist"
+release_output="$tmp_dir/goreleaser-output"
+mkdir -p "$release_dist"
+cp "$stage"/orgtop_0.2.0_*.tar.gz "$release_dist/"
+cp "$stage"/orgtop_0.2.0_windows_*.zip "$release_dist/"
+cp "$stage/checksums.txt" "$release_dist/"
+cp "$stage/provenance.intoto.jsonl" "$release_dist/"
+
+release_artifacts='[]'
+matrix_output="$("$matrix" "$version")"
+while IFS=$'\t' read -r os arch archive raw homebrew; do
+  raw_relative="targets/$os-$arch/$raw"
+  mkdir -p "$release_dist/$(dirname "$raw_relative")"
+  cp "$stage/$raw" "$release_dist/$raw_relative"
+  release_artifacts="$(jq --arg name "$raw" --arg path "dist/$raw_relative" \
+    '. + [{name: $name, type: "Binary", extra: {ID: "gh-extension"}, path: $path}]' \
+    <<<"$release_artifacts")"
+done <<<"$matrix_output"
+release_artifacts="$(jq '. + [{name: "ignored", type: "Binary", extra: {ID: "other"}, path: "dist/ignored"}]' <<<"$release_artifacts")"
+printf '%s\n' "$release_artifacts" >"$release_dist/artifacts.json"
+
+"$stage_assets" --version "$version" --dist "$release_dist" --output "$release_output"
+assert_equal "artifact staging produces the complete source set" \
+  "$(find "$release_output" -maxdepth 1 -type f -printf '%f\n' | LC_ALL=C sort)" "$expected_source_assets"
+while IFS=$'\t' read -r os arch archive raw homebrew; do
+  assert_equal "artifact staging maps the $os/$arch raw binary" \
+    "$(sha256sum "$release_output/$raw" | cut -d' ' -f1)" "$(sha256sum "$stage/$raw" | cut -d' ' -f1)"
+done <<<"$matrix_output"
+
+outside="$tmp_dir/outside-artifact"
+printf 'outside distribution root' >"$outside"
+traversal_dist="$tmp_dir/goreleaser-traversal"
+cp -a "$release_dist" "$traversal_dist"
+jq --arg name gh-orgtop-linux-amd64 --arg path 'dist/../outside-artifact' \
+  'map(if .name == $name then .path = $path else . end)' \
+  "$traversal_dist/artifacts.json" >"$traversal_dist/artifacts.tmp"
+mv "$traversal_dist/artifacts.tmp" "$traversal_dist/artifacts.json"
+assert_rejects "artifact staging rejects a traversal path" "outside distribution directory" -- \
+  "$stage_assets" --version "$version" --dist "$traversal_dist" --output "$tmp_dir/traversal-output"
+
+symlink_dist="$tmp_dir/goreleaser-symlink"
+cp -a "$release_dist" "$symlink_dist"
+ln -s "$outside" "$symlink_dist/escaped-raw"
+jq --arg name gh-orgtop-linux-amd64 --arg path 'dist/escaped-raw' \
+  'map(if .name == $name then .path = $path else . end)' \
+  "$symlink_dist/artifacts.json" >"$symlink_dist/artifacts.tmp"
+mv "$symlink_dist/artifacts.tmp" "$symlink_dist/artifacts.json"
+assert_rejects "artifact staging rejects a symlink escape" "outside distribution directory" -- \
+  "$stage_assets" --version "$version" --dist "$symlink_dist" --output "$tmp_dir/symlink-output"
+
+# A failed matrix producer must not be converted into an incomplete six-row
+# inventory by process substitution. Exercise both the workflow-facing staging
+# helper and the upload guard through a copied script directory.
+matrix_failure_dir="$tmp_dir/matrix-failure-scripts"
+mkdir -p "$matrix_failure_dir"
+cp "$stage_assets" "$upload" "$script_dir/distribution-lib.sh" "$matrix_failure_dir/"
+cat >"$matrix_failure_dir/distribution-matrix.sh" <<'EOF'
+#!/usr/bin/env bash
+printf 'darwin\tamd64\torgtop_0.2.0_darwin_amd64.tar.gz\tgh-orgtop-darwin-amd64\tyes\n'
+printf '%s\n' 'matrix fixture failed' >&2
+exit 1
+EOF
+chmod +x "$matrix_failure_dir/distribution-matrix.sh"
+assert_rejects "artifact staging surfaces a failed matrix producer" "distribution matrix" -- \
+  "$matrix_failure_dir/distribution-stage-assets.sh" --version "$version" --dist "$release_dist" --output "$tmp_dir/matrix-output"
+
+export PATH="$fake_gh_bin:$PATH"
+new_upload_state upload-matrix-failure
+assert_rejects "asset upload surfaces a failed matrix producer" "distribution matrix" -- \
+  "$matrix_failure_dir/distribution-upload-assets.sh" --tag "$tag" --repo fmueller/orgtop \
+  --dir "$stage" --channel source
+
+matrix_bad_name_dir="$tmp_dir/matrix-bad-name-scripts"
+mkdir -p "$matrix_bad_name_dir"
+cp "$stage_assets" "$upload" "$script_dir/distribution-lib.sh" "$matrix_bad_name_dir/"
+cat >"$matrix_bad_name_dir/distribution-matrix.sh" <<EOF
+#!/usr/bin/env bash
+"$matrix" "\$1" | sed '1s/orgtop_/wrong_/'
+EOF
+chmod +x "$matrix_bad_name_dir/distribution-matrix.sh"
+assert_rejects "artifact staging rejects malformed matrix names" "archive" -- \
+  "$matrix_bad_name_dir/distribution-stage-assets.sh" --version "$version" --dist "$release_dist" --output "$tmp_dir/bad-name-output"
+new_upload_state upload-matrix-bad-name
+assert_rejects "asset upload rejects malformed matrix names" "archive" -- \
+  "$matrix_bad_name_dir/distribution-upload-assets.sh" --tag "$tag" --repo fmueller/orgtop \
+  --dir "$stage" --channel source
+
+assert_rejects "artifact staging rejects output beneath dist" "output must be outside" -- \
+  "$stage_assets" --version "$version" --dist "$release_dist" --output "$release_dist/nested-output"
+assert_equal "invalid staging preserves the distribution directory" \
+  "$(test -f "$release_dist/artifacts.json" && printf present)" "present"
+
+preserved_dist="$tmp_dir/goreleaser-preserved"
+cp -a "$release_dist" "$preserved_dist"
+jq --arg name gh-orgtop-linux-amd64 --arg path 'dist/../outside-artifact' \
+  'map(if .name == $name then .path = $path else . end)' \
+  "$preserved_dist/artifacts.json" >"$preserved_dist/artifacts.tmp"
+mv "$preserved_dist/artifacts.tmp" "$preserved_dist/artifacts.json"
+preserved_stage="$tmp_dir/preserved-stage"
+mkdir -p "$preserved_stage"
+printf 'keep existing output' >"$preserved_stage/sentinel"
+assert_rejects "failed artifact staging preserves existing output" "outside distribution directory" -- \
+  "$stage_assets" --version "$version" --dist "$preserved_dist" --output "$preserved_stage"
+assert_equal "failed artifact staging keeps existing output bytes" \
+  "$(cat "$preserved_stage/sentinel")" "keep existing output"
 
 # Failure paths: every one of these must fail before anything is published.
 copy_stage() {

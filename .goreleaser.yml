@@ -93,6 +93,12 @@ checksum:
 release:
   draft: true
   prerelease: false
+  # GoReleaser creates or reuses the draft, but the release API upload is
+  # delegated to distribution-upload-assets.sh. Its compare-before-upload
+  # boundary is the only safe retry behavior: GoReleaser's keep-existing mode
+  # still attempts every upload, while replace_existing_artifacts overwrites
+  # an asset whose bytes are already public.
+  skip_upload: true
   # A draft is invisible to GitHub's get-release-by-tag endpoint, which is how
   # the release is resolved, so without this a retry of a tag whose release is
   # still a draft creates a second draft for the same tag instead of reusing

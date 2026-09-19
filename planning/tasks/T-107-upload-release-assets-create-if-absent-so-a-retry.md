@@ -1,12 +1,12 @@
 ---
 id: T-107-upload-release-assets-create-if-absent-so-a-retry
 title: Upload release assets create-if-absent so a retry reconciles
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#distribution-channels
 dependencies:
     - T-067-configure-multi-channel-release-workflows
-updated_at: "2026-09-17T22:50:21Z"
+updated_at: "2026-09-19T11:42:12Z"
 ---
 
 # T-107-upload-release-assets-create-if-absent-so-a-retry Upload release assets create-if-absent so a retry reconciles
@@ -72,3 +72,6 @@ incomplete.
 - This blocks the last open item of T-074: a retry that resumes and reconciles
   rather than one that fails closed.
 - 2026-09-19T09:36:04Z: Dependency corrected from T-074 to completed T-067; this fix must land before T-074's final rehearsal rather than wait on it.
+- 2026-09-19T10:46:41Z: verification pass
+- 2026-09-19T10:46:58Z: Implemented and verified retry-safe immutable release asset uploads; taskrail verification pass recorded with fixture, full-gate, snapshot, review, and disposition evidence.
+- 2026-09-19T11:42:12Z: verification pass

@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-updated_at: "2026-09-19T09:45:35Z"
+updated_at: "2026-09-19T11:42:12Z"
 active_spec_version: v0.2.0
 active_spec_path: specs/v0.2.0.md
 current_task: ""
@@ -8,8 +8,8 @@ current_task_title: ""
 status_summary: blocked
 blockers:
     - 'T-074-provision-and-validate-distribution-repositories: T-074 final rehearsal is blocked until T-107''s retry-safe asset upload and T-105''s protected-ledger poll fix are complete; T-074 remains incomplete'
-next_action: 'Start task T-107-upload-release-assets-create-if-absent-so-a-retry: Upload release assets create-if-absent so a retry reconciles'
-last_verification_result: pass for T-104-harden-ordered-documentation-claim-matching at 2026-09-10T09:32:00Z
+next_action: Select the next eligible task
+last_verification_result: pass for T-107-upload-release-assets-create-if-absent-so-a-retry at 2026-09-19T11:42:12Z
 relevant_artifacts: []
 continuation_notes:
     - This repository is using manual Taskrail-style workflow scaffolding until the product replaces more of the bootstrap steps.
@@ -35,11 +35,11 @@ continuation_notes:
 
 ## Last Verification
 
-- pass for T-104-harden-ordered-documentation-claim-matching at 2026-09-10T09:32:00Z
+- pass for T-107-upload-release-assets-create-if-absent-so-a-retry at 2026-09-19T11:42:12Z
 
 ## Next Action
 
-- Start task T-107-upload-release-assets-create-if-absent-so-a-retry: Upload release assets create-if-absent so a retry reconciles
+- Select the next eligible task
 
 ## Relevant Artifacts
 
@@ -51,8 +51,8 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 12
+- todo: 11
 - in_progress: 0
-- completed: 100
+- completed: 101
 - blocked: 1
 - cancelled: 0

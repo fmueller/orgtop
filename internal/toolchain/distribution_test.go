@@ -22,6 +22,8 @@ var (
 		"distribution-matrix.sh",
 		"distribution-notice.sh",
 		"distribution-protected-commit.sh",
+		"distribution-stage-assets.sh",
+		"distribution-upload-assets.sh",
 		"distribution-verify.sh",
 	}
 	// The fixture suite covers every deterministic guard. These two only make
@@ -147,7 +149,11 @@ var releaseTransitions = []string{
 	"Refuse to publish over an unresolved release",
 	"Verify the companion repositories",
 	"Build once and create or reconcile the source draft",
+	"Inspect or reuse source provenance",
 	"Attest the twelve build artifacts",
+	"Stage source draft assets",
+	"Verify staged source assets before upload",
+	"Upload or reconcile the source draft assets",
 	"Reconcile the source draft",
 	"Create or reconcile the extension draft",
 	"Reconcile the extension draft",
@@ -247,26 +253,44 @@ func TestReleaseWorkflowMintsTheCompanionTokenSeparately(t *testing.T) {
 func TestReleaseWorkflowRequestsProvenancePermissions(t *testing.T) {
 	t.Parallel()
 
-	permissions := child(loadYAML(t, releaseWorkflow), "permissions")
+	workflow := loadYAML(t, releaseWorkflow)
+	permissions := child(workflow, "permissions")
 	if permissions == nil {
 		t.Fatal("release.yml must declare workflow permissions")
 	}
 
-	want := map[string]string{
+	for scope, level := range map[string]string{"contents": "read"} {
+		if got := value(child(permissions, scope)); got != level {
+			t.Errorf("release.yml default permissions %s = %q, want %q", scope, got, level)
+		}
+	}
+	for _, scope := range []string{"id-token", "attestations"} {
+		if child(permissions, scope) != nil {
+			t.Errorf("release.yml default permissions must not grant %s outside the publishing job", scope)
+		}
+	}
+	for _, scope := range mappingKeys(permissions) {
+		if scope != "contents" {
+			t.Errorf("release.yml default requests permission %q, which snapshot/withdraw do not need", scope)
+		}
+	}
+
+	releasePermissions := child(jobAt(workflow, "release"), "permissions")
+	if releasePermissions == nil {
+		t.Fatal("the publishing release job must declare its elevated permissions explicitly")
+	}
+	for scope, level := range map[string]string{
 		"contents":     "write",
 		"id-token":     "write",
 		"attestations": "write",
-	}
-	for scope, level := range want {
-		if got := value(child(permissions, scope)); got != level {
-			t.Errorf("release.yml permissions %s = %q, want %q", scope, got, level)
+	} {
+		if got := value(child(releasePermissions, scope)); got != level {
+			t.Errorf("release job permissions %s = %q, want %q", scope, got, level)
 		}
 	}
-	// Nothing beyond those three: the App token, not this workflow, carries
-	// every permission the companion repositories need.
-	for _, scope := range mappingKeys(permissions) {
-		if _, ok := want[scope]; !ok {
-			t.Errorf("release.yml requests permission %q, which no RG-011 transition needs", scope)
+	for _, scope := range mappingKeys(releasePermissions) {
+		if scope != "contents" && scope != "id-token" && scope != "attestations" {
+			t.Errorf("release job requests permission %q, which no RG-011 transition needs", scope)
 		}
 	}
 }
@@ -283,9 +307,9 @@ func TestProvenanceBundleIsDecodedBeforeItIsSplit(t *testing.T) {
 	t.Parallel()
 
 	var assembled string
-	for _, command := range jobStepValues(loadYAML(t, releaseWorkflow), "release", "run") {
-		if strings.Contains(command, "provenance.intoto.jsonl") && strings.Contains(command, "jq") {
-			assembled = command
+	for _, step := range child(jobAt(loadYAML(t, releaseWorkflow), "release"), "steps").Content {
+		if strings.Contains(value(child(step, "name")), "Assemble the canonical provenance bundle") {
+			assembled = value(child(step, "run"))
 			break
 		}
 	}
@@ -298,6 +322,47 @@ func TestProvenanceBundleIsDecodedBeforeItIsSplit(t *testing.T) {
 	}
 	if !strings.Contains(assembled, "@base64d") {
 		t.Error("the DSSE payload is base64, so the assembly has to decode it before it can read .subject")
+	}
+}
+
+// TestReleaseReusesExistingSourceProvenance keeps a retry byte-stable. The
+// attestation action includes its workflow invocation identity, so rerunning a
+// failed companion publication would otherwise create a different provenance
+// asset and collide with the exact source draft from the first attempt.
+func TestReleaseReusesExistingSourceProvenance(t *testing.T) {
+	t.Parallel()
+
+	steps := child(jobAt(loadYAML(t, releaseWorkflow), "release"), "steps")
+	if steps == nil {
+		t.Fatal("release.yml must declare release steps")
+	}
+
+	var inspect, attest, assemble string
+	for _, step := range steps.Content {
+		name := value(child(step, "name"))
+		run := value(child(step, "run"))
+		switch {
+		case strings.Contains(name, "Inspect or reuse source provenance"):
+			inspect = run
+		case strings.Contains(name, "Attest the twelve build artifacts"):
+			attest = value(child(step, "if"))
+		case strings.Contains(name, "Assemble the canonical provenance bundle"):
+			assemble = value(child(step, "if"))
+		}
+	}
+
+	if inspect == "" {
+		t.Fatal("release.yml must inspect the existing source provenance asset before attestation")
+	}
+	for _, required := range []string{"gh release view", "gh release download", "provenance.intoto.jsonl", "GITHUB_OUTPUT"} {
+		if !strings.Contains(inspect, required) {
+			t.Errorf("source provenance inspection must contain %q", required)
+		}
+	}
+	for step, condition := range map[string]string{"attestation": attest, "provenance assembly": assemble} {
+		if condition == "" || !strings.Contains(condition, "source-provenance.outputs.exists") {
+			t.Errorf("%s must run only when source provenance is absent, got condition %q", step, condition)
+		}
 	}
 }
 
@@ -483,10 +548,81 @@ func TestReleaseReusesTheExistingDraft(t *testing.T) {
 	if got := value(child(release, "mode")); got != "keep-existing" {
 		t.Errorf(".goreleaser.yml release mode = %q, want \"keep-existing\"", got)
 	}
+	if got := value(child(release, "skip_upload")); got != "true" {
+		t.Errorf(".goreleaser.yml release skip_upload = %q, want \"true\": GoReleaser must not retry asset uploads outside the compare-before-upload guard", got)
+	}
 	// Overwriting an asset is republishing bytes under a name that already
 	// carried different ones, which no retry is allowed to do.
 	if got := value(child(release, "replace_existing_artifacts")); got == "true" {
 		t.Error(".goreleaser.yml release replace_existing_artifacts is true, so a retry would overwrite published bytes instead of comparing them")
+	}
+}
+
+// TestReleaseWorkflowUsesTheUploadGuard keeps asset publication behind the
+// create-if-absent boundary. Direct `gh release upload` or a clobber flag in the
+// tag job would bypass digest comparison and could replace an existing asset on
+// a retry.
+func TestReleaseWorkflowUsesTheUploadGuard(t *testing.T) {
+	t.Parallel()
+
+	steps := child(jobAt(loadYAML(t, releaseWorkflow), "release"), "steps")
+	sourceUpload := ""
+	extensionUpload := ""
+	for _, step := range steps.Content {
+		name := value(child(step, "name"))
+		run := value(child(step, "run"))
+		switch {
+		case strings.Contains(name, "Upload or reconcile the source draft assets"):
+			sourceUpload = run
+		case strings.Contains(name, "Create or reconcile the extension draft"):
+			extensionUpload = run
+		}
+	}
+	for name, command := range map[string]string{
+		"source":    sourceUpload,
+		"extension": extensionUpload,
+	} {
+		if !strings.Contains(command, "distribution-upload-assets.sh") ||
+			!strings.Contains(command, "--channel "+name) {
+			t.Errorf("the %s publication step must call the upload guard with its channel, got %q", name, command)
+		}
+	}
+	commands := strings.Join(jobStepValues(loadYAML(t, releaseWorkflow), "release", "run"), "\n")
+	if strings.Contains(commands, "gh release upload") {
+		t.Error("release.yml must not upload assets directly; direct gh release upload bypasses compare-before-upload semantics")
+	}
+	if strings.Contains(commands, "release upload") && strings.Contains(commands, "--clobber") {
+		t.Error("release.yml must not clobber release assets")
+	}
+}
+
+// TestReleaseStagesGoReleaserArtifactsForUpload keeps the guard's input
+// complete. GoReleaser's binary-format artifacts retain their target-directory
+// paths on disk even though their release names are the six gh-orgtop-* names;
+// uploading the raw `dist` directory directly would therefore omit them.
+func TestReleaseStagesGoReleaserArtifactsForUpload(t *testing.T) {
+	t.Parallel()
+
+	var staging string
+	for _, step := range child(jobAt(loadYAML(t, releaseWorkflow), "release"), "steps").Content {
+		if strings.Contains(value(child(step, "name")), "Stage source draft assets") {
+			staging = value(child(step, "run"))
+			break
+		}
+	}
+	if staging == "" {
+		t.Fatal("release.yml must stage the source draft assets before upload")
+	}
+	for _, required := range []string{"distribution-stage-assets.sh", "source-upload"} {
+		if !strings.Contains(staging, required) {
+			t.Errorf("source asset staging must contain %q", required)
+		}
+	}
+	helper := readFile(t, filepath.Join(repoRoot, "scripts", "distribution-stage-assets.sh"))
+	for _, required := range []string{"artifacts.json", "distribution_matrix_rows", "gh-extension", "checksums_asset", "provenance_asset", "realpath -e"} {
+		if !strings.Contains(helper, required) {
+			t.Errorf("source asset staging helper must contain %q", required)
+		}
 	}
 }
 

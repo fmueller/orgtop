@@ -210,16 +210,81 @@ pull_request_readiness() {
     }
 }
 
+# distribution_matrix_rows <version> prints the validated six-row publication
+# matrix. The matrix script is the source of truth, but every consumer still
+# validates its status, row count, target set, names, and channel metadata before
+# it can derive an upload or staging set from the result.
+distribution_matrix_rows() {
+  local version="$1" matrix_output row os arch archive raw homebrew extra target
+  local expected_archive expected_raw expected_homebrew archive_extension executable_suffix
+  local -a matrix_rows=() rows=() seen_targets=()
+
+  require_version "$version"
+  if ! matrix_output="$("$matrix_script" "$version" 2>&1)"; then
+    die "distribution matrix failed: $matrix_output"
+  fi
+  [ -n "$matrix_output" ] || die "distribution matrix returned no rows"
+  mapfile -t matrix_rows <<<"$matrix_output"
+  [ "${#matrix_rows[@]}" -eq 6 ] ||
+    die "distribution matrix returned ${#matrix_rows[@]} rows, want exactly 6"
+
+  for row in "${matrix_rows[@]}"; do
+    os="" arch="" archive="" raw="" homebrew="" extra=""
+    IFS=$'\t' read -r os arch archive raw homebrew extra <<<"$row"
+    [ -n "$os" ] && [ -n "$arch" ] && [ -n "$archive" ] && [ -n "$raw" ] &&
+      [ -n "$homebrew" ] && [ -z "$extra" ] ||
+      die "distribution matrix row is malformed: $row"
+
+    target="$os/$arch"
+    case "$target" in
+    darwin/amd64 | darwin/arm64 | linux/amd64 | linux/arm64 | windows/amd64 | windows/arm64) ;;
+    *) die "distribution matrix contains unexpected target '$target'" ;
+    esac
+    for seen in "${seen_targets[@]}"; do
+      [ "$seen" != "$target" ] || die "distribution matrix repeats target '$target'"
+    done
+    seen_targets+=("$target")
+
+    case "$os" in
+    windows)
+      archive_extension=zip
+      executable_suffix=.exe
+      expected_homebrew=no
+      ;;
+    darwin | linux)
+      archive_extension=tar.gz
+      executable_suffix=
+      expected_homebrew=yes
+      ;;
+    esac
+    expected_archive="orgtop_${version}_${os}_${arch}.${archive_extension}"
+    expected_raw="gh-orgtop-${os}-${arch}${executable_suffix}"
+    [ "$archive" = "$expected_archive" ] ||
+      die "distribution matrix row for $target has archive '$archive', want '$expected_archive'"
+    [ "$raw" = "$expected_raw" ] ||
+      die "distribution matrix row for $target has raw asset '$raw', want '$expected_raw'"
+    [ "$homebrew" = "$expected_homebrew" ] ||
+      die "distribution matrix row for $target has Homebrew value '$homebrew', want '$expected_homebrew'"
+    rows+=("$row")
+  done
+
+  printf '%s\n' "${rows[@]}"
+}
+
 # artifact_names <version> <channel> prints the exact asset names a channel's
 # draft carries, excluding the two metadata assets, sorted bytewise.
 artifact_names() {
-  local version="$1" channel="$2" os arch archive raw homebrew
+  local version="$1" channel="$2" os arch archive raw homebrew extra matrix_output
+  local -a names=()
 
-  while IFS=$'\t' read -r os arch archive raw homebrew; do
+  matrix_output="$(distribution_matrix_rows "$version")"
+  while IFS=$'\t' read -r os arch archive raw homebrew extra; do
     case "$channel" in
-    source) printf '%s\n%s\n' "$archive" "$raw" ;;
-    extension) printf '%s\n' "$raw" ;;
+    source) names+=("$archive" "$raw") ;;
+    extension) names+=("$raw") ;;
     *) die "unknown channel '$channel'" ;;
     esac
-  done < <("$matrix_script" "$version") | LC_ALL=C sort
+  done <<<"$matrix_output"
+
+  printf '%s\n' "${names[@]}" | LC_ALL=C sort
 }

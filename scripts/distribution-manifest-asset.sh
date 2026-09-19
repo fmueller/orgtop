@@ -34,7 +34,12 @@ require_tag "$tag"
 asset=distribution-complete.json
 expected="$(digest_of_file "$manifest")"
 
-if gh release view "$tag" --repo "$repo" --json assets --jq '.assets[].name' | grep -qxF "$asset"; then
+attached_output=""
+if ! attached_output="$(gh release view "$tag" --repo "$repo" --json assets --jq '.assets[].name')"; then
+  die "could not read $repo asset inventory"
+fi
+
+if grep -qxF "$asset" <<<"$attached_output"; then
   published="$(mktemp)"
   trap 'rm -f "$published"' EXIT
   gh release download "$tag" --repo "$repo" --pattern "$asset" --output "$published" --clobber
