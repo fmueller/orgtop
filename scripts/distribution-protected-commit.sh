@@ -15,7 +15,8 @@
 #
 # It is idempotent. When the default branch already carries the exact event the
 # step is complete and nothing is created; when the pull request already exists
-# it is reused rather than reopened.
+# and is open it is reused. A closed, unmerged rehearsal pull request is
+# reopened so a retry still passes through the same independent-approval gate.
 #
 # Requires GH_TOKEN to be the App installation token and the working tree to be
 # a checkout of the source repository.
@@ -127,22 +128,92 @@ fi
 git "${committer[@]}" commit -m "$title"
 git "${authenticated[@]}" push --force-with-lease origin "$branch"
 
-pull_request_state="$(gh pr view "$branch" --json state --jq '.state' 2>/dev/null || true)"
-case "$pull_request_state" in
+expected_head="$(git rev-parse HEAD)"
+pr_fields="number,state,mergedAt,headRefName,headRefOid,headRepository,headRepositoryOwner,baseRefName,baseRepository,reviews"
+readiness_fields="mergeable,author,headRefOid,reviews,latestReviews,statusCheckRollup"
+
+is_definitive_not_found() {
+  local output="$1"
+  output="${output%$'\n'}"
+  [ "$output" = "no pull requests found" ] ||
+    [ "$output" = "no pull requests found for branch" ] ||
+    [ "$output" = "no pull requests found for branch \"$branch\"" ]
+}
+
+if ! pr_json="$(gh pr view "$branch" --repo "$source_repository" --json "$pr_fields" 2>&1)"; then
+  if ! is_definitive_not_found "$pr_json"; then
+    die "the ledger pull request could not be inspected"
+  fi
+  gh pr create --repo "$source_repository" --base "$default_branch" --head "$branch" --title "$title" \
+    --body "Records one RG-011 distribution-ledger event. Merging this pull request is a required transition of the release workflow, which is waiting for it."
+  if ! pr_json="$(gh pr view "$branch" --repo "$source_repository" --json "$pr_fields" 2>&1)"; then
+    die "the ledger pull request could not be inspected after creation"
+  fi
+fi
+
+validate_pr_identity() {
+  local json="$1" require_current_head="$2" expected_state="$3"
+  if ! jq -e --arg branch "$branch" --arg repo "$source_repository" \
+    --arg base "$default_branch" --arg head "$expected_head" \
+    --arg require_head "$require_current_head" --arg state "$expected_state" '
+      (.number | type == "number" and floor == . and . > 0)
+      and .state == $state
+      and ((.headRefOid // "") | test("^[0-9a-f]{40}$"))
+      and .headRefName == $branch
+      and .headRepository.nameWithOwner == $repo
+      and .headRepositoryOwner.login == ($repo | split("/")[0])
+      and .baseRefName == $base
+      and .baseRepository.nameWithOwner == $repo
+      and (.state != "OPEN" or .mergedAt == null)
+      and (if $require_head == "yes" then .headRefOid == $head else true end)
+    ' <<<"$json" >/dev/null; then
+    die "the ledger pull request identity does not match the protected transition"
+  fi
+}
+
+read_pr_readiness() {
+  local phase="$1" state
+  if ! pr_json="$(gh pr view "$pr_number" --repo "$source_repository" --json "$pr_fields" 2>&1)"; then
+    die "the ledger pull request could not be inspected$phase"
+  fi
+  validate_pr_identity "$pr_json" yes OPEN
+
+  if ! state="$(gh pr view "$pr_number" --repo "$source_repository" --json "$readiness_fields" 2>&1)"; then
+    die "the ledger pull request state could not be read$phase"
+  fi
+  readiness="$(pull_request_readiness "$state" "$expected_head")" ||
+    die "the ledger pull request state could not be read$phase"
+}
+
+pr_number="$(jq -er '.number | select(type == "number")' <<<"$pr_json")" ||
+  die "the ledger pull request number could not be read"
+pr_state="$(jq -er '.state // empty' <<<"$pr_json")" ||
+  die "the ledger pull request state could not be read"
+case "$pr_state" in
 OPEN)
+  validate_pr_identity "$pr_json" yes OPEN
   ;;
 CLOSED)
-  # A prior release attempt may have been canceled after creating its PR. The
-  # branch is force-updated above with the current exact event, so reopening
-  # that PR is the idempotent retry path; polling a closed PR can never merge.
-  gh pr reopen "$branch" >/dev/null
-  ;;
-"")
-  gh pr create --base "$default_branch" --head "$branch" --title "$title" \
-    --body "Records one RG-011 distribution-ledger event. Merging this pull request is a required transition of the release workflow, which is waiting for it."
+  if jq -e '.mergedAt != null' <<<"$pr_json" >/dev/null; then
+    die "the existing ledger pull request is already merged; refusing to reuse it"
+  fi
+  validate_pr_identity "$pr_json" no CLOSED
+  if jq -e '[.reviews[]? | select(.state == "APPROVED")] | length > 0' <<<"$pr_json" >/dev/null; then
+    die "the existing closed ledger pull request carries prior approval; refusing to reuse it"
+  fi
+  if ! gh pr reopen "$pr_number" --repo "$source_repository" >/dev/null; then
+    die "the existing closed ledger pull request could not be reopened"
+  fi
+  if ! pr_json="$(gh pr view "$pr_number" --repo "$source_repository" --json "$pr_fields" 2>&1)"; then
+    die "the reopened ledger pull request could not be inspected"
+  fi
+  if [ "$(jq -r '.state // empty' <<<"$pr_json")" != OPEN ]; then
+    die "the reopened ledger pull request is not open"
+  fi
+  validate_pr_identity "$pr_json" yes OPEN
   ;;
 *)
-  die "the ledger pull request returned an unexpected state: $pull_request_state"
+  die "the existing ledger pull request is $pr_state; refusing to reuse it"
   ;;
 esac
 
@@ -157,12 +228,17 @@ while [ "$attempt" -lt "$poll_attempts" ]; do
     exit 0
   fi
 
-  state="$(gh pr view "$branch" --json mergeable,author,latestReviews,statusCheckRollup)"
-  readiness="$(pull_request_readiness "$state")" ||
-    die "the ledger pull request state could not be read"
+  read_pr_readiness " during the poll"
   case "$readiness" in
   ready)
-    if ! gh pr merge "$branch" --squash --delete-branch; then
+    # Re-read both identity and readiness immediately before merge. The
+    # --match-head-commit guard closes the remaining race between this check
+    # and GitHub's merge operation without ever accepting a changed head.
+    read_pr_readiness " before merge"
+    [ "$readiness" = ready ] ||
+      die "the ledger pull request was no longer ready before merge"
+
+    if ! gh pr merge "$pr_number" --repo "$source_repository" --match-head-commit "$expected_head" --squash --delete-branch; then
       # The pull request may have merged out of band after the poll check. A
       # failed merge is complete only when the exact event is now present.
       git "${authenticated[@]}" fetch origin "$default_branch"

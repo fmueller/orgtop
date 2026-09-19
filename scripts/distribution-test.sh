@@ -1005,9 +1005,42 @@ pr_state() {
     "$mergeable" "$author" "$reviews" "$checks"
 }
 
+pr_state_with_head() {
+  local head="$1" state
+  state="$(pr_state "${2:?}" "${3:?}" "${4:?}" "${5:-[]}")"
+  jq -c --arg head "$head" '
+    . + {
+      headRefOid: $head,
+      reviews: [(.latestReviews // [])[] | . + {commit: {oid: $head}}]
+    }
+  ' <<<"$state"
+}
+
 approved_by_human="$(pr_state MERGEABLE orgtop-distribution '[{"state":"APPROVED","author":{"login":"fmueller"}}]')"
 assert_equal "an approved green pull request is ready" \
   "$(pull_request_readiness "$approved_by_human")" ready
+
+current_head="$(printf 'a%.0s' {1..40})"
+old_head="$(printf 'b%.0s' {1..40})"
+current_head_approval="$(pr_state_with_head "$current_head" MERGEABLE orgtop-distribution '[{"state":"APPROVED","author":{"login":"fmueller"}}]' '[{"conclusion":"SUCCESS"}]')"
+assert_equal "an approval for the current head is ready" \
+  "$(pull_request_readiness "$current_head_approval")" ready
+
+stale_head_approval="$(jq -c --arg head "$current_head" --arg old_head "$old_head" \
+  '.headRefOid = $head | .reviews = [(.latestReviews[] | . + {commit: {oid: $old_head}})]' \
+  <<<"$current_head_approval")"
+assert_equal "an approval for an old head waits" \
+  "$(pull_request_readiness "$stale_head_approval")" waiting
+
+missing_readiness_author="$(jq -c 'del(.author)' <<<"$current_head_approval")"
+if pull_request_readiness "$missing_readiness_author" "$current_head" >/dev/null 2>&1; then
+  fail "readiness without a pull request author was accepted"
+fi
+
+missing_readiness_head="$(jq -c 'del(.headRefOid)' <<<"$current_head_approval")"
+if pull_request_readiness "$missing_readiness_head" "$current_head" >/dev/null 2>&1; then
+  fail "readiness without a current head was accepted"
+fi
 
 assert_equal "an unreviewed pull request waits" \
   "$(pull_request_readiness "$(pr_state MERGEABLE orgtop-distribution '[]')")" waiting
@@ -1094,6 +1127,16 @@ set -euo pipefail
 log="${PROTECTED_LOG:?PROTECTED_LOG is required}"
 printf 'gh %s\n' "$*" >>"$log"
 
+if [ "${PROTECTED_SCENARIO:?}" = repo_binding ] && [ "${1-}" = pr ]; then
+  case " $* " in
+  *" --repo fmueller/orgtop "*) ;;
+  *)
+    printf 'fixture: pull request command was not bound to the source repository\n' >&2
+    exit 1
+    ;;
+  esac
+fi
+
 pending='{"mergeable":"MERGEABLE","author":{"login":"orgtop-distribution"},"latestReviews":[],"statusCheckRollup":[{"conclusion":null}]}'
 failed='{"mergeable":"MERGEABLE","author":{"login":"orgtop-distribution"},"latestReviews":[{"state":"APPROVED","author":{"login":"fmueller"}}],"statusCheckRollup":[{"conclusion":"FAILURE"}]}'
 ready='{"mergeable":"MERGEABLE","author":{"login":"orgtop-distribution"},"latestReviews":[{"state":"APPROVED","author":{"login":"fmueller"}}],"statusCheckRollup":[{"conclusion":"SUCCESS"}]}'
@@ -1117,9 +1160,89 @@ pr)
       esac
     done
     [ -n "$branch" ]
-    if [ "$json" = number ] || [ "$json" = state ]; then
-      # No existing pull request: the production guard will create one.
-      exit 1
+    if [[ "$json" == *number* ]]; then
+      emit_pr() {
+        local state="$1" head_oid="$2" head_repo="$3" base="$4" merged="$5" reviews="$6" \
+          base_repo="${7:-fmueller/orgtop}" head_ref="${8:-${PROTECTED_BRANCH:?}}"
+        jq -cn --arg state "$state" --arg head_oid "$head_oid" \
+          --arg head_repo "$head_repo" --arg base "$base" --arg merged "$merged" \
+          --arg base_repo "$base_repo" --arg head_ref "$head_ref" --argjson reviews "$reviews" \
+          '{number:8,state:$state,mergedAt:(if $merged == "null" then null else $merged end),headRefName:$head_ref,headRefOid:$head_oid,headRepository:{nameWithOwner:$head_repo},headRepositoryOwner:{login:($head_repo | split("/")[0])},baseRefName:$base,baseRepository:{nameWithOwner:$base_repo},reviews:$reviews}'
+      }
+
+      case "${PROTECTED_SCENARIO:?}" in
+      lookup_failure)
+        printf 'fixture: pull request lookup failed\n' >&2
+        exit 2
+        ;;
+      lookup_api_failure)
+        printf 'HTTP 401: no pull requests found for branch\n' >&2
+        exit 2
+        ;;
+      lookup_malformed)
+        printf '{"state":"OPEN"}\n'
+        exit 0
+        ;;
+      closed|closed_approved|reopen_failure|merged)
+        if [ "${PROTECTED_SCENARIO}" = closed ] && [ -f "$PROTECTED_LOG.reopened" ]; then
+          emit_pr OPEN "$(git -C "$PROTECTED_WORK" rev-parse HEAD)" fmueller/orgtop main null '[]'
+        else
+          reviews='[]'
+          if [ "${PROTECTED_SCENARIO}" = closed_approved ]; then
+            reviews='[{"state":"APPROVED","author":{"login":"fmueller"}}]'
+          fi
+          merged=null
+          if [ "${PROTECTED_SCENARIO}" = merged ]; then
+            merged='2026-09-19T20:00:00Z'
+          fi
+          emit_pr CLOSED "${PROTECTED_STALE_HEAD:?}" fmueller/orgtop main "$merged" "$reviews"
+        fi
+        exit 0
+        ;;
+      mismatched)
+        emit_pr OPEN "$(git -C "$PROTECTED_WORK" rev-parse HEAD)" attacker/other main null '[]'
+        exit 0
+        ;;
+      mismatched_ref)
+        emit_pr OPEN "$(git -C "$PROTECTED_WORK" rev-parse HEAD)" fmueller/orgtop main null '[]' ledger/unexpected
+        exit 0
+        ;;
+      mismatched_base)
+        emit_pr OPEN "$(git -C "$PROTECTED_WORK" rev-parse HEAD)" fmueller/orgtop develop null '[]'
+        exit 0
+        ;;
+      mismatched_base_repository)
+        emit_pr OPEN "$(git -C "$PROTECTED_WORK" rev-parse HEAD)" fmueller/orgtop main null '[]' attacker/other
+        exit 0
+        ;;
+      unknown_state)
+        emit_pr UNKNOWN "$(git -C "$PROTECTED_WORK" rev-parse HEAD)" fmueller/orgtop main null '[]'
+        exit 0
+        ;;
+      head_replaced)
+        identity_views_file="$PROTECTED_LOG.identity_views"
+        identity_views=0
+        if [ -f "$identity_views_file" ]; then identity_views="$(cat "$identity_views_file")"; fi
+        identity_views=$((identity_views + 1))
+        printf '%s\n' "$identity_views" >"$identity_views_file"
+        if [ "$identity_views" -ge 3 ]; then
+          emit_pr OPEN "${PROTECTED_STALE_HEAD:?}" fmueller/orgtop main null '[]'
+        else
+          emit_pr OPEN "$(git -C "$PROTECTED_WORK" rev-parse HEAD)" fmueller/orgtop main null '[]'
+        fi
+        exit 0
+        ;;
+      *)
+        if [ -f "$PROTECTED_LOG.created" ]; then
+          emit_pr OPEN "$(git -C "$PROTECTED_WORK" rev-parse HEAD)" fmueller/orgtop main null '[]'
+          exit 0
+        fi
+        # No existing pull request: the production guard must confirm this
+        # definitive not-found response before it creates one.
+        printf 'no pull requests found for branch\n' >&2
+        exit 1
+        ;;
+      esac
     fi
 
     views_file="$PROTECTED_LOG.views"
@@ -1129,6 +1252,13 @@ pr)
     printf '%s\n' "$views" >"$views_file"
     response=""
     case "${PROTECTED_SCENARIO:?}" in
+    closed)
+      if [ -f "$PROTECTED_LOG.reopened" ] && [ "$views" -gt 1 ]; then
+        response="$ready"
+      else
+        response="$pending"
+      fi
+      ;;
     delayed)
       if [ "$views" -eq 1 ]; then
         git --git-dir "$PROTECTED_REMOTE" update-ref refs/heads/main "$PROTECTED_LANDED_COMMIT"
@@ -1144,11 +1274,20 @@ pr)
     pending_then_ready)
       if [ "$views" -eq 1 ]; then response="$pending"; else response="$ready"; fi
       ;;
+    repo_binding)
+      if [ "$views" -eq 1 ]; then response="$pending"; else response="$ready"; fi
+      ;;
+    mismatched_base_repository)
+      response="$ready"
+      ;;
     merge_race)
       response="$ready"
       ;;
     failed)
       response="$failed"
+      ;;
+    stale_approval|head_replaced)
+      response="$ready"
       ;;
     timeout)
       response="$pending"
@@ -1161,12 +1300,47 @@ pr)
       exit 2
       ;;
     esac
+    if [ "$response" = "$ready" ]; then
+      : >"$PROTECTED_LOG.ready"
+    fi
+    response="$(jq -c --arg head "$(git -C "$PROTECTED_WORK" rev-parse HEAD)" \
+      --arg old_head "${PROTECTED_STALE_HEAD:?}" \
+      --arg scenario "${PROTECTED_SCENARIO:?}" \
+      '. + {
+        headRefOid: $head,
+        reviews: [(.latestReviews // [])[] | . + {commit: {oid: (if $scenario == "stale_approval" then $old_head else $head end)}}]
+      }
+    ' <<<"$response")"
     printf '%s\n' "$response"
     ;;
+  reopen)
+    if [ "${PROTECTED_SCENARIO:?}" = reopen_failure ]; then
+      printf 'fixture: pull request reopen failed\n' >&2
+      exit 1
+    fi
+    : >"$PROTECTED_LOG.reopened"
+    printf 'reopened fixture pull request\n'
+    ;;
   create)
+    : >"$PROTECTED_LOG.created"
     printf 'created fixture pull request\n'
     ;;
   merge)
+    match_head=""
+    while [ "$#" -gt 0 ]; do
+      case "$1" in
+      --match-head-commit) match_head="${2-}"; shift 2 ;;
+      *) shift ;;
+      esac
+    done
+    if [ ! -f "$PROTECTED_LOG.ready" ]; then
+      printf 'fixture: merge attempted before the pull request was ready\n' >&2
+      exit 1
+    fi
+    if [ "$match_head" != "$(git -C "$PROTECTED_WORK" rev-parse HEAD)" ]; then
+      printf 'fixture: merge did not carry the current head guard\n' >&2
+      exit 1
+    fi
     if [ "${PROTECTED_SCENARIO:?}" = merge_race ]; then
       git --git-dir "$PROTECTED_REMOTE" update-ref refs/heads/main "$PROTECTED_LANDED_COMMIT"
       printf 'fixture: the pull request merged out of band\n' >&2
@@ -1198,6 +1372,7 @@ protected_prepare() {
   PROTECTED_REMOTE="$remote"
   PROTECTED_SCENARIO="$name"
   PROTECTED_LOG="$tmp_dir/protected-$name.log"
+  PROTECTED_BRANCH="ledger/test-$name"
   PROTECTED_ATTEMPTS=2
   rm -rf "$remote" "$seed" "$tmp_dir/protected-$name-work"
   git init --bare -q "$remote"
@@ -1213,6 +1388,7 @@ protected_prepare() {
   git -C "$seed" remote add origin "$remote"
   git -C "$seed" push -q origin main
   initial="$(git -C "$seed" rev-parse HEAD)"
+  PROTECTED_STALE_HEAD="$initial"
 
   git -C "$seed" checkout -q -B protected-landed "$initial"
   "$append" --ledger "$seed/docs/distribution-ledger.jsonl" --event-file "$staged_event" >/dev/null
@@ -1273,9 +1449,9 @@ protected_prepare() {
   git clone -q "$remote" "$tmp_dir/protected-$name-work"
   PROTECTED_WORK="$tmp_dir/protected-$name-work"
   : >"$PROTECTED_LOG"
-  rm -f "$PROTECTED_LOG.views"
-  export PROTECTED_REMOTE PROTECTED_SCENARIO PROTECTED_LOG PROTECTED_LANDED_COMMIT
-  export PROTECTED_CONTRADICTORY_COMMIT PROTECTED_WORK
+  rm -f "$PROTECTED_LOG.views" "$PROTECTED_LOG.identity_views"
+  export PROTECTED_REMOTE PROTECTED_SCENARIO PROTECTED_LOG PROTECTED_BRANCH
+  export PROTECTED_STALE_HEAD PROTECTED_LANDED_COMMIT PROTECTED_CONTRADICTORY_COMMIT PROTECTED_WORK
 }
 
 protected_run() {
@@ -1287,7 +1463,7 @@ protected_run() {
       DISTRIBUTION_POLL_ATTEMPTS="$PROTECTED_ATTEMPTS" \
       PATH="$protected_fake_gh_bin:$PATH" \
       "$protected_commit" \
-        --branch "ledger/test-$PROTECTED_SCENARIO" \
+        --branch "$PROTECTED_BRANCH" \
         --title "fixture protected ledger transition" \
         --ledger-event "$staged_event"
   )
@@ -1315,6 +1491,56 @@ protected_prepare pending_then_ready
 protected_output="$(protected_run)"
 assert_contains "a pending pull request remains in the poll" "$protected_output" "event is on main"
 assert_equal "a pending pull request eventually merges only after readiness" "$(grep -c 'gh pr merge' "$PROTECTED_LOG")" "1"
+assert_equal "a merge carries the exact head guard" "$(grep -c -- '--match-head-commit ' "$PROTECTED_LOG")" "1"
+
+protected_prepare repo_binding
+protected_output="$(protected_run)"
+assert_contains "every pull request operation is bound to the source repository" "$protected_output" "event is on main"
+
+protected_prepare closed
+protected_output="$(protected_run)"
+assert_contains "a closed pull request is reopened for a retry" "$protected_output" "event is on main"
+assert_equal "a closed pull request is reopened exactly once" "$(grep -c 'gh pr reopen' "$PROTECTED_LOG")" "1"
+
+protected_prepare closed_approved
+PROTECTED_ATTEMPTS=1
+assert_rejects "a closed pull request with prior approval fails closed" "prior approval" -- protected_run
+assert_equal "a stale approval never reopens its pull request" "$(grep -c 'gh pr reopen' "$PROTECTED_LOG" || true)" "0"
+
+protected_prepare lookup_failure
+assert_rejects "a pull request lookup failure fails closed" "could not be inspected" -- protected_run
+assert_equal "a pull request lookup failure never creates a pull request" "$(grep -c 'gh pr create' "$PROTECTED_LOG" || true)" "0"
+
+protected_prepare lookup_api_failure
+assert_rejects "an API lookup failure fails closed" "could not be inspected" -- protected_run
+assert_equal "an API lookup failure never creates a pull request" "$(grep -c 'gh pr create' "$PROTECTED_LOG" || true)" "0"
+
+protected_prepare lookup_malformed
+assert_rejects "a malformed lookup fails closed" "number could not be read" -- protected_run
+assert_equal "a malformed lookup never creates a pull request" "$(grep -c 'gh pr create' "$PROTECTED_LOG" || true)" "0"
+
+protected_prepare mismatched
+assert_rejects "a mismatched pull request identity fails closed" "identity" -- protected_run
+assert_equal "a mismatched pull request identity never merges" "$(grep -c 'gh pr merge' "$PROTECTED_LOG" || true)" "0"
+
+protected_prepare mismatched_ref
+assert_rejects "a mismatched pull request head ref fails closed" "identity" -- protected_run
+
+protected_prepare mismatched_base
+assert_rejects "a mismatched pull request base ref fails closed" "identity" -- protected_run
+
+protected_prepare mismatched_base_repository
+assert_rejects "a mismatched pull request base repository fails closed" "identity" -- protected_run
+
+protected_prepare unknown_state
+assert_rejects "an unknown pull request state fails closed" "is UNKNOWN" -- protected_run
+
+protected_prepare merged
+assert_rejects "a previously merged pull request fails closed" "already merged" -- protected_run
+assert_equal "a previously merged pull request never reopens" "$(grep -c 'gh pr reopen' "$PROTECTED_LOG" || true)" "0"
+
+protected_prepare reopen_failure
+assert_rejects "a pull request reopen failure fails closed" "could not be reopened" -- protected_run
 
 protected_prepare merge_race
 PROTECTED_ATTEMPTS=1
@@ -1325,6 +1551,16 @@ protected_prepare failed
 PROTECTED_ATTEMPTS=1
 assert_rejects "a failed check keeps the pull request partial" "not approved and green" -- protected_run
 assert_equal "a failed check never merges" "$(grep -c 'gh pr merge' "$PROTECTED_LOG" || true)" "0"
+
+protected_prepare stale_approval
+PROTECTED_ATTEMPTS=1
+assert_rejects "an approval for a replaced head keeps the pull request partial" "not approved and green" -- protected_run
+assert_equal "a stale head approval never merges" "$(grep -c 'gh pr merge' "$PROTECTED_LOG" || true)" "0"
+
+protected_prepare head_replaced
+PROTECTED_ATTEMPTS=1
+assert_rejects "a head replacement during the poll fails closed" "identity" -- protected_run
+assert_equal "a replaced head never merges" "$(grep -c 'gh pr merge' "$PROTECTED_LOG" || true)" "0"
 
 protected_prepare missing
 PROTECTED_ATTEMPTS=1
