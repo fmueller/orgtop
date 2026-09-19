@@ -21,6 +21,7 @@ formula_script="$script_dir/distribution-formula.sh"
 append="$script_dir/distribution-ledger-append.sh"
 notice_script="$script_dir/distribution-notice.sh"
 protected_commit="$script_dir/distribution-protected-commit.sh"
+release_guard="$script_dir/distribution-release-guard.sh"
 # shellcheck source=scripts/distribution-lib.sh
 . "$script_dir/distribution-lib.sh"
 
@@ -210,6 +211,13 @@ release)
   subcommand="${2-}"
   shift 2
   case "$subcommand" in
+  list)
+    if [ "${FAKE_GH_FAIL_RELEASE_LIST:-}" = yes ]; then
+      printf 'fixture: release inventory request failed\n' >&2
+      exit 1
+    fi
+    printf '%s' "${FAKE_GH_RELEASE_LIST_JSON:-[]}"
+    ;;
   view)
     # The fixture only needs the asset-name projection. Release/tag/repository
     # arguments are deliberately ignored: the production guard validates the
@@ -304,6 +312,30 @@ copy_upload_asset_from() {
 
 (
   export PATH="$fake_gh_bin:$PATH"
+
+  # The duplicate-release guard must inventory drafts, count the exact tag,
+  # and fail closed when the draft-visible inventory is truncated or unreadable.
+  new_upload_state release-guard
+  export FAKE_GH_RELEASE_LIST_JSON='[]'
+  assert_rejects "a missing draft release" "carries 0 releases" -- \
+    "$release_guard" --repo fmueller/orgtop --tag "$tag"
+
+  export FAKE_GH_RELEASE_LIST_JSON='[{"tagName":"v0.1.0"},{"tagName":"v0.2.0"}]'
+  "$release_guard" --repo fmueller/orgtop --tag "$tag"
+
+  export FAKE_GH_RELEASE_LIST_JSON='[{"tagName":"v0.2.0"},{"tagName":"v0.2.0"}]'
+  assert_rejects "duplicate releases for one tag" "carries 2 releases" -- \
+    "$release_guard" --repo fmueller/orgtop --tag "$tag"
+
+  release_limit_json="$(jq -cn '[range(0;100) | {tagName:("v" + (tostring) + ".0.0")}]')"
+  export FAKE_GH_RELEASE_LIST_JSON="$release_limit_json"
+  assert_rejects "a truncated release inventory" "reached its 100-release limit" -- \
+    "$release_guard" --repo fmueller/orgtop --tag "$tag"
+
+  export FAKE_GH_FAIL_RELEASE_LIST=yes
+  assert_rejects "a failed release inventory" "release inventory request failed" -- \
+    "$release_guard" --repo fmueller/orgtop --tag "$tag"
+  unset FAKE_GH_FAIL_RELEASE_LIST FAKE_GH_RELEASE_LIST_JSON
 
   # Empty draft: every expected source asset is uploaded, including both
   # metadata assets, and the final remote set is exactly the 14-item source

@@ -159,14 +159,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          count="$(gh api --paginate "repos/${SOURCE_REPOSITORY}/releases" \
-            --jq "[.[] | select(.tag_name == \"${GITHUB_REF_NAME}\")] | length" \
-            | awk '{ total += $1 } END { print total + 0 }')"
-          if [ "$count" -ne 1 ]; then
-            echo "guard: ${SOURCE_REPOSITORY} carries $count releases for ${GITHUB_REF_NAME}, want exactly 1; more than one release for one tag is non-reconcilable same-version state, and none means the draft was never created" >&2
-            exit 1
-          fi
-          echo "guard: ${SOURCE_REPOSITORY} carries exactly one release for ${GITHUB_REF_NAME}"
+          ./scripts/distribution-release-guard.sh \
+            --repo "${SOURCE_REPOSITORY}" --tag "${GITHUB_REF_NAME}"
 
       # An existing source provenance asset is authoritative for a retry. The
       # attestation action records its invocation identity, so rerunning it for

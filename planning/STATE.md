@@ -1,14 +1,13 @@
 ---
 schema_version: 1
-updated_at: "2026-09-19T19:16:26Z"
+updated_at: "2026-09-19T19:23:24Z"
 active_spec_version: v0.2.0
 active_spec_path: specs/v0.2.0.md
-current_task: ""
-current_task_title: ""
-status_summary: blocked
-blockers:
-    - 'T-074-provision-and-validate-distribution-repositories: T-074 final rehearsal is blocked until T-107''s retry-safe asset upload and T-105''s protected-ledger poll fix are complete; T-074 remains incomplete'
-next_action: No eligible task is ready
+current_task: T-074-provision-and-validate-distribution-repositories
+current_task_title: Provision and validate distribution repositories
+status_summary: in_progress
+blockers: []
+next_action: Implement T-074-provision-and-validate-distribution-repositories and run targeted tests
 last_verification_result: pass for T-113-correct-readme-view-selection-and-detail-control at 2026-09-19T19:16:01Z
 relevant_artifacts: []
 continuation_notes:
@@ -23,15 +22,16 @@ continuation_notes:
 
 ## Current Focus
 
-- Task: none
+- Task: `T-074-provision-and-validate-distribution-repositories`
+- Title: Provision and validate distribution repositories
 
 ## Status
 
-- blocked
+- in_progress
 
 ## Blockers
 
-- T-074-provision-and-validate-distribution-repositories: T-074 final rehearsal is blocked until T-107's retry-safe asset upload and T-105's protected-ledger poll fix are complete; T-074 remains incomplete
+- None
 
 ## Last Verification
 
@@ -39,7 +39,7 @@ continuation_notes:
 
 ## Next Action
 
-- No eligible task is ready
+- Implement T-074-provision-and-validate-distribution-repositories and run targeted tests
 
 ## Relevant Artifacts
 
@@ -52,7 +52,7 @@ continuation_notes:
 ## Task Counts
 
 - todo: 4
-- in_progress: 0
+- in_progress: 1
 - completed: 108
-- blocked: 1
+- blocked: 0
 - cancelled: 0

@@ -22,6 +22,7 @@ var (
 		"distribution-matrix.sh",
 		"distribution-notice.sh",
 		"distribution-protected-commit.sh",
+		"distribution-release-guard.sh",
 		"distribution-stage-assets.sh",
 		"distribution-upload-assets.sh",
 		"distribution-verify.sh",
@@ -635,14 +636,48 @@ func TestReleaseRefusesDuplicateSameVersionReleases(t *testing.T) {
 	t.Parallel()
 
 	var guarded bool
-	for _, command := range jobStepValues(loadYAML(t, releaseWorkflow), "release", "run") {
-		if strings.Contains(command, "more than one release") {
+	for _, name := range jobStepValues(loadYAML(t, releaseWorkflow), "release", "name") {
+		if strings.Contains(name, "more than one release") {
 			guarded = true
 			break
 		}
 	}
 	if !guarded {
 		t.Error("release.yml must refuse a tag carrying more than one release, in the channel it built, before it reconciles digests")
+	}
+}
+
+// TestReleaseDuplicateGuardSeesDraftReleases keeps the one-release invariant
+// effective while a release is still staged. The REST releases list used by
+// the workflow token can omit drafts, which makes a valid draft look absent
+// immediately after GoReleaser creates it and stops the release before any
+// asset reconciliation. `gh release list` is the draft-visible inventory the
+// later release-view and upload steps already use.
+func TestReleaseDuplicateGuardSeesDraftReleases(t *testing.T) {
+	t.Parallel()
+
+	workflow := readFile(t, releaseWorkflow)
+	if !strings.Contains(workflow, "distribution-release-guard.sh") {
+		t.Fatal("release.yml must run the duplicate-release guard")
+	}
+	command := readFile(t, filepath.Join(repoRoot, "scripts", "distribution-release-guard.sh"))
+	if !strings.Contains(command, "gh release list") {
+		t.Error("the duplicate-release guard must inventory releases with gh release list so it includes drafts")
+	}
+	if !strings.Contains(command, "--limit 100") {
+		t.Error("the duplicate-release guard must use the exact bounded inventory limit 100")
+	}
+	if !strings.Contains(command, "--json tagName") || strings.Contains(command, "--exclude-drafts") {
+		t.Error("the duplicate-release guard must inspect the draft-visible tagName field")
+	}
+	if !strings.Contains(command, "release_inventory") || !strings.Contains(command, "jq 'length'") {
+		t.Error("the duplicate-release guard must measure the complete draft-visible inventory before counting tags")
+	}
+	if !strings.Contains(command, "-ge 100") {
+		t.Error("the duplicate-release guard must fail closed when the release inventory reaches its bound")
+	}
+	if !strings.Contains(command, "set -euo pipefail") {
+		t.Error("the duplicate-release guard must fail closed when release inventory or jq commands fail")
 	}
 }
 
