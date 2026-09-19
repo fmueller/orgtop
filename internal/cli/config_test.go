@@ -254,7 +254,15 @@ func TestUsageDocumentsTheRainWindows(t *testing.T) {
 		}
 		position = next
 	}
-	for _, claim := range []string{"newest 100", "not complete repository history", "-/+", "starts at 24h"} {
+	for _, claim := range []string{
+		"newest 100",
+		"not complete repository history",
+		"-/+",
+		"starts at 24h",
+		"last 15m",
+		"Scope-fair recent-event sample",
+		"not an importance ranking",
+	} {
 		if !strings.Contains(usage, claim) {
 			t.Errorf("usage output does not state %q:\n%s", claim, usage)
 		}

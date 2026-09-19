@@ -83,6 +83,8 @@ Rain keeps an event while it is inside the selected window and defaults to ~24h~
 - ~15m~ ~30m~ ~60m~ ~6h~ ~24h~ ~7d~
 - ~available~ shows the newest 100 events per repository the last refresh
   returned, which is not complete repository history.
+Interesting Now samples the last 15 minutes as a Scope-fair recent-event sample,
+not an importance ranking.
 
 A rate-limit constraint applies, and research into restraint and training continues.
 `),
@@ -169,7 +171,8 @@ func TestHelpRainWindowCheckFailsOnADroppedOrReorderedPreset(t *testing.T) {
 	t.Parallel()
 
 	complete := "windows 15m, 30m, 60m, 6h, 24h, 7d, available; a session starts at 24h; " +
-		"available keeps the newest 100 events per repository, not complete repository history"
+		"available keeps the newest 100 events per repository, not complete repository history; " +
+		"Interesting Now samples the last 15m as a Scope-fair recent-event sample, not an importance ranking"
 	if problems := helpRainWindowProblems(complete); len(problems) != 0 {
 		t.Errorf("a complete help text failed the Rain window check: %v", problems)
 	}
@@ -412,7 +415,8 @@ func TestHelpRainWindowCheckReadsThePresetListNotTheProse(t *testing.T) {
 
 	shadowed := "the widest choice is available. " +
 		"windows 15m, 30m, 60m, 6h, 24h, 7d, available; a session starts at 24h; " +
-		"available keeps the newest 100 events per repository, not complete repository history"
+		"available keeps the newest 100 events per repository, not complete repository history; " +
+		"Interesting Now samples the last 15m as a Scope-fair recent-event sample, not an importance ranking"
 	if problems := helpRainWindowProblems(shadowed); len(problems) != 0 {
 		t.Errorf("prose naming available before the preset list failed the check: %v", problems)
 	}

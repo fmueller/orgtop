@@ -1,13 +1,13 @@
 ---
 id: T-112-disclose-the-fixed-interesting-now-recency-window
 title: Disclose the fixed Interesting Now recency window
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.2.0.md#interesting-now-strip
 dependencies:
     - T-064-render-the-interesting-now-strip
     - T-103-extend-rain-windows-for-quiet-repositories
-updated_at: "2026-09-19T08:53:27Z"
+updated_at: "2026-09-19T18:36:06Z"
 ---
 
 # T-112-disclose-the-fixed-interesting-now-recency-window Disclose the fixed Interesting Now recency window
@@ -47,3 +47,5 @@ Record boundary fixtures, commands, and inspected copy.
 
 - Required before distribution parity and final v0.2.0 release readiness.
 - This changes disclosure, not event selection or Rain lifetime.
+- 2026-09-19T18:35:53Z: verification pass
+- 2026-09-19T18:36:06Z: Fixed Interesting Now disclosure is implemented, rendered/manual-tested, independently reviewed with all findings resolved, verified pass, and covered by the full repository gate.

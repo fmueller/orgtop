@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-updated_at: "2026-09-19T17:37:41Z"
+updated_at: "2026-09-19T18:36:12Z"
 active_spec_version: v0.2.0
 active_spec_path: specs/v0.2.0.md
 current_task: ""
@@ -8,8 +8,8 @@ current_task_title: ""
 status_summary: blocked
 blockers:
     - 'T-074-provision-and-validate-distribution-repositories: T-074 final rehearsal is blocked until T-107''s retry-safe asset upload and T-105''s protected-ledger poll fix are complete; T-074 remains incomplete'
-next_action: Resolve blocker on T-074-provision-and-validate-distribution-repositories
-last_verification_result: pass for T-105-complete-the-protected-ledger-step-when-its-event at 2026-09-19T17:34:56Z
+next_action: 'Start task T-113-correct-readme-view-selection-and-detail-control: Correct README view selection and detail-control guidance'
+last_verification_result: pass for T-112-disclose-the-fixed-interesting-now-recency-window at 2026-09-19T18:35:53Z
 relevant_artifacts: []
 continuation_notes:
     - This repository is using manual Taskrail-style workflow scaffolding until the product replaces more of the bootstrap steps.
@@ -35,11 +35,11 @@ continuation_notes:
 
 ## Last Verification
 
-- pass for T-105-complete-the-protected-ledger-step-when-its-event at 2026-09-19T17:34:56Z
+- pass for T-112-disclose-the-fixed-interesting-now-recency-window at 2026-09-19T18:35:53Z
 
 ## Next Action
 
-- Resolve blocker on T-074-provision-and-validate-distribution-repositories
+- Start task T-113-correct-readme-view-selection-and-detail-control: Correct README view selection and detail-control guidance
 
 ## Relevant Artifacts
 
@@ -51,8 +51,8 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 6
+- todo: 5
 - in_progress: 0
-- completed: 106
+- completed: 107
 - blocked: 1
 - cancelled: 0

@@ -97,6 +97,10 @@ workflow refuses to publish otherwise.
   `available`; only the selected window removes it. The no-color recency
   accounting states the old items too, as
   `recency: N new · R recent · A aging · O old` or `age N/R/A/O`.
+- Rain's `Interesting Now` strip now discloses its independent fixed last-15-minute
+  Scope-fair recent-event sample, rather than leaving its shown/hidden/omitted
+  accounting or empty state open to an importance-ranking interpretation. Narrow
+  layouts retain the `I15m:` forms and the `q I15+` overflow hint.
 - `--help` now lists the Rain windows beneath the flags, with the preset a
   session starts at and what `available` covers, so the bound is readable
   without opening the README.

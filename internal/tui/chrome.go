@@ -397,12 +397,11 @@ const quitHint = "q quit"
 // renderStripFooter renders the collapsed Rain footer: RG-007's strip
 // accounting in place of the optional hints, ahead of the mandatory quit hint.
 // The compact rung spends its separator on the counts, because that is what
-// lets the worst-case accounting and the quit hint share the seventeen cells
-// RG-007 names: the collapsed strip shows none, hides at most the 20 it stores,
-// and omits at most the 480 the retained 500 leave, so `I:0/20/480` and
-// `q quit` fit exactly. Below
-// that the explicit overflow indicator marks the entries the size is holding
-// back, which `2` reaches in Stream.
+// lets the worst-case accounting and the quit hint share twenty cells: the
+// collapsed strip shows none, hides at most the 20 it stores, and omits at most
+// the 480 the retained 500 leave, so `I15m:0/20/480 q quit` fits exactly. Below
+// that the explicit `I15+` overflow indicator marks the entries the size is
+// holding back, which `2` reaches in Stream.
 func renderStripFooter(accounting stripAccounting, width int) string {
 	overflow := quitHint
 	if accounting.overflowing() {

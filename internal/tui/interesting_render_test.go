@@ -63,8 +63,8 @@ func stripLinesOf(t *testing.T, scopes domain.ScopeSet, retained []domain.EventE
 }
 
 // TestInterestingStripRendersTitleAndVisibleEntries guards RG-007's full-height
-// strip: one title stating the disjoint accounting and the first five stored
-// entries in stored order beneath it.
+// strip: one title disclosing the fixed window and disjoint accounting, and the
+// first five stored entries in stored order beneath it.
 func TestInterestingStripRendersTitleAndVisibleEntries(t *testing.T) {
 	repository := "acme/api"
 	scopes := stripRenderScopes(t, repository)
@@ -77,7 +77,7 @@ func TestInterestingStripRendersTitleAndVisibleEntries(t *testing.T) {
 	if got, want := len(lines), 6; got != want {
 		t.Fatalf("the strip rendered %d lines, want %d:\n%v", got, want, lines)
 	}
-	if got, want := plain(lines[0]), "Interesting Now: 5 shown · 3 hidden · 0 omitted"; got != want {
+	if got, want := plain(lines[0]), "Interesting Now (last 15m): 5 shown · 3 hidden · 0 omitted"; got != want {
 		t.Fatalf("the strip title is %q, want %q", got, want)
 	}
 	for index := range 5 {
@@ -226,7 +226,7 @@ func TestInterestingStripCountOnlyLineAtFourRows(t *testing.T) {
 	if got, want := len(lines), 1; got != want {
 		t.Fatalf("the collapsed strip rendered %d lines, want %d:\n%v", got, want, lines)
 	}
-	if got, want := plain(lines[0]), "interesting: 0 shown/8 hidden/0 omitted"; got != want {
+	if got, want := plain(lines[0]), "interesting (last 15m): 0 shown/8 hidden/0 omitted"; got != want {
 		t.Fatalf("the count-only line is %q, want %q", got, want)
 	}
 }
@@ -239,15 +239,78 @@ func TestInterestingStripEmptyState(t *testing.T) {
 	scopes := stripRenderScopes(t, repository)
 	retained := []domain.EventEvidence{stripEvidence(t, "old", repository, time.Hour)}
 
-	lines := stripLinesOf(t, scopes, retained, wideWidth, 8)
-	if got, want := len(lines), 1; got != want {
-		t.Fatalf("the empty strip rendered %d lines, want %d:\n%v", got, want, lines)
-	}
-	if got, want := plain(lines[0]), "Interesting Now: no recent activity"; got != want {
-		t.Fatalf("the empty strip line is %q, want %q", got, want)
+	for _, vector := range []struct {
+		width int
+		want  string
+	}{
+		{width: wideWidth, want: "Interesting Now (last 15m): no recent activity"},
+		{width: 40, want: "I15m: no recent activity"},
+		{width: 12, want: "I15m: none"},
+	} {
+		lines := stripLinesOf(t, scopes, retained, vector.width, 8)
+		if got, want := len(lines), 1; got != want {
+			t.Fatalf("at width %d the empty strip rendered %d lines, want %d:\n%v", vector.width, got, want, lines)
+		}
+		if got := plain(lines[0]); got != vector.want {
+			t.Errorf("at width %d the empty strip line is %q, want %q", vector.width, got, vector.want)
+		}
 	}
 	if lines := stripLinesOf(t, scopes, retained, wideWidth, 3); len(lines) != 0 {
 		t.Errorf("the empty strip took %d rows below four available, want none:\n%v", len(lines), lines)
+	}
+}
+
+// TestRainInterestingDisclosureAtFortyByTen guards RG-007 and FR-011: the
+// supported 40x10 layout uses the compact fixed-window disclosure, retains all
+// three disjoint counts, and keeps the mandatory quit hint.
+func TestRainInterestingDisclosureAtFortyByTen(t *testing.T) {
+	repository := "acme/api"
+	scopes := stripRenderScopes(t, repository)
+	var retained []domain.EventEvidence
+	for index := range 8 {
+		retained = append(retained, stripEvidence(t, fmt.Sprintf("e%02d", index), repository, time.Duration(index)*time.Minute))
+	}
+
+	model := stripModel(t, scopes, retained, narrowWidth, narrowHeight)
+	content := plain(model.render())
+	assertFits(t, model.render(), narrowWidth, narrowHeight)
+	if !strings.Contains(content, "I15m:") {
+		t.Fatalf("the 40x10 Rain render does not disclose the fixed strip window:\n%s", content)
+	}
+	for _, want := range []string{"shown", "hidden", "omitted", quitHint} {
+		if !strings.Contains(content, want) {
+			t.Errorf("the 40x10 Rain render does not contain %q:\n%s", want, content)
+		}
+	}
+}
+
+// TestRainInterestingDisclosureSurvivesPauseAndStale guards RG-007's temporal
+// semantics: pause freezes the field only, and a failed refresh marks the
+// retained snapshot stale without changing the strip's fixed-window disclosure.
+func TestRainInterestingDisclosureSurvivesPauseAndStale(t *testing.T) {
+	repository := "acme/api"
+	scopes := stripRenderScopes(t, repository)
+	retained := []domain.EventEvidence{stripEvidence(t, "fresh", repository, time.Minute)}
+	model := stripModel(t, scopes, retained, wideWidth, 14)
+
+	model, _ = apply(t, model, press("p"))
+	if !model.rain.paused {
+		t.Fatal("Rain did not pause")
+	}
+	for _, state := range []struct {
+		name      string
+		freshness Freshness
+	}{
+		{name: "paused", freshness: FreshnessCurrent},
+		{name: "stale", freshness: FreshnessStale},
+	} {
+		t.Run(state.name, func(t *testing.T) {
+			model.state.Freshness = state.freshness
+			content := plain(model.render())
+			if !strings.Contains(content, "Interesting Now (last 15m):") {
+				t.Fatalf("the %s Rain render does not disclose the fixed strip window:\n%s", state.name, content)
+			}
+		})
 	}
 }
 
@@ -276,9 +339,9 @@ func TestInterestingStripAccountingShortensWithWidth(t *testing.T) {
 		width int
 		want  string
 	}{
-		{width: wideWidth, want: "Interesting Now: 5 shown · 3 hidden · 0 omitted"},
-		{width: 34, want: "I: 5 shown 3 hidden 0 omitted"},
-		{width: 12, want: "I:5/3/0"},
+		{width: wideWidth, want: "Interesting Now (last 15m): 5 shown · 3 hidden · 0 omitted"},
+		{width: 34, want: "I15m: 5 shown 3 hidden 0 omitted"},
+		{width: 12, want: "I15m:5/3/0"},
 	} {
 		lines := renderedStrip(strip, scopes.Tokens(), vector.width, 12)
 		if got := plain(lines[0]); got != vector.want {
@@ -304,7 +367,7 @@ func TestRainBodySplitsRowsBetweenFieldAndStrip(t *testing.T) {
 		t.Fatalf("the Rain body rendered %d lines, want %d:\n%v", got, want, body)
 	}
 	title := plain(body[len(body)-6])
-	if !strings.HasPrefix(title, "Interesting Now: 5 shown") {
+	if !strings.HasPrefix(title, "Interesting Now (last 15m): 5 shown") {
 		t.Fatalf("the strip title line is %q, want the Interesting Now accounting", title)
 	}
 }
@@ -323,7 +386,7 @@ func TestRainFooterCarriesStripAccountingWhenCollapsed(t *testing.T) {
 
 	lines := strings.Split(model.render(), "\n")
 	footer := plain(lines[len(lines)-1])
-	if !strings.Contains(footer, "interesting: 0 shown/8 hidden/0 omitted") {
+	if !strings.Contains(footer, "interesting (last 15m): 0 shown/8 hidden/0 omitted") {
 		t.Fatalf("the collapsed Rain footer is %q, want the strip accounting", footer)
 	}
 	if !strings.HasSuffix(footer, "q quit") {
@@ -337,7 +400,7 @@ func TestRainFooterCarriesStripAccountingWhenCollapsed(t *testing.T) {
 }
 
 // TestRainFooterMarksHiddenStripEntriesWhenNarrow guards RG-007's overflow
-// indicator: between six and sixteen cells the collapsed footer renders `q I+`
+// indicator: between six and nineteen cells the collapsed footer renders `q I15+`
 // while any strip entry is hidden or omitted.
 func TestRainFooterMarksHiddenStripEntriesWhenNarrow(t *testing.T) {
 	repository := "acme/api"
@@ -349,8 +412,29 @@ func TestRainFooterMarksHiddenStripEntriesWhenNarrow(t *testing.T) {
 	model := stripModel(t, scopes, retained, 12, 6)
 
 	lines := strings.Split(model.render(), "\n")
-	if got, want := plain(lines[len(lines)-1]), "q I+"; got != want {
+	if got, want := plain(lines[len(lines)-1]), "q I15+"; got != want {
 		t.Fatalf("the narrow collapsed footer is %q, want %q", got, want)
+	}
+}
+
+// TestRainFooterDisclosureBoundaryGuardsWorstCaseCounts guards RG-007's
+// compact footer boundary: the maximum prepared counts need twenty cells for
+// the disclosed form plus `q quit`, so widths 17-19 retain the explicit I+
+// overflow route and width 20 is the first width that can state all counts.
+func TestRainFooterDisclosureBoundaryGuardsWorstCaseCounts(t *testing.T) {
+	accounting := stripAccounting{shown: 0, hidden: 20, omitted: 480}
+
+	for _, vector := range []struct {
+		width int
+		want  string
+	}{
+		{width: 17, want: "q I15+"},
+		{width: 19, want: "q I15+"},
+		{width: 20, want: "I15m:0/20/480 q quit"},
+	} {
+		if got := plain(renderStripFooter(accounting, vector.width)); got != vector.want {
+			t.Errorf("at width %d the worst-case strip footer is %q, want %q", vector.width, got, vector.want)
+		}
 	}
 }
 
@@ -400,7 +484,7 @@ func TestSuccessfulRefreshPublishesTheStrip(t *testing.T) {
 		t.Fatalf("the published refresh stored %d strip entries, want %d", got, want)
 	}
 	body := strings.Join(rainBodyLines(model.render()), "\n")
-	if !strings.Contains(plain(body), "Interesting Now: 1 shown") {
+	if !strings.Contains(plain(body), "Interesting Now (last 15m): 1 shown") {
 		t.Fatalf("the Rain body carries no published strip:\n%s", plain(body))
 	}
 }
@@ -454,13 +538,13 @@ func TestInterestingStripFillsAnUnboundedBody(t *testing.T) {
 	if len(lines) != rows {
 		t.Fatalf("the unbounded strip rendered %d lines, want %d", len(lines), rows)
 	}
-	if got, want := plain(lines[0]), "Interesting Now: 5 shown · 3 hidden · 0 omitted"; got != want {
+	if got, want := plain(lines[0]), "Interesting Now (last 15m): 5 shown · 3 hidden · 0 omitted"; got != want {
 		t.Errorf("the unbounded strip title is %q, want %q", got, want)
 	}
 
 	body := newRain().reconciled(scopes, stripSnapshot(scopes, retained...), stripBase).
 		render(State{Scopes: scopes, Freshness: FreshnessCurrent}, strip, charsetUTF8, capabilityTruecolor, wideWidth, unbounded)
-	if !strings.Contains(plain(body), "Interesting Now: 5 shown") {
+	if !strings.Contains(plain(body), "Interesting Now (last 15m): 5 shown") {
 		t.Errorf("an unbounded Rain body renders no strip:\n%s", plain(body))
 	}
 }

@@ -19,15 +19,24 @@ const (
 	stripCollapse   = stripFieldFloor + stripTitleRow
 )
 
-// stripEmptyState is the explicit line the strip renders when the retained
-// snapshot carries no eligible event at all. It states the absence rather than
-// leaving the reader to read an empty area as a rendering fault.
-const stripEmptyState = "Interesting Now: no recent activity"
+// stripEmptyState is the explicit wide line the strip renders when the retained
+// snapshot carries no eligible event at all. It states both the fixed sample
+// window and its absence rather than leaving the reader to read an empty area
+// as a rendering fault.
+const stripEmptyState = "Interesting Now (last 15m): no recent activity"
+
+// stripEmptyForms keeps the fixed-window disclosure through the empty-state
+// ladder before the caller's final best-effort truncation below six cells.
+var stripEmptyForms = []string{
+	stripEmptyState,
+	"I15m: no recent activity",
+	"I15m: none",
+}
 
 // stripOverflowHint is RG-007's explicit indicator that the collapsed strip is
 // holding entries the size cannot show. `2` reaches every retained eligible
 // source event in Stream.
-const stripOverflowHint = "q I+"
+const stripOverflowHint = "q I15+"
 
 // rows returns how many of the available body rows the strip takes and how many
 // stored entries it renders in them, applying RG-007's height collapse: no
@@ -77,10 +86,16 @@ func (s interesting) render(tokens map[domain.ScopeIdentity]string, set charset,
 
 // titleLine returns the line above the rendered entries: the explicit empty
 // state, the count-only line of a body that has room for nothing else, or the
-// accounting title of the entries beneath it.
+// accounting title of the entries beneath it. The empty-state ladder has its
+// own forms because it has no counts to spell.
 func (s interesting) titleLine(shown, width int) string {
 	if s.counts.eligible == 0 {
-		return stripEmptyState
+		for _, form := range stripEmptyForms {
+			if fits(lipgloss.Width(form), width) {
+				return form
+			}
+		}
+		return stripEmptyForms[len(stripEmptyForms)-1]
 	}
 	forms := stripTitleForms
 	if shown == 0 {
@@ -109,7 +124,7 @@ func (s interesting) accounting(shown int) stripAccounting {
 }
 
 // overflowing reports whether the strip is holding entries the current size
-// does not render, which is what RG-007's `I+` indicator marks.
+// does not render, which is what RG-007's `I15+` indicator marks.
 func (a stripAccounting) overflowing() bool { return a.hidden+a.omitted > 0 }
 
 // stripAccountingForms spells the accounting from its full form down to its
@@ -119,17 +134,17 @@ type stripAccountingForms []string
 
 // stripTitleForms names the strip above its entries.
 var stripTitleForms = stripAccountingForms{
-	"Interesting Now: %d shown" + separator + "%d hidden" + separator + "%d omitted",
-	"I: %d shown %d hidden %d omitted",
-	"I:%d/%d/%d",
+	"Interesting Now (last 15m): %d shown" + separator + "%d hidden" + separator + "%d omitted",
+	"I15m: %d shown %d hidden %d omitted",
+	"I15m:%d/%d/%d",
 }
 
 // stripCountForms names the accounting where the strip has no entry row of its
 // own: the count-only body line and the collapsed Rain footer.
 var stripCountForms = stripAccountingForms{
-	"interesting: %d shown/%d hidden/%d omitted",
-	"I: %d shown %d hidden %d omitted",
-	"I:%d/%d/%d",
+	"interesting (last 15m): %d shown/%d hidden/%d omitted",
+	"I15m: %d shown %d hidden %d omitted",
+	"I15m:%d/%d/%d",
 }
 
 // line returns the widest spelling of the accounting that fits the width, and

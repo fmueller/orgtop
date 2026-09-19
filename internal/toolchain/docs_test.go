@@ -79,20 +79,35 @@ const rainWindowsSectionID = "rain-windows"
 var documentedRainWindows = []string{"`15m`", "`30m`", "`60m`", "`6h`", "`24h`", "`7d`", "`available`"}
 
 // documentedRainWindowClaims are the claims the section states in prose: which
-// preset a session starts at, and what `available` does and does not mean. The
-// last two keep the honest bound RG-006 requires, so the documentation cannot
-// quietly promise complete repository history for a window that only ever shows
-// the bounded snapshot the source returned.
-var documentedRainWindowClaims = []string{"defaults to `24h`", "newest 100", "not complete repository history"}
+// preset a session starts at, what `available` does and does not mean, and what
+// the separate Interesting Now sample means. The bound and sample claims keep
+// the documentation from promising complete history or an importance ranking
+// for a bounded snapshot.
+var documentedRainWindowClaims = []string{
+	"defaults to `24h`",
+	"newest 100",
+	"not complete repository history",
+	"last 15 minutes",
+	"Scope-fair recent-event sample",
+	"not an importance ranking",
+}
 
-// helpRainWindowClaims are the same two honest bounds stated without README's
-// markdown, so the binary's own help and the user document cannot drift apart:
+// helpRainWindowClaims are the same honest bounds and Interesting Now meaning
+// stated without README's markdown, so the binary's own help and the user
+// document cannot drift apart:
 // FR-012 promises the presets and the current-snapshot meaning of `available`
 // in both surfaces, and a reader who never opens README still gets them. The
 // starting preset is claimed as the phrase rather than as the bare `24h`, which
 // the preset list already carries: help that named the presets but stopped
 // saying which one a session opens at would otherwise pass.
-var helpRainWindowClaims = []string{"starts at 24h", "newest 100", "not complete repository history"}
+var helpRainWindowClaims = []string{
+	"starts at 24h",
+	"newest 100",
+	"not complete repository history",
+	"last 15m",
+	"Scope-fair recent-event sample",
+	"not an importance ranking",
+}
 
 // streamColumnsSectionID marks the section that describes Stream's columns. The
 // column checks are scoped to it, because names as ordinary as "age" and
@@ -508,6 +523,47 @@ func helpRainWindowProblems(usage string) []string {
 		}
 	}
 	return problems
+}
+
+// TestInterestingNowSpecUsesTheDisclosedCollapseForms keeps the normative
+// RG-007 section in step with the shipped renderer. The section is bounded by
+// its stable heading anchors so older references remain valid while its exact
+// presentation contract can evolve without leaving contradictory forms behind.
+func TestInterestingNowSpecUsesTheDisclosedCollapseForms(t *testing.T) {
+	spec := readFile(t, filepath.Join(repoRoot, "specs", activeSpecVersion(t)+".md"))
+	start := strings.Index(spec, "### RG-007 Interesting Now Selection Contract")
+	if start < 0 {
+		t.Fatal("the active spec does not contain the RG-007 boundary")
+	}
+	end := strings.Index(spec[start:], "### RG-008 Shared Visual Semantics Contract")
+	if end < 0 {
+		t.Fatal("the active spec does not contain the RG-007 and RG-008 boundaries")
+	}
+	section := spec[start : start+end]
+
+	for _, form := range []string{
+		"Interesting Now (last 15m): D shown · H hidden · O omitted",
+		"I15m: D shown H hidden O omitted",
+		"I15m:D/H/O",
+		"q I15+",
+		"widths 20 and above fit worst-case compact accounting",
+	} {
+		if !strings.Contains(section, form) {
+			t.Errorf("RG-007 does not state the amended form %q", form)
+		}
+	}
+	for _, stale := range []string{
+		"Interesting Now: D shown · H hidden · O omitted",
+		"I: D shown H hidden O omitted",
+		"I:D/H/O",
+		"I:0/20/480",
+		"q I+",
+		"6-16-cell case uses `I+`",
+	} {
+		if strings.Contains(section, stale) {
+			t.Errorf("RG-007 still contains the superseded form %q", stale)
+		}
+	}
 }
 
 // TestDocumentationDescribesTheShippedSurface runs every check over the

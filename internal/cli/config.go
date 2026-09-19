@@ -75,6 +75,8 @@ const rainWindowHelp = `Rain windows:
         a session starts at 24h; each finite window drops an event at that exact age
         available keeps every event of the last refresh, which is the newest 100
         events per repository GitHub returned, not complete repository history
+        Interesting Now samples the last 15m as a Scope-fair recent-event sample,
+        not an importance ranking
 `
 
 // Config is the validated launch configuration.

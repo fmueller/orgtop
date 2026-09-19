@@ -271,6 +271,19 @@ minutes is drawn at the faintest emphasis but stays in the field under `6h`,
 without distinct intensity is given the same information as text, as
 `recency: 1 new · 1 recent · 1 aging · 1 old`.
 
+The separate `Interesting Now` strip samples the last 15 minutes as a
+Scope-fair recent-event sample, not an importance ranking.
+
+### Interesting Now
+
+Rain's `Interesting Now` strip is a bounded Scope-fair recent-event sample from
+the last 15 minutes (`0 <= age < 15m`). It is direct recent activity, not an
+importance ranking, anomaly signal, or complete-history feed. Its wide title
+states `Interesting Now (last 15m)` and accounts for shown, retained-hidden, and
+capacity-omitted entries. At narrower widths it uses `I15m:` forms; a collapsed
+strip uses `q I15+` when entries are hidden or omitted, and `2` opens Stream where
+every retained eligible event remains reachable.
+
 ### Controls
 
 | Key | Action |
