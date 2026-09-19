@@ -9,21 +9,25 @@
 happening across the repositories you care about, without opening a browser
 dashboard.
 
+<!-- docs:view-selection -->
 OrgTop shows recent activity for an explicitly selected set of GitHub
-repositories in two views: an Overview of per-repository counts and a Stream of
-individual events. It reads; it never writes to GitHub, and it stores no
-credential of its own.
+repositories. It reads; it never writes to GitHub, and it stores no credential
+of its own.
 
+### Views
+
+OrgTop has three primary views: Overview summarizes each Scope, Stream lists
+individual events and opens local event detail, and Rain shows an ambient
+activity field with its `Interesting Now` strip.
+
+<!-- docs:overview-counts -->
 ### Overview counts
 
 Overview reports direct counts from the retained normalized event snapshot for
 each repository or path Scope. `N activity` counts confirmed member events;
 `U unknown` is separate coverage that keeps that activity count a lower bound.
 These are retained snapshot event counts, not rates or fixed-window totals. A
-zero Scope row says `No activity in retained snapshot`: it is a bounded
-observation, not a claim that older repository history is empty. Each refresh
-fetches at most the newest 100 events per repository and retains the newest 500
-unique events globally, so the snapshot does not represent complete history.
+Scope row with zero confirmed activity and zero unknowns says `No activity in retained snapshot`: it is a bounded observation, not a claim that older repository history is empty. A row with unknown evidence says `No confirmed activity · U unknown`, so it is not presented as a confirmed empty Scope. Each refresh fetches at most the newest 100 events per repository and retains the newest 500 unique events globally, so the snapshot does not represent complete history.
 The PR-related count is labeled `PR event`/`PR events` (compactly `PR evt`/
 `PR evts`): it counts each pull-request event, review, and pull-request comment
 separately, even when they refer to the same PR. An unrelated issue comment is
@@ -99,6 +103,8 @@ itself; the checksum and the attestation above are the verification routes.
 ```bash
 orgtop --repo OWNER/REPOSITORY [--repo OWNER/REPOSITORY ...] [--path (PATTERN | OWNER/REPOSITORY:PATTERN) ...] [--no-cache]
 orgtop --path OWNER/REPOSITORY:PATTERN [--path OWNER/REPOSITORY:PATTERN ...] [--repo OWNER/REPOSITORY ...] [--no-cache]
+orgtop (--org ORGANIZATION | --repo 'ORGANIZATION/*') [...] [--repo OWNER/REPOSITORY ...] [--path OWNER/REPOSITORY:PATTERN ...] [--include-archived] [--include-forks] [--no-cache]
+orgtop (--org ORGANIZATION | --repo 'ORGANIZATION/*') [...] --repo OWNER/REPOSITORY [--repo OWNER/REPOSITORY ...] --path PATTERN [--path PATTERN ...] [--path OWNER/REPOSITORY:PATTERN ...] [--include-archived] [--include-forks] [--no-cache]
 orgtop --reset-cache
 orgtop --version
 ```
@@ -109,10 +115,29 @@ Repeat `--repo` to select several repositories:
 orgtop --repo acme/backend --repo acme/frontend
 ```
 
-Every repository is named exactly as `owner/repository`. There is no glob or
-organization-wide repository selection: a launch without a selection, with a
-malformed identifier, or with glob syntax in a repository name exits before the
-terminal UI with usage and a concise cause, and makes no network request.
+Every exact repository is named `owner/repository`. A launch without a selection,
+with a malformed identifier, or with unsupported glob syntax in an exact
+repository name exits before the terminal UI with usage and a concise cause, and
+makes no network request.
+
+<!-- docs:organization-selection -->
+### Organization selection
+
+Use `--org ORGANIZATION` or the `--repo 'ORGANIZATION/*'` alias to select an
+organization's eligible repositories without naming each one. Exact repository,
+qualified path, and organization selections may be mixed:
+
+```bash
+orgtop --org acme --repo other/api --path 'other/api:src/**'
+```
+
+`--include-archived` and `--include-forks` widen every organization selector;
+they do not change exact repository or path Scopes. A selection accepts at most
+20 distinct repositories and 100 total Scopes. Exact selections keep capacity
+first; organization expansion truncates deterministically when the remaining
+capacity is exhausted, reports omitted eligible repositories (and when
+applicable that more may remain), and does not present the retained subset as the
+whole organization.
 
 `--path` narrows a selection to the files an event changed. A bare pattern
 filters every `--repo` selection, so the repositories become filtered selections
@@ -272,7 +297,8 @@ without distinct intensity is given the same information as text, as
 `recency: 1 new · 1 recent · 1 aging · 1 old`.
 
 The separate `Interesting Now` strip samples the last 15 minutes as a
-Scope-fair recent-event sample, not an importance ranking.
+Scope-fair recent-event sample, not an importance ranking. Its fixed 15-minute
+window is independent of Rain's selected window and its `-`/`+` controls.
 
 ### Interesting Now
 
@@ -284,7 +310,12 @@ capacity-omitted entries. At narrower widths it uses `I15m:` forms; a collapsed
 strip uses `q I15+` when entries are hidden or omitted, and `2` opens Stream where
 every retained eligible event remains reachable.
 
+<!-- docs:stream-controls -->
 ### Controls
+
+Stream uses a visible focus marker so arrow-key and page-key navigation is
+observable even when the viewport stays still. `enter detail` opens local event
+detail for the focused event; `esc back` returns to that event and its viewport.
 
 | Key | Action |
 |---|---|

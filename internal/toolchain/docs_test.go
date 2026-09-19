@@ -1,6 +1,7 @@
 package toolchain
 
 import (
+	"fmt"
 	"io"
 	"path/filepath"
 	"regexp"
@@ -8,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/fmueller/orgtop/internal/cli"
+	"github.com/fmueller/orgtop/internal/domain"
 )
 
 // documentSet is the documentation FR-011 and FR-012 govern, keyed by the
@@ -62,8 +64,29 @@ var deferredClaimsBySpec = map[string][]string{
 // shell to the operator who reads it.
 var documentedControls = []string{
 	"`1`", "`2`", "`3`", "`tab`", "`up`", "`down`", "`pgup`", "`pgdown`",
+	"`enter`", "`esc`",
 	"`-`", "`+`", "`p`", "`[`", "`]`", "`q`", "`ctrl+c`",
 }
+
+// viewSelectionSectionID marks the section that introduces the primary views.
+const viewSelectionSectionID = "view-selection"
+
+// overviewCountsSectionID marks the section that explains Overview's event and
+// current-PR evidence labels and the bounded snapshot they describe.
+const overviewCountsSectionID = "overview-counts"
+
+// organizationSelectionSectionID marks the section that documents organization
+// selectors, their composition with exact selections, and their capacities.
+const organizationSelectionSectionID = "organization-selection"
+
+// streamControlsSectionID marks the section that documents Stream focus and its
+// local detail controls.
+const streamControlsSectionID = "stream-controls"
+
+// mixedOrganizationSelectionExamplePattern identifies a runnable example that
+// combines an organization selector with an exact repository and path selector
+// without freezing the example's owner or repository names.
+var mixedOrganizationSelectionExamplePattern = regexp.MustCompile(`(?m)^\s*orgtop\s+--org\s+\S+\s+--repo\s+\S+\s+--path\s+\S+.*$`)
 
 // rainWindowsSectionID marks the section that documents Rain's recency windows.
 // The preset checks are scoped to it, because durations as ordinary as `6h` also
@@ -90,6 +113,7 @@ var documentedRainWindowClaims = []string{
 	"last 15 minutes",
 	"Scope-fair recent-event sample",
 	"not an importance ranking",
+	"independent of Rain's selected window",
 }
 
 // helpRainWindowClaims are the same honest bounds and Interesting Now meaning
@@ -353,6 +377,117 @@ func pollingAndControlProblems(readme string) []string {
 	return problems
 }
 
+// viewSelectionProblems guards the v0.2.0 primary-view inventory and rejects the
+// pre-release README's claim that the product has only two views.
+func viewSelectionProblems(readme string) []string {
+	section, ok := documentSection(readme, viewSelectionSectionID)
+	if !ok {
+		return []string{"there is no " + sectionMarker(viewSelectionSectionID) + " section introducing the primary views"}
+	}
+
+	lowered := strings.ToLower(section)
+	var problems []string
+	for _, claim := range []string{"three primary views", "overview", "stream", "local event detail", "rain", "interesting now"} {
+		if !strings.Contains(lowered, claim) {
+			problems = append(problems, "the view inventory does not state "+claim)
+		}
+	}
+	for _, stale := range []string{"two views", "organization-wide repository selection"} {
+		if strings.Contains(strings.ToLower(readme), stale) {
+			problems = append(problems, "the README still contains the obsolete claim "+stale)
+		}
+	}
+	return problems
+}
+
+// overviewCountsProblems guards the revised event/evidence labels and the
+// retained-snapshot bounds that make Overview's numbers honest observations.
+func overviewCountsProblems(readme string) []string {
+	section, ok := documentSection(readme, overviewCountsSectionID)
+	if !ok {
+		return []string{"there is no " + sectionMarker(overviewCountsSectionID) + " section explaining Overview counts"}
+	}
+
+	lowered := strings.ToLower(section)
+	var problems []string
+	for _, claim := range []string{
+		"pr event",
+		"current pr evidence",
+		"retained snapshot",
+		"newest 100",
+		"newest 500",
+		"no activity in retained snapshot",
+		"no confirmed activity · u unknown",
+		"complete history",
+		"distinct, open, or waiting",
+	} {
+		if !strings.Contains(lowered, claim) {
+			problems = append(problems, "the Overview counts section does not state "+claim)
+		}
+	}
+	return problems
+}
+
+// organizationSelectionProblems guards the closed RG-010 user contract without
+// coupling the test to the README's heading names or paragraph layout.
+func organizationSelectionProblems(readme string) []string {
+	section, ok := documentSection(readme, organizationSelectionSectionID)
+	if !ok {
+		return []string{"there is no " + sectionMarker(organizationSelectionSectionID) + " section documenting organization selection"}
+	}
+
+	lowered := strings.ToLower(section)
+	var problems []string
+	for _, claim := range []string{
+		"--org",
+		"--repo 'organization/*'",
+		"--include-archived",
+		"--include-forks",
+		"mixed",
+		fmt.Sprintf("%d distinct repositories", domain.MaxSelectedRepositories),
+		fmt.Sprintf("%d total scopes", domain.MaxScopes),
+		"deterministic",
+		"truncat",
+		"omitt",
+		"more may remain",
+		"whole organization",
+	} {
+		if !strings.Contains(lowered, strings.ToLower(claim)) {
+			problems = append(problems, "the organization selection section does not state "+claim)
+		}
+	}
+	if !mixedOrganizationSelectionExamplePattern.MatchString(section) {
+		problems = append(problems, "the organization selection section does not include a mixed --org/--repo/--path example")
+	}
+	return problems
+}
+
+// streamDetailControlProblems guards the T-108/T-111 interaction contract:
+// focus is visible, Enter opens local detail, and Escape returns to the same
+// focused event and viewport.
+func streamDetailControlProblems(readme string) []string {
+	section, ok := documentSection(readme, streamControlsSectionID)
+	if !ok {
+		return []string{"there is no " + sectionMarker(streamControlsSectionID) + " section documenting Stream controls"}
+	}
+
+	lowered := strings.ToLower(section)
+	var problems []string
+	for _, claim := range []string{
+		"visible focus",
+		"focus marker",
+		"enter detail",
+		"esc back",
+		"event detail",
+		"returns to that event and its viewport",
+	} {
+		if !strings.Contains(lowered, claim) {
+			problems = append(problems, "the Stream controls section does not state "+claim)
+		}
+	}
+	return problems
+}
+
 // contributorClaimProblems guards the contributor-facing claims. They are
 // satisfied by any document in the set, so the local gate command can live in
 // CONTRIBUTING.md with the rest of the contributor material.
@@ -576,17 +711,21 @@ func TestDocumentationDescribesTheShippedSurface(t *testing.T) {
 	docs := readDocumentationSet(t)
 	readme := docs[userDocument]
 	checks := map[string][]string{
-		"invocation":            invocationProblems(readme, documentedInvocation(t)),
-		"credential contract":   credentialContractProblems(readme),
-		"polling and controls":  pollingAndControlProblems(readme),
-		"contributor claims":    contributorClaimProblems(docs),
-		"version and help":      versionAndHelpFlagProblems(readme),
-		"Stream columns":        streamColumnProblems(readme),
-		"Rain windows":          rainWindowProblems(readme),
-		"Rain window help":      helpRainWindowProblems(documentedInvocation(t)),
-		"path diagnostics":      pathDiagnosticProblems(readme, documentedPathDiagnostics(t)),
-		"deferred capabilities": deferredClaimProblems(readme, deferredClaims(t, activeSpecVersion(t))),
-		"stale claims":          staleClaimProblems(readme),
+		"invocation":             invocationProblems(readme, documentedInvocation(t)),
+		"credential contract":    credentialContractProblems(readme),
+		"polling and controls":   pollingAndControlProblems(readme),
+		"view selection":         viewSelectionProblems(readme),
+		"Overview counts":        overviewCountsProblems(readme),
+		"organization selection": organizationSelectionProblems(readme),
+		"Stream detail controls": streamDetailControlProblems(readme),
+		"contributor claims":     contributorClaimProblems(docs),
+		"version and help":       versionAndHelpFlagProblems(readme),
+		"Stream columns":         streamColumnProblems(readme),
+		"Rain windows":           rainWindowProblems(readme),
+		"Rain window help":       helpRainWindowProblems(documentedInvocation(t)),
+		"path diagnostics":       pathDiagnosticProblems(readme, documentedPathDiagnostics(t)),
+		"deferred capabilities":  deferredClaimProblems(readme, deferredClaims(t, activeSpecVersion(t))),
+		"stale claims":           staleClaimProblems(readme),
 	}
 	for name, problems := range checks {
 		for _, problem := range problems {

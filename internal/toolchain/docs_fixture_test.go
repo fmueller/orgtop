@@ -18,16 +18,49 @@ func restructuredDocs() documentSet {
 	return documentSet{
 		"README.md": inlineBackticks(`# Product
 
+<!-- docs:view-selection -->
+## Views
+
+OrgTop has three primary views: Overview summarizes each Scope, Stream lists
+events and opens local event detail, and Rain shows the ambient field with its
+Interesting Now strip.
+
+<!-- docs:overview-counts -->
+## Overview counts
+
+Overview reports PR event counts and current PR evidence from the retained snapshot.
+These are not counts of distinct, open, or waiting pull requests; a row with
+zero confirmed activity and zero unknowns says No activity in retained snapshot,
+while unknown evidence says No confirmed activity · U unknown. The source
+fetches the newest 100 events per repository and retains the newest 500 globally
+rather than promising complete history.
+
 ## Running it
 
 ~~~bash
 orgtop --repo OWNER/REPOSITORY [--repo OWNER/REPOSITORY ...] [--path (PATTERN | OWNER/REPOSITORY:PATTERN) ...] [--no-cache]
 orgtop --path OWNER/REPOSITORY:PATTERN [--path OWNER/REPOSITORY:PATTERN ...] [--repo OWNER/REPOSITORY ...] [--no-cache]
+orgtop (--org ORGANIZATION | --repo 'ORGANIZATION/*') [...] [--repo OWNER/REPOSITORY ...] [--path OWNER/REPOSITORY:PATTERN ...] [--include-archived] [--include-forks] [--no-cache]
+orgtop (--org ORGANIZATION | --repo 'ORGANIZATION/*') [...] --repo OWNER/REPOSITORY [--repo OWNER/REPOSITORY ...] --path PATTERN [--path PATTERN ...] [--path OWNER/REPOSITORY:PATTERN ...] [--include-archived] [--include-forks] [--no-cache]
 orgtop --reset-cache
 orgtop --version
 ~~~
 
 Repeat it: ~orgtop --repo acme/backend --repo acme/frontend~.
+
+<!-- docs:organization-selection -->
+## Selecting an organization
+
+Use ~--org acme~ or ~--repo 'ORGANIZATION/*'~. Exact repositories, qualified
+paths, and organization selectors can be mixed. ~--include-archived~ and
+~--include-forks~ widen every organization selector. A selection accepts at
+most 20 distinct repositories and 100 total Scopes; expansion truncates deterministically at those capacities, records omitted eligible repositories and,
+when applicable, that more may remain, and does not present the result as the
+whole organization.
+
+~~~bash
+orgtop --org acme --repo other/api --path 'other/api:src/**'
+~~~
 
 ~--version~ (or ~-v~) and ~--help~ (or ~-h~) exit at once.
 
@@ -73,7 +106,14 @@ quotes the prefix and carries no byte offset.
 
 ## Keys
 
-~1~ ~2~ ~3~ ~tab~ ~up~ ~down~ ~pgup~ ~pgdown~ ~-~ ~+~ ~p~ ~[~ ~]~ ~q~ ~ctrl+c~
+<!-- docs:stream-controls -->
+## Stream controls
+
+Stream uses a visible focus marker. ~enter detail~ opens local event detail;
+~esc back~ returns to that event and its viewport. The ~enter~ and ~esc~ keys are
+kept beside ~q quit~ at narrow widths.
+
+~1~ ~2~ ~3~ ~tab~ ~up~ ~down~ ~pgup~ ~pgdown~ ~enter~ ~esc~ ~-~ ~+~ ~p~ ~[~ ~]~ ~q~ ~ctrl+c~
 
 <!-- docs:rain-windows -->
 ## The Rain field
@@ -84,7 +124,7 @@ Rain keeps an event while it is inside the selected window and defaults to ~24h~
 - ~available~ shows the newest 100 events per repository the last refresh
   returned, which is not complete repository history.
 Interesting Now samples the last 15 minutes as a Scope-fair recent-event sample,
-not an importance ranking.
+not an importance ranking. Its fixed 15-minute window is independent of Rain's selected window and its -/+ controls.
 
 A rate-limit constraint applies, and research into restraint and training continues.
 `),
@@ -107,15 +147,19 @@ func TestRestructuredDocumentationSetSatisfiesEveryCheck(t *testing.T) {
 	docs := restructuredDocs()
 	readme := docs["README.md"]
 	for name, problems := range map[string][]string{
-		"invocation":   invocationProblems(readme, documentedInvocation(t)),
-		"credentials":  credentialContractProblems(readme),
-		"polling":      pollingAndControlProblems(readme),
-		"contributor":  contributorClaimProblems(docs),
-		"flags":        versionAndHelpFlagProblems(readme),
-		"columns":      streamColumnProblems(readme),
-		"diagnostics":  pathDiagnosticProblems(readme, documentedPathDiagnostics(t)),
-		"Rain windows": rainWindowProblems(readme),
-		"deferred":     deferredClaimProblems(readme, deferredClaims(t, "v0.2.0")),
+		"invocation":             invocationProblems(readme, documentedInvocation(t)),
+		"credentials":            credentialContractProblems(readme),
+		"polling":                pollingAndControlProblems(readme),
+		"views":                  viewSelectionProblems(readme),
+		"Overview counts":        overviewCountsProblems(readme),
+		"organization selection": organizationSelectionProblems(readme),
+		"Stream controls":        streamDetailControlProblems(readme),
+		"contributor":            contributorClaimProblems(docs),
+		"flags":                  versionAndHelpFlagProblems(readme),
+		"columns":                streamColumnProblems(readme),
+		"diagnostics":            pathDiagnosticProblems(readme, documentedPathDiagnostics(t)),
+		"Rain windows":           rainWindowProblems(readme),
+		"deferred":               deferredClaimProblems(readme, deferredClaims(t, "v0.2.0")),
 	} {
 		if len(problems) != 0 {
 			t.Errorf("restructured documentation failed the %s checks: %v", name, problems)
@@ -131,18 +175,34 @@ func TestChecksFailWhenAGuardedClaimIsDropped(t *testing.T) {
 	usage := documentedInvocation(t)
 	diagnostics := documentedPathDiagnostics(t)
 	for name, testCase := range map[string]struct {
-		drop  string
-		check func(string) []string
+		drop   string
+		mutate func(string) string
+		check  func(string) []string
 	}{
-		"a control":           {drop: "`pgdown`", check: pollingAndControlProblems},
-		"the polling label":   {drop: "POLLING", check: pollingAndControlProblems},
-		"a credential step":   {drop: "GITHUB_TOKEN", check: credentialContractProblems},
-		"the short help flag": {drop: "`-h`", check: versionAndHelpFlagProblems},
-		"a Stream column":     {drop: "`repository`", check: streamColumnProblems},
-		"a Rain window":       {drop: "`7d`", check: rainWindowProblems},
-		"the available bound": {drop: "not complete repository history", check: rainWindowProblems},
-		"the window section":  {drop: "<!-- docs:rain-windows -->", check: rainWindowProblems},
-		"the column section":  {drop: "<!-- docs:stream-columns -->", check: streamColumnProblems},
+		"a control":          {drop: "`pgdown`", check: pollingAndControlProblems},
+		"the view inventory": {drop: "three primary views", check: viewSelectionProblems},
+		"the Overview label": {drop: "PR event counts", check: overviewCountsProblems},
+		"the mixed selection example": {
+			mutate: func(readme string) string {
+				return mixedOrganizationSelectionExamplePattern.ReplaceAllString(readme, "")
+			},
+			check: organizationSelectionProblems,
+		},
+		"the selection bound":               {drop: "100 total Scopes", check: organizationSelectionProblems},
+		"the deterministic expansion claim": {drop: "truncates deterministically", check: organizationSelectionProblems},
+		"the more-may-remain claim":         {drop: "more may remain", check: organizationSelectionProblems},
+		"the Stream focus":                  {drop: "visible focus marker", check: streamDetailControlProblems},
+		"the Stream section":                {drop: "<!-- docs:stream-controls -->", check: streamDetailControlProblems},
+		"the Stream viewport return":        {drop: "returns to that event and its viewport", check: streamDetailControlProblems},
+		"the unknown empty state":           {drop: "No confirmed activity · U unknown", check: overviewCountsProblems},
+		"the polling label":                 {drop: "POLLING", check: pollingAndControlProblems},
+		"a credential step":                 {drop: "GITHUB_TOKEN", check: credentialContractProblems},
+		"the short help flag":               {drop: "`-h`", check: versionAndHelpFlagProblems},
+		"a Stream column":                   {drop: "`repository`", check: streamColumnProblems},
+		"a Rain window":                     {drop: "`7d`", check: rainWindowProblems},
+		"the available bound":               {drop: "not complete repository history", check: rainWindowProblems},
+		"the window section":                {drop: "<!-- docs:rain-windows -->", check: rainWindowProblems},
+		"the column section":                {drop: "<!-- docs:stream-columns -->", check: streamColumnProblems},
 		"a quoted diagnostic": {
 			drop:  `at byte 4: empty segment`,
 			check: func(readme string) []string { return pathDiagnosticProblems(readme, diagnostics) },
@@ -156,7 +216,12 @@ func TestChecksFailWhenAGuardedClaimIsDropped(t *testing.T) {
 			check: func(readme string) []string { return invocationProblems(readme, usage) },
 		},
 	} {
-		readme := strings.Replace(restructuredDocs()["README.md"], testCase.drop, "", 1)
+		readme := restructuredDocs()["README.md"]
+		if testCase.mutate != nil {
+			readme = testCase.mutate(readme)
+		} else {
+			readme = strings.Replace(readme, testCase.drop, "", 1)
+		}
 		if problems := testCase.check(readme); len(problems) == 0 {
 			t.Errorf("dropping %s from the README did not fail its check", name)
 		}

@@ -1,7 +1,7 @@
 ---
 id: T-113-correct-readme-view-selection-and-detail-control
 title: Correct README view selection and detail-control guidance
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.2.0.md#integration-documentation-and-release-readiness
 dependencies:
@@ -10,7 +10,7 @@ dependencies:
     - T-110-qualify-activity-counts-and-empty-states-by
     - T-111-keep-stream-detail-navigation-discoverable-at
     - T-112-disclose-the-fixed-interesting-now-recency-window
-updated_at: "2026-09-19T08:53:27Z"
+updated_at: "2026-09-19T19:16:16Z"
 ---
 
 # T-113-correct-readme-view-selection-and-detail-control Correct README view selection and detail-control guidance
@@ -51,3 +51,5 @@ Record checked commands and guarded claims.
 - This task does not wait for external distribution provisioning.
 - Required before T-070 and final v0.2.0 release readiness; predecessor UI tasks
   settle the wording and controls this documentation describes.
+- 2026-09-19T19:16:01Z: verification pass
+- 2026-09-19T19:16:16Z: Completed README and documentation contract corrections for v0.2.0 views, organization selection, Overview evidence and empty states, Stream focus/detail controls, snapshot coverage, and independent Interesting Now recency. Verification pass recorded; distribution guard remains environment-blocked only because zip is unavailable in the orb.
