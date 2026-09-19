@@ -129,7 +129,7 @@ git "${committer[@]}" commit -m "$title"
 git "${authenticated[@]}" push --force-with-lease origin "$branch"
 
 expected_head="$(git rev-parse HEAD)"
-pr_fields="number,state,mergedAt,headRefName,headRefOid,headRepository,headRepositoryOwner,baseRefName,baseRepository,reviews"
+pr_fields="number,state,mergedAt,headRefName,headRefOid,headRepository,headRepositoryOwner,baseRefName,reviews"
 readiness_fields="mergeable,author,headRefOid,reviews,latestReviews,statusCheckRollup"
 
 is_definitive_not_found() {
@@ -140,13 +140,47 @@ is_definitive_not_found() {
     [ "$output" = "no pull requests found for branch \"$branch\"" ]
 }
 
-if ! pr_json="$(gh pr view "$branch" --repo "$source_repository" --json "$pr_fields" 2>&1)"; then
+read_pr_json() {
+  local selector="$1" json number base_repository
+  if ! json="$(gh pr view "$selector" --repo "$source_repository" --json "$pr_fields" 2>&1)"; then
+    printf '%s\n' "$json"
+    return 1
+  fi
+  if ! number="$(jq -er '.number | select(type == "number")' <<<"$json")"; then
+    printf '%s\n' "$json"
+    return 2
+  fi
+  if ! base_repository="$(gh api "repos/$source_repository/pulls/$number" --jq '.base.repo.full_name' 2>&1)"; then
+    printf '%s\n' "$base_repository"
+    return 1
+  fi
+  [[ "$base_repository" =~ ^[^/]+/[^/]+$ ]] || {
+    printf '%s\n' "$base_repository"
+    return 1
+  }
+  jq --arg base_repository "$base_repository" \
+    '. + {baseRepository: {nameWithOwner: $base_repository}}' <<<"$json"
+}
+
+if pr_json="$(read_pr_json "$branch")"; then
+  :
+else
+  lookup_status="$?"
+  if [ "$lookup_status" -eq 2 ]; then
+    die "the ledger pull request number could not be read"
+  fi
   if ! is_definitive_not_found "$pr_json"; then
     die "the ledger pull request could not be inspected"
   fi
   gh pr create --repo "$source_repository" --base "$default_branch" --head "$branch" --title "$title" \
     --body "Records one RG-011 distribution-ledger event. Merging this pull request is a required transition of the release workflow, which is waiting for it."
-  if ! pr_json="$(gh pr view "$branch" --repo "$source_repository" --json "$pr_fields" 2>&1)"; then
+  if pr_json="$(read_pr_json "$branch")"; then
+    :
+  else
+    lookup_status="$?"
+    if [ "$lookup_status" -eq 2 ]; then
+      die "the ledger pull request number could not be read after creation"
+    fi
     die "the ledger pull request could not be inspected after creation"
   fi
 fi
@@ -173,7 +207,7 @@ validate_pr_identity() {
 
 read_pr_readiness() {
   local phase="$1" state
-  if ! pr_json="$(gh pr view "$pr_number" --repo "$source_repository" --json "$pr_fields" 2>&1)"; then
+  if ! pr_json="$(read_pr_json "$pr_number")"; then
     die "the ledger pull request could not be inspected$phase"
   fi
   validate_pr_identity "$pr_json" yes OPEN
@@ -204,7 +238,7 @@ CLOSED)
   if ! gh pr reopen "$pr_number" --repo "$source_repository" >/dev/null; then
     die "the existing closed ledger pull request could not be reopened"
   fi
-  if ! pr_json="$(gh pr view "$pr_number" --repo "$source_repository" --json "$pr_fields" 2>&1)"; then
+  if ! pr_json="$(read_pr_json "$pr_number")"; then
     die "the reopened ledger pull request could not be inspected"
   fi
   if [ "$(jq -r '.state // empty' <<<"$pr_json")" != OPEN ]; then

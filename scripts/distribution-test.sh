@@ -1143,7 +1143,28 @@ ready='{"mergeable":"MERGEABLE","author":{"login":"orgtop-distribution"},"latest
 
 case "${1-}" in
 api)
-  printf 'main\n'
+  endpoint="${2-}"
+  if [[ "$endpoint" == repos/*/pulls/* ]]; then
+    if [ "${PROTECTED_SCENARIO:?}" = repo_binding ] && [[ "$endpoint" != repos/fmueller/orgtop/pulls/* ]]; then
+      printf 'fixture: pull request API command was not bound to the source repository\n' >&2
+      exit 1
+    fi
+    if [ "${PROTECTED_SCENARIO}" = lookup_api_failure ]; then
+      printf 'HTTP 401: pull request API lookup failed\n' >&2
+      exit 2
+    fi
+    if [ "${PROTECTED_SCENARIO}" = lookup_api_malformed ]; then
+      printf 'not-a-repository\n'
+      exit 0
+    fi
+    if [ "${PROTECTED_SCENARIO}" = mismatched_base_repository ]; then
+      printf 'attacker/other\n'
+    else
+      printf 'fmueller/orgtop\n'
+    fi
+  else
+    printf 'main\n'
+  fi
   ;;
 pr)
   subcommand="${2-}"
@@ -1160,14 +1181,22 @@ pr)
       esac
     done
     [ -n "$branch" ]
+    # The installed gh CLI does not expose baseRepository as a supported
+    # `gh pr view --json` field. The production guard must obtain that fact
+    # from the pull-request REST resource rather than treating this fixture's
+    # richer historical response as the live CLI contract.
+    if [[ "$json" == *baseRepository* ]]; then
+      printf 'Unknown JSON field: "baseRepository"\n' >&2
+      exit 2
+    fi
     if [[ "$json" == *number* ]]; then
       emit_pr() {
         local state="$1" head_oid="$2" head_repo="$3" base="$4" merged="$5" reviews="$6" \
-          base_repo="${7:-fmueller/orgtop}" head_ref="${8:-${PROTECTED_BRANCH:?}}"
+          head_ref="${7:-${PROTECTED_BRANCH:?}}"
         jq -cn --arg state "$state" --arg head_oid "$head_oid" \
           --arg head_repo "$head_repo" --arg base "$base" --arg merged "$merged" \
-          --arg base_repo "$base_repo" --arg head_ref "$head_ref" --argjson reviews "$reviews" \
-          '{number:8,state:$state,mergedAt:(if $merged == "null" then null else $merged end),headRefName:$head_ref,headRefOid:$head_oid,headRepository:{nameWithOwner:$head_repo},headRepositoryOwner:{login:($head_repo | split("/")[0])},baseRefName:$base,baseRepository:{nameWithOwner:$base_repo},reviews:$reviews}'
+          --arg head_ref "$head_ref" --argjson reviews "$reviews" \
+          '{number:8,state:$state,mergedAt:(if $merged == "null" then null else $merged end),headRefName:$head_ref,headRefOid:$head_oid,headRepository:{nameWithOwner:$head_repo},headRepositoryOwner:{login:($head_repo | split("/")[0])},baseRefName:$base,reviews:$reviews}'
       }
 
       case "${PROTECTED_SCENARIO:?}" in
@@ -1175,12 +1204,12 @@ pr)
         printf 'fixture: pull request lookup failed\n' >&2
         exit 2
         ;;
-      lookup_api_failure)
-        printf 'HTTP 401: no pull requests found for branch\n' >&2
-        exit 2
-        ;;
       lookup_malformed)
         printf '{"state":"OPEN"}\n'
+        exit 0
+        ;;
+      lookup_api_failure|lookup_api_malformed)
+        emit_pr OPEN "$(git -C "$PROTECTED_WORK" rev-parse HEAD)" fmueller/orgtop main null '[]'
         exit 0
         ;;
       closed|closed_approved|reopen_failure|merged)
@@ -1212,7 +1241,7 @@ pr)
         exit 0
         ;;
       mismatched_base_repository)
-        emit_pr OPEN "$(git -C "$PROTECTED_WORK" rev-parse HEAD)" fmueller/orgtop main null '[]' attacker/other
+        emit_pr OPEN "$(git -C "$PROTECTED_WORK" rev-parse HEAD)" fmueller/orgtop main null '[]' fmueller/orgtop
         exit 0
         ;;
       unknown_state)
@@ -1514,6 +1543,10 @@ assert_equal "a pull request lookup failure never creates a pull request" "$(gre
 protected_prepare lookup_api_failure
 assert_rejects "an API lookup failure fails closed" "could not be inspected" -- protected_run
 assert_equal "an API lookup failure never creates a pull request" "$(grep -c 'gh pr create' "$PROTECTED_LOG" || true)" "0"
+
+protected_prepare lookup_api_malformed
+assert_rejects "a malformed API lookup fails closed" "could not be inspected" -- protected_run
+assert_equal "a malformed API lookup never creates a pull request" "$(grep -c 'gh pr create' "$PROTECTED_LOG" || true)" "0"
 
 protected_prepare lookup_malformed
 assert_rejects "a malformed lookup fails closed" "number could not be read" -- protected_run
