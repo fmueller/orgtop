@@ -7,6 +7,11 @@ spec_ref: specs/v0.2.0.md#distribution-channels
 dependencies:
     - T-069-integrate-the-closed-v0-2-0-binary-flow
     - T-074-provision-and-validate-distribution-repositories
+    - T-108-make-stream-arrow-key-navigation-visibly
+    - T-109-clarify-overview-pr-event-counts-and-evidence
+    - T-110-qualify-activity-counts-and-empty-states-by
+    - T-111-keep-stream-detail-navigation-discoverable-at
+    - T-112-disclose-the-fixed-interesting-now-recency-window
 updated_at: "2026-08-29T09:22:04Z"
 ---
 
@@ -33,3 +38,5 @@ Build and verify the closed channel artifact matrix and installation contracts w
 ## Implementation Notes
 
 - Do not publish tags or external repositories during task verification.
+- Verify artifacts built after the five pre-release UI improvements T-108 through
+  T-112; earlier binary parity evidence does not cover their final behavior.

@@ -15,6 +15,7 @@ dependencies:
     - T-088-match-deferred-claim-spelling-variants
     - T-089-resolve-terminal-capability-and-charset-at-launch
     - T-090-move-rain-page-range-and-hidden-counts-into-the
+    - T-113-correct-readme-view-selection-and-detail-control
 updated_at: "2026-08-29T09:22:04Z"
 ---
 
@@ -43,3 +44,7 @@ Update README and help text for the implemented closed v0.2.0 contracts after th
 
 - This task intentionally depends on existing `T-030-decouple-readme-structure-from-doc-tests`.
 - Do not depend on an external design document or promise unresolved behavior.
+- T-113 owns the focused README corrections after T-108 through T-112. Audit
+  their final behavior alongside the remaining contracts rather than duplicating
+  implementation. All six improvements therefore precede T-106 release-candidate
+  testing and T-071 final release readiness.
