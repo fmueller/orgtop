@@ -1,12 +1,12 @@
 ---
 id: T-105-complete-the-protected-ledger-step-when-its-event
 title: Complete the protected ledger step when its event already landed
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.2.0.md#distribution-channels
 dependencies:
     - T-067-configure-multi-channel-release-workflows
-updated_at: "2026-09-17T21:42:57Z"
+updated_at: "2026-09-19T17:37:41Z"
 ---
 
 # T-105-complete-the-protected-ledger-step-when-its-event Complete the protected ledger step when its event already landed
@@ -60,3 +60,5 @@ record already on the default branch.
   `source_commit` to 7be99b1, so changing the workflow would have made the
   retried tag produce a different staged event and fail closed as contradictory.
 - 2026-09-19T09:36:04Z: Dependency corrected from T-074 to completed T-067; this fix must land before T-074's final rehearsal rather than wait on it.
+- 2026-09-19T17:34:56Z: verification pass
+- 2026-09-19T17:37:41Z: Implemented exact default-branch ledger polling and merge-race reconciliation with strict canonical-ledger validation. Fixture suite covers landed, pending, failed, missing, delayed, duplicate, contradictory, malformed, blank, truncated, merge-race, and timeout cases. Full task check passed with a temporary fixture-only zip shim because zip is unavailable in the orb; no external release action was run.

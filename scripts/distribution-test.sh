@@ -20,6 +20,7 @@ stage_assets="$script_dir/distribution-stage-assets.sh"
 formula_script="$script_dir/distribution-formula.sh"
 append="$script_dir/distribution-ledger-append.sh"
 notice_script="$script_dir/distribution-notice.sh"
+protected_commit="$script_dir/distribution-protected-commit.sh"
 # shellcheck source=scripts/distribution-lib.sh
 . "$script_dir/distribution-lib.sh"
 
@@ -1043,5 +1044,270 @@ fi
 
 assert_equal "an unknown mergeable state waits" \
   "$(pull_request_readiness "$(pr_state UNKNOWN orgtop-distribution '[{"state":"APPROVED","author":{"login":"fmueller"}}]')")" waiting
+
+# ---------------------------------------------------------------------------
+# Protected ledger commit poll
+# ---------------------------------------------------------------------------
+
+# The protected commit guard is the only distribution step whose normal path
+# mutates a remote repository through GitHub. Use a bare Git remote and a fake
+# `gh` so these fixtures exercise fetches, branch creation, pull-request state,
+# and merge verification without publishing or contacting an external service.
+protected_fake_gh_bin="$tmp_dir/protected-fake-gh"
+mkdir -p "$protected_fake_gh_bin"
+cat >"$protected_fake_gh_bin/gh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+log="${PROTECTED_LOG:?PROTECTED_LOG is required}"
+printf 'gh %s\n' "$*" >>"$log"
+
+pending='{"mergeable":"MERGEABLE","author":{"login":"orgtop-distribution"},"latestReviews":[],"statusCheckRollup":[{"conclusion":null}]}'
+failed='{"mergeable":"MERGEABLE","author":{"login":"orgtop-distribution"},"latestReviews":[{"state":"APPROVED","author":{"login":"fmueller"}}],"statusCheckRollup":[{"conclusion":"FAILURE"}]}'
+ready='{"mergeable":"MERGEABLE","author":{"login":"orgtop-distribution"},"latestReviews":[{"state":"APPROVED","author":{"login":"fmueller"}}],"statusCheckRollup":[{"conclusion":"SUCCESS"}]}'
+
+case "${1-}" in
+api)
+  printf 'main\n'
+  ;;
+pr)
+  subcommand="${2-}"
+  shift 2
+  case "$subcommand" in
+  view)
+    branch="${1-}"
+    shift
+    json=""
+    while [ "$#" -gt 0 ]; do
+      case "$1" in
+      --json) json="${2-}"; shift 2 ;;
+      *) shift ;;
+      esac
+    done
+    [ -n "$branch" ]
+    if [ "$json" = number ]; then
+      # No existing pull request: the production guard will create one.
+      exit 1
+    fi
+
+    views_file="$PROTECTED_LOG.views"
+    views=0
+    if [ -f "$views_file" ]; then views="$(cat "$views_file")"; fi
+    views=$((views + 1))
+    printf '%s\n' "$views" >"$views_file"
+    response=""
+    case "${PROTECTED_SCENARIO:?}" in
+    delayed)
+      if [ "$views" -eq 1 ]; then
+        git --git-dir "$PROTECTED_REMOTE" update-ref refs/heads/main "$PROTECTED_LANDED_COMMIT"
+      fi
+      response="$pending"
+      ;;
+    contradictory)
+      if [ "$views" -eq 1 ]; then
+        git --git-dir "$PROTECTED_REMOTE" update-ref refs/heads/main "$PROTECTED_CONTRADICTORY_COMMIT"
+      fi
+      response="$pending"
+      ;;
+    pending_then_ready)
+      if [ "$views" -eq 1 ]; then response="$pending"; else response="$ready"; fi
+      ;;
+    merge_race)
+      response="$ready"
+      ;;
+    failed)
+      response="$failed"
+      ;;
+    timeout)
+      response="$pending"
+      ;;
+    missing)
+      response="$ready"
+      ;;
+    *)
+      printf 'fixture: unsupported protected scenario %s\n' "$PROTECTED_SCENARIO" >&2
+      exit 2
+      ;;
+    esac
+    printf '%s\n' "$response"
+    ;;
+  create)
+    printf 'created fixture pull request\n'
+    ;;
+  merge)
+    if [ "${PROTECTED_SCENARIO:?}" = merge_race ]; then
+      git --git-dir "$PROTECTED_REMOTE" update-ref refs/heads/main "$PROTECTED_LANDED_COMMIT"
+      printf 'fixture: the pull request merged out of band\n' >&2
+      exit 1
+    fi
+    if [ "${PROTECTED_SCENARIO:?}" != missing ]; then
+      git --git-dir "$PROTECTED_REMOTE" update-ref refs/heads/main "$PROTECTED_LANDED_COMMIT"
+    fi
+    printf 'merged fixture pull request\n'
+    ;;
+  *)
+    printf 'fixture: unsupported gh pr subcommand %s\n' "$subcommand" >&2
+    exit 2
+    ;;
+  esac
+  ;;
+*)
+  printf 'fixture: unsupported gh command %s\n' "${1-}" >&2
+  exit 2
+  ;;
+esac
+EOF
+chmod +x "$protected_fake_gh_bin/gh"
+
+protected_prepare() {
+  local name="$1" remote seed initial
+  remote="$tmp_dir/protected-$name.git"
+  seed="$tmp_dir/protected-$name-seed"
+  PROTECTED_REMOTE="$remote"
+  PROTECTED_SCENARIO="$name"
+  PROTECTED_LOG="$tmp_dir/protected-$name.log"
+  PROTECTED_ATTEMPTS=2
+  rm -rf "$remote" "$seed" "$tmp_dir/protected-$name-work"
+  git init --bare -q "$remote"
+  git --git-dir "$remote" symbolic-ref HEAD refs/heads/main
+  git init -q "$seed"
+  git -C "$seed" config user.name fixture
+  git -C "$seed" config user.email fixture@example.com
+  mkdir -p "$seed/docs"
+  : >"$seed/docs/distribution-ledger.jsonl"
+  git -C "$seed" add docs/distribution-ledger.jsonl
+  git -C "$seed" commit -q -m initial
+  git -C "$seed" branch -M main
+  git -C "$seed" remote add origin "$remote"
+  git -C "$seed" push -q origin main
+  initial="$(git -C "$seed" rev-parse HEAD)"
+
+  git -C "$seed" checkout -q -B protected-landed "$initial"
+  "$append" --ledger "$seed/docs/distribution-ledger.jsonl" --event-file "$staged_event" >/dev/null
+  git -C "$seed" add docs/distribution-ledger.jsonl
+  git -C "$seed" commit -q -m landed
+  PROTECTED_LANDED_COMMIT="$(git -C "$seed" rev-parse HEAD)"
+
+  git -C "$seed" checkout -q -B protected-contradictory "$initial"
+  "$append" --ledger "$seed/docs/distribution-ledger.jsonl" --event-file "$contradiction" >/dev/null
+  git -C "$seed" add docs/distribution-ledger.jsonl
+  git -C "$seed" commit -q -m contradictory
+  PROTECTED_CONTRADICTORY_COMMIT="$(git -C "$seed" rev-parse HEAD)"
+
+  git -C "$seed" checkout -q -B protected-duplicate "$initial"
+  "$append" --ledger "$seed/docs/distribution-ledger.jsonl" --event-file "$staged_event" >/dev/null
+  printf '%s\n' "$staged" >>"$seed/docs/distribution-ledger.jsonl"
+  git -C "$seed" add docs/distribution-ledger.jsonl
+  git -C "$seed" commit -q -m duplicate
+  PROTECTED_DUPLICATE_COMMIT="$(git -C "$seed" rev-parse HEAD)"
+
+  git -C "$seed" checkout -q -B protected-malformed "$initial"
+  "$append" --ledger "$seed/docs/distribution-ledger.jsonl" --event-file "$staged_event" >/dev/null
+  printf 'not json\n' >>"$seed/docs/distribution-ledger.jsonl"
+  git -C "$seed" add docs/distribution-ledger.jsonl
+  git -C "$seed" commit -q -m malformed
+  PROTECTED_MALFORMED_COMMIT="$(git -C "$seed" rev-parse HEAD)"
+
+  git -C "$seed" checkout -q -B protected-blank "$initial"
+  "$append" --ledger "$seed/docs/distribution-ledger.jsonl" --event-file "$staged_event" >/dev/null
+  printf '\n' >>"$seed/docs/distribution-ledger.jsonl"
+  git -C "$seed" add docs/distribution-ledger.jsonl
+  git -C "$seed" commit -q -m blank
+  PROTECTED_BLANK_COMMIT="$(git -C "$seed" rev-parse HEAD)"
+
+  git -C "$seed" checkout -q -B protected-truncated "$initial"
+  "$append" --ledger "$seed/docs/distribution-ledger.jsonl" --event-file "$staged_event" >/dev/null
+  truncate -s -1 "$seed/docs/distribution-ledger.jsonl"
+  git -C "$seed" add docs/distribution-ledger.jsonl
+  git -C "$seed" commit -q -m truncated
+  PROTECTED_TRUNCATED_COMMIT="$(git -C "$seed" rev-parse HEAD)"
+
+  git -C "$seed" push -q origin \
+    "$PROTECTED_LANDED_COMMIT:refs/heads/protected-landed" \
+    "$PROTECTED_CONTRADICTORY_COMMIT:refs/heads/protected-contradictory" \
+    "$PROTECTED_DUPLICATE_COMMIT:refs/heads/protected-duplicate" \
+    "$PROTECTED_MALFORMED_COMMIT:refs/heads/protected-malformed" \
+    "$PROTECTED_BLANK_COMMIT:refs/heads/protected-blank" \
+    "$PROTECTED_TRUNCATED_COMMIT:refs/heads/protected-truncated"
+
+  case "$name" in
+  already) git --git-dir "$remote" update-ref refs/heads/main "$PROTECTED_LANDED_COMMIT" ;;
+  duplicate) git --git-dir "$remote" update-ref refs/heads/main "$PROTECTED_DUPLICATE_COMMIT" ;;
+  malformed) git --git-dir "$remote" update-ref refs/heads/main "$PROTECTED_MALFORMED_COMMIT" ;;
+  blank) git --git-dir "$remote" update-ref refs/heads/main "$PROTECTED_BLANK_COMMIT" ;;
+  truncated) git --git-dir "$remote" update-ref refs/heads/main "$PROTECTED_TRUNCATED_COMMIT" ;;
+  esac
+
+  git clone -q "$remote" "$tmp_dir/protected-$name-work"
+  PROTECTED_WORK="$tmp_dir/protected-$name-work"
+  : >"$PROTECTED_LOG"
+  rm -f "$PROTECTED_LOG.views"
+  export PROTECTED_REMOTE PROTECTED_SCENARIO PROTECTED_LOG PROTECTED_LANDED_COMMIT
+  export PROTECTED_CONTRADICTORY_COMMIT PROTECTED_WORK
+}
+
+protected_run() {
+  (
+    cd "$PROTECTED_WORK"
+    GH_TOKEN=fixture-token \
+      LEDGER_PATH=docs/distribution-ledger.jsonl \
+      DISTRIBUTION_POLL_SECONDS=0 \
+      DISTRIBUTION_POLL_ATTEMPTS="$PROTECTED_ATTEMPTS" \
+      PATH="$protected_fake_gh_bin:$PATH" \
+      "$protected_commit" \
+        --branch "ledger/test-$PROTECTED_SCENARIO" \
+        --title "fixture protected ledger transition" \
+        --ledger-event "$staged_event"
+  )
+}
+
+protected_prepare already
+protected_output="$(protected_run)"
+assert_contains "an already-landed event completes before opening a pull request" "$protected_output" "already on main"
+assert_equal "an already-landed event does not open a pull request" "$(grep -c 'gh pr ' "$PROTECTED_LOG" || true)" "0"
+
+protected_prepare duplicate
+assert_rejects "a duplicate event on the default branch fails closed" "duplicate" -- protected_run
+assert_equal "a duplicate event does not open a pull request" "$(grep -c 'gh pr ' "$PROTECTED_LOG" || true)" "0"
+
+protected_prepare malformed
+assert_rejects "a malformed default-branch ledger fails closed" "valid canonical ledger" -- protected_run
+
+protected_prepare blank
+assert_rejects "a blank line in the default-branch ledger fails closed" "valid canonical ledger" -- protected_run
+
+protected_prepare truncated
+assert_rejects "a truncated default-branch ledger fails closed" "valid canonical ledger" -- protected_run
+
+protected_prepare pending_then_ready
+protected_output="$(protected_run)"
+assert_contains "a pending pull request remains in the poll" "$protected_output" "event is on main"
+assert_equal "a pending pull request eventually merges only after readiness" "$(grep -c 'gh pr merge' "$PROTECTED_LOG")" "1"
+
+protected_prepare merge_race
+PROTECTED_ATTEMPTS=1
+protected_output="$(protected_run)"
+assert_contains "an out-of-band merge race completes the transition" "$protected_output" "already on main"
+
+protected_prepare failed
+PROTECTED_ATTEMPTS=1
+assert_rejects "a failed check keeps the pull request partial" "not approved and green" -- protected_run
+assert_equal "a failed check never merges" "$(grep -c 'gh pr merge' "$PROTECTED_LOG" || true)" "0"
+
+protected_prepare missing
+PROTECTED_ATTEMPTS=1
+assert_rejects "a merge that does not land the exact event fails closed" "did not land the exact event" -- protected_run
+
+protected_prepare delayed
+protected_output="$(protected_run)"
+assert_contains "a delayed out-of-band merge completes the poll" "$protected_output" "already on main"
+assert_equal "a delayed out-of-band merge does not require approval" "$(grep -c 'gh pr merge' "$PROTECTED_LOG" || true)" "0"
+
+protected_prepare contradictory
+assert_rejects "a different same-version event fails closed" "contradictory" -- protected_run
+
+protected_prepare timeout
+PROTECTED_ATTEMPTS=2
+assert_rejects "a missing event times out rather than claiming completion" "not approved and green" -- protected_run
 
 echo "PASS: distribution guards"

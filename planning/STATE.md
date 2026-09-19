@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-updated_at: "2026-09-19T16:50:39Z"
+updated_at: "2026-09-19T17:37:41Z"
 active_spec_version: v0.2.0
 active_spec_path: specs/v0.2.0.md
 current_task: ""
@@ -8,8 +8,8 @@ current_task_title: ""
 status_summary: blocked
 blockers:
     - 'T-074-provision-and-validate-distribution-repositories: T-074 final rehearsal is blocked until T-107''s retry-safe asset upload and T-105''s protected-ledger poll fix are complete; T-074 remains incomplete'
-next_action: 'Start task T-105-complete-the-protected-ledger-step-when-its-event: Complete the protected ledger step when its event already landed'
-last_verification_result: pass for T-111-keep-stream-detail-navigation-discoverable-at at 2026-09-19T16:48:46Z
+next_action: Resolve blocker on T-074-provision-and-validate-distribution-repositories
+last_verification_result: pass for T-105-complete-the-protected-ledger-step-when-its-event at 2026-09-19T17:34:56Z
 relevant_artifacts: []
 continuation_notes:
     - This repository is using manual Taskrail-style workflow scaffolding until the product replaces more of the bootstrap steps.
@@ -35,11 +35,11 @@ continuation_notes:
 
 ## Last Verification
 
-- pass for T-111-keep-stream-detail-navigation-discoverable-at at 2026-09-19T16:48:46Z
+- pass for T-105-complete-the-protected-ledger-step-when-its-event at 2026-09-19T17:34:56Z
 
 ## Next Action
 
-- Start task T-105-complete-the-protected-ledger-step-when-its-event: Complete the protected ledger step when its event already landed
+- Resolve blocker on T-074-provision-and-validate-distribution-repositories
 
 ## Relevant Artifacts
 
@@ -51,8 +51,8 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 7
+- todo: 6
 - in_progress: 0
-- completed: 105
+- completed: 106
 - blocked: 1
 - cancelled: 0

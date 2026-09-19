@@ -46,6 +46,11 @@ done
   usage_error "$usage"
 
 event="$(cat "$event_file")"
+event_version="$(printf '%s' "$event" | jq -r '.version // empty')"
+event_kind="$(printf '%s' "$event" | jq -r '.event // empty')"
+ledger_snapshot="$(mktemp)"
+ledger_validation="$(mktemp)"
+trap 'rm -f "$ledger_snapshot" "$ledger_validation"' EXIT
 default_branch="$(gh api "repos/$source_repository" --jq '.default_branch')"
 
 # Every network git operation authenticates as the App, not as whatever
@@ -59,9 +64,45 @@ authenticated=(-c "http.extraheader=AUTHORIZATION: basic $(printf 'x-access-toke
 
 git "${authenticated[@]}" fetch origin "$default_branch"
 
+default_branch_event() {
+  local line line_version line_kind matches=0
+  if ! git show "origin/$default_branch:$ledger_path" >"$ledger_snapshot" 2>/dev/null; then
+    return 1
+  fi
+
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    if [ "$line" = "$event" ]; then
+      matches=$((matches + 1))
+      continue
+    fi
+    line_version="$(printf '%s' "$line" | jq -r '.version // empty' 2>/dev/null || true)"
+    line_kind="$(printf '%s' "$line" | jq -r '.event // empty' 2>/dev/null || true)"
+    if [ "$line_version" = "$event_version" ] && [ "$line_kind" = "$event_kind" ]; then
+      die "the default branch holds a contradictory $event_kind event for $event_version"
+    fi
+  done <"$ledger_snapshot"
+
+  [ "$matches" -le 1 ] ||
+    die "the default branch holds duplicate $event_kind event for $event_version"
+
+  # Reuse the append guard's complete ledger validation against a disposable
+  # copy. It checks canonical JSON, blank lines, and exactly one LF per record;
+  # the copy may receive the requested event when it is not present, while the
+  # fetched default-branch bytes remain untouched for the exact match above.
+  cp "$ledger_snapshot" "$ledger_validation"
+  if ! "$script_dir/distribution-ledger-append.sh" \
+    --ledger "$ledger_validation" --event-file "$event_file" >/dev/null 2>&1; then
+    die "the default branch ledger is not a valid canonical ledger"
+  fi
+
+  [ "$matches" -eq 1 ]
+}
+
 # Already landed: the transition is complete and creating anything would be a
-# second, contradictory record.
-if git show "origin/$default_branch:$ledger_path" 2>/dev/null | grep -qxF "$event"; then
+# second, contradictory record. The same check is repeated during the approval
+# poll because the event may land out of band while this step is waiting.
+if default_branch_event; then
   echo "guard: the event is already on $default_branch"
   exit 0
 fi
@@ -96,14 +137,29 @@ fi
 # refuses an approval carrying its own login.
 attempt=0
 while [ "$attempt" -lt "$poll_attempts" ]; do
+  git "${authenticated[@]}" fetch origin "$default_branch"
+  if default_branch_event; then
+    echo "guard: the event is already on $default_branch"
+    exit 0
+  fi
+
   state="$(gh pr view "$branch" --json mergeable,author,latestReviews,statusCheckRollup)"
   readiness="$(pull_request_readiness "$state")" ||
     die "the ledger pull request state could not be read"
   case "$readiness" in
   ready)
-    gh pr merge "$branch" --squash --delete-branch
+    if ! gh pr merge "$branch" --squash --delete-branch; then
+      # The pull request may have merged out of band after the poll check. A
+      # failed merge is complete only when the exact event is now present.
+      git "${authenticated[@]}" fetch origin "$default_branch"
+      if default_branch_event; then
+        echo "guard: the event is already on $default_branch"
+        exit 0
+      fi
+      die "the ledger pull request could not be merged"
+    fi
     git "${authenticated[@]}" fetch origin "$default_branch"
-    git show "origin/$default_branch:$ledger_path" | grep -qxF "$event" ||
+    default_branch_event ||
       die "the merge did not land the exact event on $default_branch"
     echo "guard: the event is on $default_branch"
     exit 0
