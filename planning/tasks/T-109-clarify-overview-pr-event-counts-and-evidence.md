@@ -1,12 +1,12 @@
 ---
 id: T-109-clarify-overview-pr-event-counts-and-evidence
 title: Clarify Overview PR event counts and evidence labels
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#scope-aware-overview-and-stream
 dependencies:
     - T-054-implement-scoped-snapshots-and-direct-aggregation
-updated_at: "2026-09-19T08:53:11Z"
+updated_at: "2026-09-19T13:44:56Z"
 ---
 
 # T-109-clarify-overview-pr-event-counts-and-evidence Clarify Overview PR event counts and evidence labels
@@ -44,3 +44,5 @@ Record independently derived counts, commands, and inspected output.
 
 - Required before distribution parity and final v0.2.0 release readiness.
 - Do not turn this wording correction into a PR-backlog feature.
+- 2026-09-19T13:44:41Z: verification pass
+- 2026-09-19T13:44:56Z: Overview PR event/evidence labels clarified; aggregation and cross-view invariants preserved; verification pass recorded.

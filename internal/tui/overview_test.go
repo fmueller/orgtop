@@ -152,7 +152,7 @@ func TestOverviewRendersOneOrderedRowPerRepository(t *testing.T) {
 	for index, wantCounts := range [][]string{{"3", "1", "2"}, {"1", "0", "1"}} {
 		numbers := countsOf(rows[index])
 		if strings.Join(numbers, ",") != strings.Join(wantCounts, ",") {
-			t.Errorf("row %d has counts %v, want activity, pull-request activity, pushes %v: %q", index, numbers, wantCounts, rows[index])
+			t.Errorf("row %d has counts %v, want activity, PR-event activity, pushes %v: %q", index, numbers, wantCounts, rows[index])
 		}
 	}
 	// A Scope that complete evidence found quiet states so rather than
@@ -165,7 +165,7 @@ func TestOverviewRendersOneOrderedRowPerRepository(t *testing.T) {
 func TestOverviewLabelsEveryCountedDimension(t *testing.T) {
 	content := strings.ToLower(renderAt(t, populatedModel(t), wideWidth, wideHeight))
 
-	for _, want := range []string{"activity", "pull request", "push"} {
+	for _, want := range []string{"activity", "pr event", "push"} {
 		if !strings.Contains(content, want) {
 			t.Errorf("wide overview does not label %q:\n%s", want, content)
 		}
@@ -239,20 +239,20 @@ func TestOverviewRetainsIdentityAndCountsAtNarrowSizes(t *testing.T) {
 	if len(rows) != 3 {
 		t.Fatalf("narrow overview rendered %d rows, want 3:\n%v", len(rows), rows)
 	}
-	for index, want := range []string{"acme/backend", "acme/frontend", "acme/docs"} {
-		if !strings.Contains(rows[index], want) {
-			t.Errorf("narrow row %d is %q, want the identity %q", index, rows[index], want)
+	for index, want := range []string{"R1", "R3", "R2"} {
+		if !strings.HasPrefix(strings.TrimSpace(rows[index]), want+" ") {
+			t.Errorf("narrow row %d is %q, want the Scope token %q", index, rows[index], want)
 		}
 	}
 	// The sparsest layout still names all three counted dimensions, so a narrow
 	// row stays readable instead of collapsing into a bare run of numbers.
-	for _, want := range []string{"3 act", "1 pr", "2 push"} {
+	for _, want := range []string{"3 act", "1 PR evt", "2 push"} {
 		if !strings.Contains(rows[0], want) {
 			t.Errorf("narrow row for acme/backend drops the labeled count %q: %q", want, rows[0])
 		}
 	}
 	for index, row := range rows[:2] {
-		for _, label := range []string{"act", "pr", "push"} {
+		for _, label := range []string{"act", "PR evt", "push"} {
 			if !strings.Contains(row, label) {
 				t.Errorf("narrow row %d does not label %q: %q", index, label, row)
 			}
@@ -515,7 +515,7 @@ func TestScrolledOverviewRendersWithinNarrowBounds(t *testing.T) {
 	content := scrolled(t, model, "down", "pgdown", "pgup", "up").View().Content
 
 	assertFits(t, content, narrowWidth, narrowHeight)
-	for _, want := range []string{ModeOverview.Label(), transportLabel, "acme/repo-01", "q quit"} {
+	for _, want := range []string{ModeOverview.Label(), transportLabel, "R1", "q quit"} {
 		if !strings.Contains(content, want) {
 			t.Errorf("scrolled %dx%d overview does not contain %q:\n%s", narrowWidth, narrowHeight, want, content)
 		}

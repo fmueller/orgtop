@@ -14,6 +14,25 @@ repositories in two views: an Overview of per-repository counts and a Stream of
 individual events. It reads; it never writes to GitHub, and it stores no
 credential of its own.
 
+### Overview counts
+
+Overview reports direct counts from the retained normalized event snapshot for
+each repository or path Scope. `N activity` counts confirmed member events;
+`U unknown` is separate coverage that keeps that activity count a lower bound.
+The PR-related count is labeled `PR event`/`PR events` (compactly `PR evt`/
+`PR evts`): it counts each pull-request event, review, and pull-request comment
+separately, even when they refer to the same PR. An unrelated issue comment is
+not a PR event, and the count is not a count of distinct, open, or waiting PRs.
+
+`current PR evidence` (compactly `cur PR~`, where `~` is the ASCII qualified-
+current-PR marker) is the qualified subset of `activity` whose path membership
+was proven from an open PR's current files. At the tightest widths, Overview
+uses `PR evts` for PR events and `PR~` for current-PR evidence to keep the
+direct counts beside the Scope token. It is evidence about the event's
+current-file membership, not an open-PR backlog count or a claim about files at
+the event's historical time. Unknown membership remains `U unknown` rather than
+being treated as either member or not-member.
+
 ## Installation
 
 OrgTop is one standalone executable. Every channel below redistributes the

@@ -134,6 +134,54 @@ func TestScopedSnapshotRepositoryScopesKeepDirectV01Semantics(t *testing.T) {
 	}
 }
 
+// TestScopedSnapshotCountsDistinctPREventsAndQualifiedEvidence guards T-109:
+// a pull-request event, review, and PR comment sharing one PR remain three
+// eligible events, while an unrelated issue comment is not a PR event. The
+// current-PR evidence qualifies only the matching path membership and remains a
+// subset of that path's activity.
+func TestScopedSnapshotCountsDistinctPREventsAndQualifiedEvidence(t *testing.T) {
+	api := pathScope(t, "owner/repo", literal("services"), separator(), recursive())
+	repository := domain.NewRepositoryScope(mustParseRepository(t, "owner/repo"))
+	scope := mustScopeSet(t, repository, api)
+
+	sharedPR := func(id string, category domain.Category, outcome domain.EvidenceOutcome) domain.EventEvidence {
+		event := testEvent(t, id, 4, "owner/repo", category, domain.EntityPullRequest)
+		event.EntityRef = "#42"
+		return evidenceOf(event, outcome)
+	}
+	issueComment := testEvent(t, "issue-comment", 4, "owner/repo", domain.CategoryComment, domain.EntityOther)
+	issueComment.EntityRef = "#99"
+
+	snapshot := domain.NewScopedSnapshot(scope, []domain.ScopedActivity{scopedActivity(t, "owner/repo",
+		sharedPR("pull", domain.CategoryPullRequest, complete(t, "services/pr.go")),
+		sharedPR("review", domain.CategoryReview, complete(t, "services/review.go")),
+		sharedPR("comment", domain.CategoryComment, currentPR(t, "services/comment.go")),
+		evidenceOf(issueComment, complete(t, "services/issue-comment.go")),
+	)})
+
+	repositoryAggregate := findScopeAggregate(t, snapshot, repository)
+	if repositoryAggregate.Activity != 4 {
+		t.Errorf("repository activity = %d, want all four distinct source events", repositoryAggregate.Activity)
+	}
+	if repositoryAggregate.PullRequestActivity != 3 {
+		t.Errorf("repository PR events = %d, want the PR event, review, and PR comment", repositoryAggregate.PullRequestActivity)
+	}
+
+	pathAggregate := findScopeAggregate(t, snapshot, api)
+	if pathAggregate.Activity != 4 {
+		t.Errorf("path activity = %d, want all four qualified events", pathAggregate.Activity)
+	}
+	if pathAggregate.PullRequestActivity != 3 {
+		t.Errorf("path PR events = %d, want the three events sharing PR #42", pathAggregate.PullRequestActivity)
+	}
+	if pathAggregate.CurrentPR != 1 {
+		t.Errorf("path current-PR evidence = %d, want only the PR comment's qualified membership", pathAggregate.CurrentPR)
+	}
+	if pathAggregate.Unknown != 0 {
+		t.Errorf("path unknown = %d, want no unknown evidence", pathAggregate.Unknown)
+	}
+}
+
 // TestScopedSnapshotRetainsOverlappingMembership guards FR-006: one event
 // matching two Scopes contributes to both and the snapshot keeps the distinct
 // event count separate from the overlapping sum.

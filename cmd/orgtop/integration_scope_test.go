@@ -142,7 +142,7 @@ func TestPinnedRepositoryOnlyFlowPreservesV01BehaviorWithoutEnrichment(t *testin
 	run.refresh()
 
 	overview := run.render(wideWidth, wideHeight)
-	assertContains(t, overview, "OVERVIEW", "POLLING", backend, "2 activity", "2 pushes", frontend, "1 pull request")
+	assertContains(t, overview, "OVERVIEW", "POLLING", backend, "2 activity", "2 pushes", frontend, "1 PR event")
 	assertAbsent(t, overview, "ERROR", "STALE", "CACHE DEGRADED")
 
 	run.press("2")

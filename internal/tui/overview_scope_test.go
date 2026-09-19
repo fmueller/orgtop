@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/fmueller/orgtop/internal/domain"
 )
@@ -198,8 +199,8 @@ func TestOverviewQualifiesCurrentPRMembership(t *testing.T) {
 
 	rows := bodyLines(t, renderAt(t, scopedModel(t, scopes, retained), 120, wideHeight))
 
-	if path := rowFor(t, rows, "P2"); !strings.Contains(path, "12 activity"+separator+"2 current PR") {
-		t.Errorf("the path Scope row %q does not report 12 activity · 2 current PR", path)
+	if path := rowFor(t, rows, "P2"); !strings.Contains(path, "12 activity"+separator+"2 current PR evidence") {
+		t.Errorf("the path Scope row %q does not report 12 activity · 2 current PR evidence", path)
 	}
 }
 
@@ -219,9 +220,67 @@ func TestOverviewComposesActivityCurrentPRAndUnknown(t *testing.T) {
 
 	rows := bodyLines(t, renderAt(t, scopedModel(t, scopes, retained), 140, wideHeight))
 
-	want := "12 activity" + separator + "2 current PR" + separator + "3 unknown"
+	want := "12 activity" + separator + "2 current PR evidence" + separator + "3 unknown"
 	if path := rowFor(t, rows, "P2"); !strings.Contains(path, want) {
 		t.Errorf("the path Scope row %q does not report %q", path, want)
+	}
+}
+
+// TestOverviewUsesExplicitPREventAndEvidenceLabels guards T-109: the rich and
+// compact row registers name the pull-request count as distinct source events
+// and name current-PR membership as evidence, not as an open-PR backlog.
+func TestOverviewUsesExplicitPREventAndEvidenceLabels(t *testing.T) {
+	api := "acme/api"
+	scopes := scopeSet(t, domain.NewRepositoryScope(testRepository(t, api)), pathScope(t, api, "src"))
+	retained := []domain.EventEvidence{
+		{
+			Event:   testEvent(t, "pr", api, domain.CategoryPullRequest, domain.EntityPullRequest),
+			Outcome: completeEvidence(t, "src/main.go"),
+		},
+		{
+			Event:   testEvent(t, "review", api, domain.CategoryReview, domain.EntityPullRequest),
+			Outcome: completeEvidence(t, "src/review.go"),
+		},
+		{
+			Event:   testEvent(t, "comment", api, domain.CategoryComment, domain.EntityPullRequest),
+			Outcome: domain.CompleteOutcome(domain.ProvenanceCurrentPR, mustChangedPaths(t, "src/comment.go")),
+		},
+	}
+	model := scopedModel(t, scopes, retained)
+
+	wide := rowFor(t, bodyLines(t, renderAt(t, model, 140, wideHeight)), "P2")
+	for _, want := range []string{"3 activity", "1 current PR evidence", "3 PR events"} {
+		if !strings.Contains(wide, want) {
+			t.Errorf("wide Overview row %q omits %q", wide, want)
+		}
+	}
+	if strings.Contains(wide, "pull request") {
+		t.Errorf("wide Overview row %q still presents a pull-request identity label", wide)
+	}
+
+	narrow := rowFor(t, bodyLines(t, renderAt(t, model, narrowWidth, narrowHeight)), "P2")
+	for _, want := range []string{"3 act", "1 PR~", "3 PR evts"} {
+		if !strings.Contains(narrow, want) {
+			t.Errorf("compact Overview row %q omits %q", narrow, want)
+		}
+	}
+	if strings.Contains(strings.ToLower(narrow), "pull request") {
+		t.Errorf("compact Overview row %q still presents a pull-request identity label", narrow)
+	}
+
+	compact := rowFor(t, bodyLines(t, renderAt(t, model, 60, narrowHeight)), "P2")
+	for _, want := range []string{"1 cur PR~", "3 PR evts"} {
+		if !strings.Contains(compact, want) {
+			t.Errorf("compact Overview row %q omits %q", compact, want)
+		}
+	}
+
+	noColor := model
+	noColor.charset, noColor.capability = charsetASCII, capabilityNoColor
+	noColorContent := ansi.Strip(renderAt(t, noColor, narrowWidth, narrowHeight))
+	noColorRow := rowFor(t, bodyLines(t, noColorContent), "P2")
+	if !strings.Contains(noColorRow, "PR evts") {
+		t.Errorf("no-color ASCII Overview row omits the compact PR-event label:\n%s", noColorRow)
 	}
 }
 

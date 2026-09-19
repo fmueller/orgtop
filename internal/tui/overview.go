@@ -88,15 +88,15 @@ const (
 )
 
 // rowLayout labels the direct counts of one Scope row: confirmed activity, the
-// qualified current-PR subset of it, undecided evidence, and the pull-request
-// and push categories the confirmed members fall into. No other measure is
-// derived from them (FR-009, RG-004).
+// qualified current-PR subset of it, undecided evidence, and the PR-event and
+// push categories the confirmed members fall into. No other measure is derived
+// from them (FR-009, RG-004).
 type rowLayout struct {
-	activity     countLabel
-	currentPR    countLabel
-	unknown      countLabel
-	pullRequests countLabel
-	pushes       countLabel
+	activity  countLabel
+	currentPR countLabel
+	unknown   countLabel
+	prEvents  countLabel
+	pushes    countLabel
 }
 
 // counts renders the labeled counts of one Scope in their fixed order. The
@@ -119,7 +119,7 @@ func (r rowLayout) counts(aggregate domain.ScopeAggregate) string {
 		fields = append(fields, r.unknown.of(aggregate.Unknown))
 	}
 	fields = append(fields,
-		r.pullRequests.of(aggregate.PullRequestActivity),
+		r.prEvents.of(aggregate.PullRequestActivity),
 		r.pushes.of(aggregate.Pushes),
 	)
 	return strings.Join(fields, separator)
@@ -127,21 +127,30 @@ func (r rowLayout) counts(aggregate domain.ScopeAggregate) string {
 
 // overviewLayouts orders the row layouts from richest to sparsest. Both spell
 // the empty states identically, because those are the contract's own words
-// rather than a count a narrow terminal may abbreviate.
+// rather than a count a narrow terminal may abbreviate. The final dense layout
+// keeps the Scope token and every direct count visible when the compact labels
+// cannot fit beside one another.
 var overviewLayouts = []rowLayout{
 	{
-		activity:     countLabel{singular: "activity", plural: "activity"},
-		currentPR:    countLabel{singular: "current PR", plural: "current PR"},
-		unknown:      countLabel{singular: "unknown", plural: "unknown"},
-		pullRequests: countLabel{singular: "pull request", plural: "pull requests"},
-		pushes:       countLabel{singular: "push", plural: "pushes"},
+		activity:  countLabel{singular: "activity", plural: "activity"},
+		currentPR: countLabel{singular: "current PR evidence", plural: "current PR evidence"},
+		unknown:   countLabel{singular: "unknown", plural: "unknown"},
+		prEvents:  countLabel{singular: "PR event", plural: "PR events"},
+		pushes:    countLabel{singular: "push", plural: "pushes"},
 	},
 	{
-		activity:     countLabel{singular: "act", plural: "act"},
-		currentPR:    countLabel{singular: "cur PR", plural: "cur PR"},
-		unknown:      countLabel{singular: "unk", plural: "unk"},
-		pullRequests: countLabel{singular: "pr", plural: "pr"},
-		pushes:       countLabel{singular: "push", plural: "push"},
+		activity:  countLabel{singular: "act", plural: "act"},
+		currentPR: countLabel{singular: "cur PR~", plural: "cur PR~"},
+		unknown:   countLabel{singular: "unk", plural: "unk"},
+		prEvents:  countLabel{singular: "PR evt", plural: "PR evts"},
+		pushes:    countLabel{singular: "push", plural: "push"},
+	},
+	{
+		activity:  countLabel{singular: "act", plural: "act"},
+		currentPR: countLabel{singular: "PR~", plural: "PR~"},
+		unknown:   countLabel{singular: "unk", plural: "unk"},
+		prEvents:  countLabel{singular: "PR evt", plural: "PR evts"},
+		pushes:    countLabel{singular: "push", plural: "push"},
 	},
 }
 

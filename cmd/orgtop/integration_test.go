@@ -499,7 +499,7 @@ func TestMultipleRepositoryFlowRendersEverySelectedRepository(t *testing.T) {
 		t.Fatalf("overview rendered %d rows, want one per selected repository:\n%v", len(rows), rows)
 	}
 	assertContains(t, rows[0], "acme/backend", "2 activity", "2 pushes")
-	assertContains(t, rows[1], "acme/frontend", "1 activity", "1 pull request")
+	assertContains(t, rows[1], "acme/frontend", "1 activity", "1 PR event")
 
 	for _, repository := range []string{"acme/backend", "acme/frontend"} {
 		if count := endpoint.requestCount(repository); count != 1 {
@@ -530,7 +530,7 @@ func TestViewNavigationPreservesTheLoadedSnapshotAndScrollPosition(t *testing.T)
 	run.refresh()
 	run.size(narrowWidth, narrowHeight)
 
-	assertContains(t, run.model.View().Content, "OVERVIEW", "acme/backend")
+	assertContains(t, run.model.View().Content, "OVERVIEW", "R1")
 
 	run.press("2")
 	assertContains(t, run.model.View().Content, "STREAM")
@@ -539,7 +539,7 @@ func TestViewNavigationPreservesTheLoadedSnapshotAndScrollPosition(t *testing.T)
 	scrolled := body(t, run.model.View().Content)
 
 	run.press("1")
-	assertContains(t, run.model.View().Content, "OVERVIEW", "acme/backend")
+	assertContains(t, run.model.View().Content, "OVERVIEW", "R1")
 	run.press("tab")
 	restored := body(t, run.model.View().Content)
 

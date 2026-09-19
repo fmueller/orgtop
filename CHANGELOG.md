@@ -118,6 +118,13 @@ workflow refuses to publish otherwise.
   `comment`, and `other` instead of the abbreviations `pr`, `rev`, `com`, and
   `oth`; the wide spellings are unchanged. A category a release does not know
   normalizes to `other` rather than reaching a row unnamed.
+- Overview now labels its direct pull-request-related count `PR events` (compact
+  `PR evts`), counting each pull-request event, review, and pull-request comment
+  separately rather than implying distinct, open, or waiting pull requests.
+  `current PR evidence` (compact `cur PR~`, with `~` as the ASCII evidence
+  marker; dense `PR evts`/`PR~` at the tightest widths) identifies the subset
+  of member events proven from an open PR's current files, while unknown path
+  coverage remains separate.
 
 ### Fixed
 
