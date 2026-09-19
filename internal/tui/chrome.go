@@ -369,14 +369,16 @@ var scrollFooterCandidates = footerLadder(
 // streamFooterCandidates advertises Stream's own controls: arrows move its
 // focused event, page keys move that focus by a page, and `enter` opens bounded
 // detail over the focused event.
-var streamFooterCandidates = footerLadder(
+var streamFooterCandidates = contextualFooterLadder(
+	"enter detail",
 	[]string{"up/down focus", "pgup/pgdn page", "enter detail"},
 	[]string{"up/down focus", "enter detail"},
 )
 
 // detailFooterCandidates advertises the open detail's own controls: it scrolls
 // its wrapped lines and `esc` returns to the focused event it was opened from.
-var detailFooterCandidates = footerLadder(
+var detailFooterCandidates = contextualFooterLadder(
+	"esc back",
 	[]string{"up/down scroll", "pgup/pgdn page", "esc back"},
 	[]string{"up/down scroll", "esc back"},
 )
@@ -433,6 +435,14 @@ func footerLadder(controls, shorter []string) []string {
 		hintLine(compactNavigation, nil),
 		quitHint,
 	}
+}
+
+// contextualFooterLadder inserts the active Stream action ahead of redundant
+// navigation and passive scrolling hints. At constrained widths, the action
+// remains paired with the mandatory quit hint instead of disappearing with
+// the rest of the control surface (FR-011, RG-012).
+func contextualFooterLadder(contextual string, controls, shorter []string) []string {
+	return slices.Insert(footerLadder(controls, shorter), 2, hintLine(nil, []string{contextual}))
 }
 
 // hintLine joins one navigation spelling, the advertised controls, and the quit

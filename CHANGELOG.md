@@ -108,6 +108,9 @@ workflow refuses to publish otherwise.
 - Stream now marks the focused event as arrow keys move within a stationary
   viewport, with an accessible UTF-8/ASCII indicator, and documents the focus,
   detail, and return controls.
+- At narrow widths, Stream keeps `enter detail` or `esc back` beside `q quit`
+  in the active footer before optional navigation hints yield; Rain retains its
+  strip accounting.
 - Bare `--path` patterns turn their `--repo` selections into filtered path
   Scopes rather than whole-repository Scopes. Repository-only invocations keep
   their v0.1 meaning.

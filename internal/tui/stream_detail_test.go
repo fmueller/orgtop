@@ -1,12 +1,14 @@
 package tui
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/fmueller/orgtop/internal/domain"
 )
@@ -415,6 +417,64 @@ func TestStreamAdvertisesItsDetailControls(t *testing.T) {
 	for _, footer := range []string{list, detail} {
 		if !strings.Contains(footer, quitHint) {
 			t.Errorf("the footer %q drops the mandatory quit hint", footer)
+		}
+	}
+}
+
+// TestStreamDetailHintsWinTheNarrowFooterLadder guards FR-011/RG-012: the
+// active Stream action stays discoverable at 40 columns and at every smaller
+// boundary where its contextual form fits, before the footer falls back to
+// the mandatory quit hint. The control labels are ASCII, so both charset
+// fallbacks and no-color output must carry the same action after styling is
+// stripped.
+func TestStreamDetailHintsWinTheNarrowFooterLadder(t *testing.T) {
+	api := "acme/api"
+	scopes := detailScopes(t, api, "src")
+	retained := []domain.EventEvidence{
+		detailEvidence(t, "narrow-controls", api, "alice", "opened #7", time.Minute, completeEvidence(t, "src/main.go")),
+	}
+	model := scopedStreamModel(t, scopes, retained)
+	assertFooter := func(t *testing.T, content, want string) {
+		t.Helper()
+		if got := ansi.Strip(footerOf(t, content)); got != want {
+			t.Errorf("footer is %q, want %q", got, want)
+		}
+	}
+
+	cases := []struct {
+		width      int
+		wantList   string
+		wantDetail string
+	}{
+		{width: narrowWidth, wantList: "enter detail · q quit", wantDetail: "esc back · q quit"},
+		{width: 30, wantList: "enter detail · q quit", wantDetail: "esc back · q quit"},
+		{width: 21, wantList: "enter detail · q quit", wantDetail: "esc back · q quit"},
+		{width: 20, wantList: quitHint, wantDetail: "esc back · q quit"},
+		{width: 19, wantList: quitHint, wantDetail: "esc back · q quit"},
+		{width: 17, wantList: quitHint, wantDetail: "esc back · q quit"},
+		{width: 16, wantList: quitHint, wantDetail: quitHint},
+		{width: 6, wantList: quitHint, wantDetail: quitHint},
+	}
+	for _, testCase := range cases {
+		for _, capabilities := range []struct {
+			name    string
+			charset charset
+		}{
+			{name: "ascii no-color", charset: charsetASCII},
+			{name: "utf-8 no-color", charset: charsetUTF8},
+		} {
+			t.Run(fmt.Sprintf("%dx%d/%s", testCase.width, narrowHeight, capabilities.name), func(t *testing.T) {
+				list := model
+				list.charset, list.capability = capabilities.charset, capabilityNoColor
+				listContent := renderAt(t, list, testCase.width, narrowHeight)
+				assertFits(t, listContent, testCase.width, narrowHeight)
+				assertFooter(t, listContent, testCase.wantList)
+
+				detail := opened(t, list, testCase.width, narrowHeight)
+				detailContent := detail.View().Content
+				assertFits(t, detailContent, testCase.width, narrowHeight)
+				assertFooter(t, detailContent, testCase.wantDetail)
+			})
 		}
 	}
 }

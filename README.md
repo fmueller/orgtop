@@ -289,6 +289,11 @@ without distinct intensity is given the same information as text, as
 | `q` | Quit |
 | `ctrl+c` | Quit |
 
+At narrow widths, Stream's footer keeps the active detail action beside `q quit`:
+the focused list shows `enter detail`, and open event detail shows `esc back`.
+Other optional hints yield first; Rain keeps its own strip accounting in the
+footer.
+
 Quitting cancels whatever refresh is in flight and restores the terminal.
 
 ## Contributing
