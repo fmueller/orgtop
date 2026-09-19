@@ -5,7 +5,7 @@ status: todo
 priority: high
 spec_ref: specs/v0.2.0.md#distribution-channels
 dependencies:
-    - T-074-provision-and-validate-distribution-repositories
+    - T-067-configure-multi-channel-release-workflows
 updated_at: "2026-09-17T22:50:21Z"
 ---
 
@@ -71,3 +71,4 @@ incomplete.
   permitted.
 - This blocks the last open item of T-074: a retry that resumes and reconciles
   rather than one that fails closed.
+- 2026-09-19T09:36:04Z: Dependency corrected from T-074 to completed T-067; this fix must land before T-074's final rehearsal rather than wait on it.

@@ -5,7 +5,7 @@ status: todo
 priority: medium
 spec_ref: specs/v0.2.0.md#distribution-channels
 dependencies:
-    - T-074-provision-and-validate-distribution-repositories
+    - T-067-configure-multi-channel-release-workflows
 updated_at: "2026-09-17T21:42:57Z"
 ---
 
@@ -59,3 +59,4 @@ record already on the default branch.
 - The rehearsal could not carry this fix: v0.0.1's staged ledger event pins
   `source_commit` to 7be99b1, so changing the workflow would have made the
   retried tag produce a different staged event and fail closed as contradictory.
+- 2026-09-19T09:36:04Z: Dependency corrected from T-074 to completed T-067; this fix must land before T-074's final rehearsal rather than wait on it.
