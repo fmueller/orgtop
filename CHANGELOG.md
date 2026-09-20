@@ -146,6 +146,12 @@ workflow refuses to publish otherwise.
 
 ### Fixed
 
+- A retried release no longer leaves its tap staging branch behind. A retry of
+  an already completed publication restages `release/orgtop-v<version>`, and the
+  merge that follows finds its pull request already merged and deletes nothing,
+  so the branch survived in the public tap. The deletion is now requested
+  explicitly, and only for a branch carrying exactly the formula that tag
+  published.
 - Coalesced one-commit push enrichment now checks each event's own `before` SHA,
   including cached evidence, so events sharing a head never borrow another
   event's changed-file proof.

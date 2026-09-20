@@ -2382,4 +2382,168 @@ withdraw_tags() {
   withdraw_output="$(withdraw_run)" || fail "an already clean withdrawal was refused: $withdraw_output"
 )
 
+
+# ---------------------------------------------------------------------------
+# Tap staging branch cleanup
+# ---------------------------------------------------------------------------
+
+# `gh pr merge --delete-branch` deletes nothing when the pull request is
+# already merged, which is exactly the state a retry of a completed publication
+# restages into: the branch is recreated, the merge reports `! Pull request ...
+# was already merged`, and the run succeeds with the staging branch left behind
+# in a public tap. The cleanup is therefore requested explicitly, and because it
+# deletes a public branch it refuses anything that is not byte-for-byte the
+# formula this tag published.
+tap_staging_delete="$script_dir/distribution-tap-staging-delete.sh"
+tap_fake_gh_bin="$tmp_dir/tap-fake-gh"
+tap_state="$tmp_dir/tap-state"
+mkdir -p "$tap_fake_gh_bin"
+
+# A fixture tap holding one staging branch: its formula, the files it changes
+# against the default branch, and whether a delete is honoured.
+cat >"$tap_fake_gh_bin/gh" <<'EOF'
+#!/usr/bin/env bash
+set -uo pipefail
+
+[ "${1-}" = api ] || {
+  printf 'fixture: unsupported gh command %s\n' "${1-}" >&2
+  exit 2
+}
+shift
+
+method=GET
+jq_filter=""
+path=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+  -X) method="${2-}" && shift 2 ;;
+  --jq) jq_filter="${2-}" && shift 2 ;;
+  -*) shift ;;
+  *) path="$1" && shift ;;
+  esac
+done
+
+case "$path" in
+*/git/ref/heads/*)
+  [ -e "$FAKE_STATE/branch" ] || exit 1
+  printf '{"ref":"refs/heads/staging"}\n'
+  ;;
+*/git/refs/heads/*)
+  [ "$method" = DELETE ] || {
+    printf 'fixture: unsupported ref method %s\n' "$method" >&2
+    exit 2
+  }
+  printf 'deleted\n' >>"$FAKE_STATE/deletes"
+  if [ -e "$FAKE_STATE/refuse-delete" ]; then
+    printf 'gh: Resource not accessible by integration (HTTP 403)\n' >&2
+    exit 1
+  fi
+  # A tap marked pretend-delete answers the delete with success and keeps the
+  # branch, the shape a swallowed failure would take.
+  [ -e "$FAKE_STATE/pretend-delete" ] || rm -f "$FAKE_STATE/branch"
+  ;;
+*/contents/Formula/orgtop.rb*)
+  [ -e "$FAKE_STATE/branch-formula" ] || exit 1
+  base64 -w0 <"$FAKE_STATE/branch-formula"
+  printf '\n'
+  ;;
+*/compare/*)
+  [ -n "$jq_filter" ] || {
+    printf 'fixture: a compare must be read through --jq\n' >&2
+    exit 2
+  }
+  jq -r "$jq_filter" "$FAKE_STATE/compare.json"
+  ;;
+*)
+  printf 'fixture: unsupported api path %s\n' "$path" >&2
+  exit 2
+  ;;
+esac
+EOF
+chmod +x "$tap_fake_gh_bin/gh"
+
+# tap_stage <state> seeds the fixture tap: present, gone, foreign or extra.
+tap_stage() {
+  rm -rf "$tap_state"
+  mkdir -p "$tap_state"
+  printf 'class Orgtop < Formula\n  version "9.9.9"\nend\n' >"$tap_state/published-formula"
+  printf '{"files":[{"filename":"Formula/orgtop.rb"}]}' >"$tap_state/compare.json"
+  case "$1" in
+  present)
+    : >"$tap_state/branch"
+    cp "$tap_state/published-formula" "$tap_state/branch-formula"
+    ;;
+  gone) ;;
+  foreign)
+    : >"$tap_state/branch"
+    printf 'class Orgtop < Formula\n  version "6.6.6"\nend\n' >"$tap_state/branch-formula"
+    ;;
+  extra)
+    : >"$tap_state/branch"
+    cp "$tap_state/published-formula" "$tap_state/branch-formula"
+    printf '{"files":[{"filename":"Formula/orgtop.rb"},{"filename":".github/workflows/pwn.yml"}]}' \
+      >"$tap_state/compare.json"
+    ;;
+  esac
+}
+
+tap_deletes() {
+  [ -e "$tap_state/deletes" ] || {
+    printf '0\n'
+    return
+  }
+  wc -l <"$tap_state/deletes" | tr -d ' '
+}
+
+(
+  export PATH="$tap_fake_gh_bin:$PATH"
+  export FAKE_STATE="$tap_state"
+
+  tap_run() {
+    "$tap_staging_delete" --repository fmueller/homebrew-tap \
+      --branch release/orgtop-v9.9.9 --base main \
+      --formula "$tap_state/published-formula"
+  }
+
+  # The defect: a retry whose pull request is already merged leaves the branch
+  # it restaged behind. The cleanup deletes it, and touches no formula bytes.
+  tap_stage present
+  tap_output="$(tap_run)" || fail "a retried staging branch was not cleaned: $tap_output"
+  assert_contains "a retried staging branch is deleted" "$tap_output" "release/orgtop-v9.9.9"
+  assert_equal "a retried staging branch is gone" "$([ -e "$tap_state/branch" ] && echo present || echo gone)" gone
+  assert_equal "the published formula is untouched" \
+    "$(cat "$tap_state/published-formula")" \
+    "$(printf 'class Orgtop < Formula\n  version "9.9.9"\nend')"
+
+  # A first publication deletes the branch through its own merge, so the
+  # cleanup finds nothing and must not fail the run or delete anything.
+  tap_stage gone
+  tap_output="$(tap_run)" || fail "an already deleted staging branch was refused: $tap_output"
+  assert_contains "an already deleted staging branch is accepted" "$tap_output" "already gone"
+  assert_equal "an already deleted staging branch is not deleted again" "$(tap_deletes)" 0
+
+  # It deletes only what this tag published: a branch carrying any other
+  # formula is somebody else's, and is refused rather than removed silently.
+  tap_stage foreign
+  assert_rejects "a branch carrying another formula" "does not carry the formula" -- tap_run
+  assert_equal "a branch carrying another formula survives" "$(tap_deletes)" 0
+
+  # The same for a branch that changes anything besides the formula.
+  tap_stage extra
+  assert_rejects "a branch changing more than the formula" "pwn.yml" -- tap_run
+  assert_equal "a branch changing more than the formula survives" "$(tap_deletes)" 0
+
+  # A refused deletion is a failure, not a silent no-op.
+  tap_stage present
+  : >"$tap_state/refuse-delete"
+  tap_output="$(tap_run 2>&1)" && fail "a refused deletion was reported as success: $tap_output"
+  assert_contains "a refused deletion names the branch" "$tap_output" "release/orgtop-v9.9.9"
+
+  # A delete answered with success that leaves the branch in place fails closed.
+  tap_stage present
+  : >"$tap_state/pretend-delete"
+  tap_output="$(tap_run 2>&1)" && fail "a surviving staging branch was reported as deleted: $tap_output"
+  assert_contains "a surviving staging branch fails closed" "$tap_output" "still"
+)
+
 echo "PASS: distribution guards"

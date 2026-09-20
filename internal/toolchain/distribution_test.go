@@ -28,6 +28,7 @@ var (
 		"distribution-release-guard.sh",
 		"distribution-release-state.sh",
 		"distribution-stage-assets.sh",
+		"distribution-tap-staging-delete.sh",
 		"distribution-upload-assets.sh",
 		"distribution-verify.sh",
 		"distribution-withdraw-delete.sh",
@@ -1065,6 +1066,43 @@ func TestExtensionReconciliationComparesAgainstTheSource(t *testing.T) {
 		if !strings.Contains(command, "--against") {
 			t.Errorf("an extension reconciliation runs without --against, so it compares the channel only to itself: %q", command)
 		}
+	}
+}
+
+// TestPublicationDeletesTheTapStagingBranch keeps the tap carrying only its
+// default branch once a run succeeds. `gh pr merge --delete-branch` deletes
+// nothing when the pull request is already merged, which is exactly what a
+// retry of a completed publication restages into: the branch is recreated, the
+// merge reports it was already merged, and the run succeeds with a dangling
+// release branch left in a public tap. The deletion has to be requested
+// explicitly, and what is asserted here is that the merge step still runs the
+// guard that does it; the deletion itself is a fixture in the suite.
+func TestPublicationDeletesTheTapStagingBranch(t *testing.T) {
+	t.Parallel()
+
+	var merge string
+	steps := child(jobAt(loadYAML(t, releaseWorkflow), "release"), "steps")
+	if steps == nil {
+		t.Fatal("release.yml must declare a `release` job with steps")
+	}
+	for _, step := range steps.Content {
+		if strings.Contains(value(child(step, "name")), "Merge the formula onto the verified tap base") {
+			merge = value(child(step, "run"))
+		}
+	}
+	if merge == "" {
+		t.Fatal("release.yml must merge the formula onto the verified tap base")
+	}
+
+	if !strings.Contains(merge, "distribution-tap-staging-delete.sh") {
+		t.Error("the merge must delete the staging branch explicitly; --delete-branch deletes nothing on an already merged pull request, so a retry leaves the branch in the tap")
+	}
+
+	// The cleanup compares against the formula this tag rendered rather than
+	// against whatever the branch happens to carry. Passing it anything else
+	// would either delete a branch it did not create or never match.
+	if !strings.Contains(merge, `--formula "${RUNNER_TEMP}/orgtop.rb"`) {
+		t.Error("the staging branch cleanup must match against the rendered formula the staging step wrote")
 	}
 }
 

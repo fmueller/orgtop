@@ -80,6 +80,20 @@ pull request is not that commit, and refuses after a merge whose squashed commit
 does not sit directly on it. Each refusal is durable evidence: it is written to
 the job summary with the branch, the event, the base, and the reason.
 
+### The tap staging branch
+
+The formula is staged on `release/orgtop-v<version>` in the tap and merged onto
+the base the workflow validated. That branch is expected to exist only between
+staging and the transition, and `gh pr merge --delete-branch` removes it as part
+of a first publication's merge. It removes nothing when the pull request is
+already merged, which is the state a retry of a completed publication restages
+into, so `scripts/distribution-tap-staging-delete.sh` requests the deletion
+explicitly afterwards. Because it deletes a branch in a public repository
+unattended, it deletes only a branch carrying byte-for-byte the formula that tag
+rendered and changing nothing else against the default branch; anything else
+fails the step rather than disappearing. A branch that is already gone is the
+merge having done the work, and is success.
+
 ## The ledger
 
 `docs/distribution-ledger.jsonl` is the durable record of every staged,

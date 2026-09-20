@@ -485,6 +485,13 @@ jobs:
               --body "Updates Formula/orgtop.rb to ${GITHUB_REF_NAME#v}, published by https://github.com/${SOURCE_REPOSITORY}/releases/tag/${GITHUB_REF_NAME}."
           fi
           gh pr merge "$branch" --repo "${TAP_REPOSITORY}" --squash --delete-branch
+
+          # `--delete-branch` deletes nothing when the pull request is already
+          # merged, the state a retry of a completed publication restages into.
+          # The staging branch is deleted explicitly, and only while it carries
+          # exactly the formula this tag rendered.
+          ./scripts/distribution-tap-staging-delete.sh --repository "${TAP_REPOSITORY}" \
+            --branch "$branch" --base main --formula "${RUNNER_TEMP}/orgtop.rb"
           echo "TAP_COMMIT=$(gh api "repos/${TAP_REPOSITORY}/commits/main" --jq '.sha')" >>"$GITHUB_ENV"
 
       # Final parity: every public asset is downloaded again and rechecked, and

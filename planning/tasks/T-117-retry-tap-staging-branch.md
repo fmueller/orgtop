@@ -1,12 +1,12 @@
 ---
 id: T-117-retry-tap-staging-branch
 title: Delete the tap staging branch a retry recreates
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.2.0.md#distribution-channels
 dependencies:
     - T-074-provision-and-validate-distribution-repositories
-updated_at: "2026-09-20T09:35:16Z"
+updated_at: "2026-09-20T10:18:36Z"
 ---
 
 # T-117-retry-tap-staging-branch Delete the tap staging branch a retry recreates
@@ -60,3 +60,4 @@ the later withdrawal.
   `.github/workflows/release.yml`.
 - `gh pr merge --delete-branch` is not a cleanup path for an already merged pull
   request; the branch deletion has to be requested explicitly for that case.
+- 2026-09-20T10:18:32Z: verification pass
