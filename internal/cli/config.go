@@ -79,6 +79,37 @@ const rainWindowHelp = `Rain windows:
         not an importance ranking
 `
 
+// The enrichment cache help FR-012 requires beside the flags. Like the Rain
+// window help this repeats the closed RG-005 location and bounds rather than
+// importing internal/cache: the CLI must be able to print its own help without
+// opening, or even resolving, a cache, and the toolchain documentation gate
+// checks this text against the cache package's own names.
+const enrichmentCacheHelp = `Enrichment cache:
+  changed-file evidence is reused from orgtop/enrichment-v1.db under the user
+        cache directory, beside its enrichment-v1.lock maintenance lock
+        it stores no credential, header, or raw payload, and it is disposable:
+        deleting it changes request volume, never what a Scope matches
+        a record stays usable for 30 days; bounded cleanup removes invalid and
+        expired records first, then the least recently used, at 10,000 records,
+        250,000 paths, or 128 MiB
+  --no-cache runs one process without it, --reset-cache removes it and exits
+        a cache that is unusable degrades to direct GitHub requests and shows
+        CACHE DEGRADED rather than failing the refresh
+`
+
+// The GitHub request help FR-012 requires beside the flags: what one refresh
+// costs, what enrichment may add to it, and what an exhausted limit looks like.
+// The budget repeats RG-009's closed enrichment capacity for the same reason
+// the presets are repeated here; the gate checks it against the shipped bounds.
+const githubRequestHelp = `GitHub requests:
+  one request per selected repository per refresh, out of the 5000 REST requests
+        an authenticated token gets per hour
+        changed-file enrichment may spend at most 20 changed-file requests more
+        per refresh; cache hits and deduplicated work spend none
+        an exhausted limit shows RATE LIMITED with the instructed retry time and
+        leaves path membership unknown; unknown membership is never guessed
+`
+
 // Config is the validated launch configuration.
 type Config struct {
 	// Scopes is the expanded, deduplicated selection the launch renders. It is
@@ -195,4 +226,6 @@ func writeUsage(output io.Writer, name string) {
 	_, _ = fmt.Fprintf(output, "  --%s\n        %s\n", resetCacheFlag, resetCacheUsage)
 	_, _ = fmt.Fprintf(output, "  --%s, -%s\n        %s\n", versionFlag, versionShort, versionUsage)
 	_, _ = fmt.Fprintf(output, "\n%s", rainWindowHelp)
+	_, _ = fmt.Fprintf(output, "\n%s", enrichmentCacheHelp)
+	_, _ = fmt.Fprintf(output, "\n%s", githubRequestHelp)
 }

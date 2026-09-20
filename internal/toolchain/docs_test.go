@@ -8,8 +8,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/fmueller/orgtop/internal/cache"
 	"github.com/fmueller/orgtop/internal/cli"
 	"github.com/fmueller/orgtop/internal/domain"
+	"github.com/fmueller/orgtop/internal/enrichment"
 )
 
 // documentSet is the documentation FR-011 and FR-012 govern, keyed by the
@@ -131,6 +133,83 @@ var helpRainWindowClaims = []string{
 	"last 15m",
 	"Scope-fair recent-event sample",
 	"not an importance ranking",
+}
+
+// enrichmentCacheSectionID marks the section that documents the local
+// enrichment cache: where it lives, what it keeps, the bounds and cleanup that
+// keep it from growing without limit, and the two controls that disable and
+// remove it.
+const enrichmentCacheSectionID = "enrichment-cache"
+
+// githubRequestsSectionID marks the section that documents what one refresh
+// spends at GitHub and what the user sees when a limit or a cache failure
+// degrades it.
+const githubRequestsSectionID = "github-requests"
+
+// rainMembershipSectionID marks the section that documents Rain's column
+// membership and its motion pause. Both are scoped to their own section,
+// because words as ordinary as "pause" and "column" occur in unrelated prose.
+const rainMembershipSectionID = "rain-membership"
+
+// cacheLocationClaims are the fixed location facts the user document states,
+// derived from the cache package rather than repeated, so a renamed database,
+// lock, or directory fails here instead of sending a user to a path that no
+// longer exists. The root is a placeholder: only the names beneath it are
+// fixed, while the user cache directory itself is the platform's.
+func cacheLocationClaims() []string {
+	location := cache.LocationIn(filepath.FromSlash("/root"))
+	return []string{
+		filepath.Base(location.Directory()),
+		filepath.Base(location.Database()),
+		filepath.Base(location.Lock()),
+	}
+}
+
+// documentedCacheClaims are the closed RG-005 facts a user needs before
+// trusting, bounding, or removing the cache: what it does and does not keep,
+// how long a record stays usable, the bounds cleanup converges toward, the
+// deterministic eviction order, the two controls, and the honest degraded state
+// a failed cache publishes instead of a wrong answer.
+var documentedCacheClaims = []string{
+	"user cache directory",
+	"credential",
+	"30 days",
+	"10,000",
+	"250,000",
+	"128 mib",
+	"least recently used",
+	"bounded",
+	"--no-cache",
+	"--reset-cache",
+	"disposable",
+	"cache degraded",
+}
+
+// documentedRequestClaims are the API-cost and degraded-behavior facts FR-012
+// requires: the per-refresh repository cost, the additional changed-file
+// requests enrichment may spend, the hourly budget those are spent from, the
+// badge a limit publishes with its instructed retry, and the unknown membership
+// a limited or failed refresh leaves rather than guessing.
+var documentedRequestClaims = []string{
+	"5000",
+	"one request per selected repository per refresh",
+	"rate limited",
+	"retry",
+	"unknown",
+	"never guessed",
+}
+
+// documentedRainMembershipClaims are FR-008's column and pause semantics: one
+// event that belongs to several visible Scopes is drawn in each of their
+// columns rather than assigned to one, and `p` freezes motion and ageing
+// without pausing the refresh that keeps arriving behind it.
+var documentedRainMembershipClaims = []string{
+	"every matching scope column",
+	"one normalized event",
+	"does not stop polling",
+	"freezes",
+	"queued",
+	"resume",
 }
 
 // streamColumnsSectionID marks the section that describes Stream's columns. The
@@ -615,6 +694,97 @@ func pathDiagnosticProblems(readme string, diagnostics []string) []string {
 	return problems
 }
 
+// enrichmentCacheProblems guards FR-005 and FR-012 for the cache a user can
+// find, bound, disable, and delete. The location facts are derived; the policy
+// facts are stated, so documentation that keeps the flags but drops the bounds
+// or the eviction order fails rather than leaving the cache's growth unexplained.
+func enrichmentCacheProblems(readme string) []string {
+	section, ok := documentSection(readme, enrichmentCacheSectionID)
+	if !ok {
+		return []string{"there is no " + sectionMarker(enrichmentCacheSectionID) + " section documenting the enrichment cache"}
+	}
+
+	lowered := strings.ToLower(section)
+	var problems []string
+	for _, claim := range cacheLocationClaims() {
+		if !strings.Contains(lowered, strings.ToLower(claim)) {
+			problems = append(problems, "the enrichment cache section does not name "+claim)
+		}
+	}
+	for _, claim := range documentedCacheClaims {
+		if !strings.Contains(lowered, claim) {
+			problems = append(problems, "the enrichment cache section does not state "+claim)
+		}
+	}
+	return problems
+}
+
+// githubRequestProblems guards FR-012's API-cost half: enrichment can spend
+// requests beyond the one per repository a refresh already costs, and the
+// rate-limited and degraded states that follow are named as the operator sees
+// them. The enrichment budget is derived from the shipped bounds, so raising or
+// lowering it fails here instead of understating what a refresh may spend.
+func githubRequestProblems(readme string) []string {
+	section, ok := documentSection(readme, githubRequestsSectionID)
+	if !ok {
+		return []string{"there is no " + sectionMarker(githubRequestsSectionID) + " section documenting GitHub request cost"}
+	}
+
+	lowered := strings.ToLower(section)
+	var problems []string
+	budget := fmt.Sprintf("%d changed-file requests", enrichment.DefaultBounds().Requests)
+	if !strings.Contains(lowered, budget) {
+		problems = append(problems, "the GitHub requests section does not state the enrichment budget of "+budget)
+	}
+	for _, claim := range documentedRequestClaims {
+		if !strings.Contains(lowered, claim) {
+			problems = append(problems, "the GitHub requests section does not state "+claim)
+		}
+	}
+	return problems
+}
+
+// rainMembershipProblems guards FR-008's overlap and pause semantics, which the
+// windows section deliberately does not carry: a window says how long an event
+// is kept, while these say where it is drawn and what freezes when motion stops.
+func rainMembershipProblems(readme string) []string {
+	section, ok := documentSection(readme, rainMembershipSectionID)
+	if !ok {
+		return []string{"there is no " + sectionMarker(rainMembershipSectionID) + " section documenting Rain membership and pause"}
+	}
+
+	lowered := strings.ToLower(section)
+	var problems []string
+	for _, claim := range documentedRainMembershipClaims {
+		if !strings.Contains(lowered, claim) {
+			problems = append(problems, "the Rain membership section does not state "+claim)
+		}
+	}
+	return problems
+}
+
+// helpCacheProblems guards FR-012's help-text half for the cache and its API
+// cost: a reader who never opens README still learns where the cache lives, how
+// it is bounded, how to disable or remove it, and that enrichment spends
+// additional requests whose limit is visible. The names and the budget are
+// derived from the same packages the README checks read, so the two surfaces
+// cannot drift apart.
+func helpCacheProblems(usage string) []string {
+	var problems []string
+	claims := append(cacheLocationClaims(),
+		"30 days", "10,000", "250,000", "128 MiB",
+		"least recently used", "--no-cache", "--reset-cache",
+		fmt.Sprintf("%d changed-file requests", enrichment.DefaultBounds().Requests),
+		"RATE LIMITED",
+	)
+	for _, claim := range claims {
+		if !strings.Contains(usage, claim) {
+			problems = append(problems, "the help text does not state "+claim)
+		}
+	}
+	return problems
+}
+
 // rainWindowProblems guards FR-008 and FR-012 for the surface T-103 changed:
 // the Rain windows are named in their own section with the preset the session
 // starts at, and `available` is described as the bounded current snapshot
@@ -722,6 +892,10 @@ func TestDocumentationDescribesTheShippedSurface(t *testing.T) {
 		"version and help":       versionAndHelpFlagProblems(readme),
 		"Stream columns":         streamColumnProblems(readme),
 		"Rain windows":           rainWindowProblems(readme),
+		"Rain membership":        rainMembershipProblems(readme),
+		"enrichment cache":       enrichmentCacheProblems(readme),
+		"GitHub requests":        githubRequestProblems(readme),
+		"cache help":             helpCacheProblems(documentedInvocation(t)),
 		"Rain window help":       helpRainWindowProblems(documentedInvocation(t)),
 		"path diagnostics":       pathDiagnosticProblems(readme, documentedPathDiagnostics(t)),
 		"deferred capabilities":  deferredClaimProblems(readme, deferredClaims(t, activeSpecVersion(t))),

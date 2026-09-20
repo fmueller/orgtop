@@ -184,6 +184,40 @@ diagnostic quotes the prefix and carries no byte offset.
 resolving a credential, making a request, or starting the terminal UI; it
 accepts no other flag.
 
+<!-- docs:enrichment-cache -->
+### Enrichment cache
+
+Deciding whether an event changed a selected path needs that event's changed
+files. OrgTop reuses that evidence from a local SQLite database rather than
+asking GitHub for it again.
+
+The cache lives in the fixed `orgtop` directory beneath the user cache directory
+your platform reports (`~/.cache/orgtop` on Linux, `~/Library/Caches/orgtop` on
+macOS, `%LocalAppData%\orgtop` on Windows). It holds `enrichment-v1.db` beside
+its `enrichment-v1.lock` maintenance lock. There is no path override. On POSIX
+systems the directory is created mode `0700` and its files mode `0600`.
+
+It stores only immutable changed-file evidence and the facts that validate it:
+no credential, no authorization or response header, no raw GitHub payload, no
+rendered screen, and no Scope or event identity. A denied, rate-limited, failed,
+or canceled lookup is never stored as evidence of absence.
+
+A record stays usable for 30 days from the moment it was acquired; reuse never
+extends that. The database is bounded at 10,000 evidence records, 250,000 stored
+paths, and 128 MiB of files on disk. Reaching a bound, or finding expired
+records, requests cleanup: a refresh removes at most one bounded batch — invalid
+records first, then expired ones, then the least recently used — so cleanup
+never pauses the interface while it converges toward its retained targets.
+
+The cache is disposable. `--no-cache` runs one process without opening, reading,
+or writing it at all, and `--reset-cache` removes OrgTop's own database and its
+sidecars, touching no credential and no unrelated file. Removing it costs
+GitHub requests on the next refresh; it never changes which files a Scope
+matches. A cache that is missing, busy, unwritable, over its ceiling, or written
+by another version is bypassed rather than repaired in place: the refresh reads
+from GitHub instead and the header shows `CACHE DEGRADED`, and a database from
+another version asks you to update OrgTop or run `--reset-cache`.
+
 `--version` (or `-v`) prints the release version on stdout and exits, and
 `--help` (or `-h`) prints usage and exits. Neither needs a `--repo` selection or
 a credential, and neither makes a network request, so a downloaded binary can be
@@ -208,10 +242,30 @@ If none of the three yields a token, startup exits non-zero and recommends
 setting `GH_TOKEN` or running `gh auth login`. The token value never appears in
 output, errors, or rendered views.
 
+<!-- docs:github-requests -->
+### GitHub requests and rate limits
+
 An authenticated token gets 5000 GitHub REST requests per hour. OrgTop spends
 one request per selected repository per refresh, so a selection stays well
 inside the budget at the 60-second poll floor; a very large selection is bounded
 by that hourly limit rather than by OrgTop.
+
+Changed-file enrichment can spend more. When a path Scope needs evidence an
+event does not carry, OrgTop asks GitHub for that entity's changed files, up to
+at most 20 changed-file requests per refresh; expanding an organization
+selector spends up to five more. Work is deduplicated per entity, so adding
+path Scopes over the same repositories costs no extra lookup, and a cache hit
+costs none at all.
+
+When the hourly limit is exhausted, the header shows `RATE LIMITED` with the
+retry time GitHub instructed, the interface stays responsive, and the last
+successful snapshot stays visible. Path membership that could not be decided
+stays unknown: it is counted as `U unknown` and shown as `PATH ?` in the header,
+and is never guessed into a member or a non-member. `CACHE DEGRADED` marks a
+refresh that had to work without the cache, and `TRUNCATED` marks a selection
+whose retained snapshot dropped older events at its bound. A narrow header that
+cannot fit every badge ends in a `status` count of the ones it held back rather
+than dropping them.
 
 ### Polling, not live
 
@@ -299,6 +353,24 @@ without distinct intensity is given the same information as text, as
 The separate `Interesting Now` strip samples the last 15 minutes as a
 Scope-fair recent-event sample, not an importance ranking. Its fixed 15-minute
 window is independent of Rain's selected window and its `-`/`+` controls.
+
+<!-- docs:rain-membership -->
+### Rain columns and pause
+
+Rain draws one column per visible Scope, and repository and path Scopes use the
+same column model. An event that belongs to several visible Scopes is drawn in
+every matching Scope column rather than being assigned to one of them; it stays
+one normalized event, and each drawn copy counts against that column's capacity
+and the field's global bound. `[` and `]` page through the Scope columns a
+narrow terminal cannot show at once, and the context line accounts for the
+columns and items a width is holding back.
+
+`p` pauses and resumes Rain motion. A pause freezes movement, ageing, and window
+expiry in the field; it does not stop polling, so refreshes continue behind it.
+Events that arrive while Rain is paused are queued in a deterministic order
+inside the same bounds and are admitted fairly when motion resumes. Ages
+elsewhere — the header's freshness, Stream's rows, and the `Interesting Now`
+strip — keep advancing while Rain is paused.
 
 ### Interesting Now
 

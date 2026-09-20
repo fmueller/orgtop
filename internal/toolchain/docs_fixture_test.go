@@ -126,6 +126,32 @@ Rain keeps an event while it is inside the selected window and defaults to ~24h~
 Interesting Now samples the last 15 minutes as a Scope-fair recent-event sample,
 not an importance ranking. Its fixed 15-minute window is independent of Rain's selected window and its -/+ controls.
 
+<!-- docs:rain-membership -->
+## Columns and pausing
+
+An event of several visible Scopes is drawn in every matching Scope column and
+stays one normalized event. ~p~ freezes motion, ageing, and expiry.
+Pausing does not stop polling; arrivals are queued deterministically
+and admitted when motion resumes.
+
+<!-- docs:enrichment-cache -->
+## The local cache
+
+Evidence is reused from ~orgtop/enrichment-v1.db~ in the user cache directory,
+beside ~enrichment-v1.lock~. No credential is stored. A record stays
+usable for 30 days, and bounded cleanup removes invalid and expired records
+first, then the least recently used, at 10,000 records, 250,000 paths, or
+128 MiB. The cache is disposable: ~--no-cache~ skips it and ~--reset-cache~
+removes it, and an unusable one is bypassed with CACHE DEGRADED.
+
+<!-- docs:github-requests -->
+## What a refresh spends
+
+One request per selected repository per refresh, out of 5000 an hour, plus at
+most 20 changed-file requests. An exhausted budget is shown as RATE LIMITED
+with its retry time, and membership it could not decide stays unknown and is
+never guessed.
+
 A rate-limit constraint applies, and research into restraint and training continues.
 `),
 		"CONTRIBUTING.md": "Run `task check` before opening a pull request.\n",
@@ -159,6 +185,10 @@ func TestRestructuredDocumentationSetSatisfiesEveryCheck(t *testing.T) {
 		"columns":                streamColumnProblems(readme),
 		"diagnostics":            pathDiagnosticProblems(readme, documentedPathDiagnostics(t)),
 		"Rain windows":           rainWindowProblems(readme),
+		"Rain membership":        rainMembershipProblems(readme),
+		"enrichment cache":       enrichmentCacheProblems(readme),
+		"GitHub requests":        githubRequestProblems(readme),
+		"cache help":             helpCacheProblems(documentedInvocation(t)),
 		"deferred":               deferredClaimProblems(readme, deferredClaims(t, "v0.2.0")),
 	} {
 		if len(problems) != 0 {
@@ -203,6 +233,16 @@ func TestChecksFailWhenAGuardedClaimIsDropped(t *testing.T) {
 		"the available bound":               {drop: "not complete repository history", check: rainWindowProblems},
 		"the window section":                {drop: "<!-- docs:rain-windows -->", check: rainWindowProblems},
 		"the column section":                {drop: "<!-- docs:stream-columns -->", check: streamColumnProblems},
+		"the cache bound":                   {drop: "128 MiB", check: enrichmentCacheProblems},
+		"the cache eviction order":          {drop: "least recently used", check: enrichmentCacheProblems},
+		"the cache database name":           {drop: "enrichment-v1.db", check: enrichmentCacheProblems},
+		"the cache section":                 {drop: "<!-- docs:enrichment-cache -->", check: enrichmentCacheProblems},
+		"the enrichment budget":             {drop: "20 changed-file requests", check: githubRequestProblems},
+		"the unknown honesty claim":         {drop: "never guessed", check: githubRequestProblems},
+		"the request section":               {drop: "<!-- docs:github-requests -->", check: githubRequestProblems},
+		"the Rain overlap claim":            {drop: "every matching Scope column", check: rainMembershipProblems},
+		"the Rain pause claim":              {drop: "does not stop polling", check: rainMembershipProblems},
+		"the membership section":            {drop: "<!-- docs:rain-membership -->", check: rainMembershipProblems},
 		"a quoted diagnostic": {
 			drop:  `at byte 4: empty segment`,
 			check: func(readme string) []string { return pathDiagnosticProblems(readme, diagnostics) },

@@ -13,6 +13,18 @@ workflow refuses to publish otherwise.
 
 ### Added
 
+- `README.md` and `orgtop --help` now document the local enrichment cache: its
+  fixed `orgtop/enrichment-v1.db` location under the user cache directory, what
+  it does and does not store, the 30-day record freshness, the 10,000-record,
+  250,000-path, and 128 MiB bounds its deterministic bounded cleanup converges
+  toward, and the `--no-cache` and `--reset-cache` controls that disable and
+  remove it. Both surfaces state what one refresh spends at GitHub — one request
+  per selected repository plus at most 20 changed-file enrichment requests — and
+  what an exhausted limit looks like: `RATE LIMITED` with its instructed retry,
+  membership that stays unknown rather than being guessed, and `CACHE DEGRADED`
+  for a refresh that ran without the cache. `README.md` also documents Rain's
+  overlapping column membership and its `p` pause semantics.
+
 - One tag now publishes through three channels. Alongside the release archives,
   a GitHub CLI extension release in `fmueller/gh-orgtop` carries a raw
   `gh-orgtop-<os>-<arch>` executable for each of the six platform targets, and a

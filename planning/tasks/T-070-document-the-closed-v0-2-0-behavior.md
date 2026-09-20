@@ -1,7 +1,7 @@
 ---
 id: T-070-document-the-closed-v0-2-0-behavior
 title: Document the closed v0.2.0 behavior
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.2.0.md#integration-documentation-and-release-readiness
 dependencies:
@@ -16,7 +16,7 @@ dependencies:
     - T-089-resolve-terminal-capability-and-charset-at-launch
     - T-090-move-rain-page-range-and-hidden-counts-into-the
     - T-113-correct-readme-view-selection-and-detail-control
-updated_at: "2026-08-29T09:22:04Z"
+updated_at: "2026-09-20T10:37:32Z"
 ---
 
 # T-070-document-the-closed-v0-2-0-behavior Document the closed v0.2.0 behavior
@@ -48,3 +48,4 @@ Update README and help text for the implemented closed v0.2.0 contracts after th
   their final behavior alongside the remaining contracts rather than duplicating
   implementation. All six improvements therefore precede T-106 release-candidate
   testing and T-071 final release readiness.
+- 2026-09-20T10:37:29Z: verification pass
