@@ -1,14 +1,14 @@
 ---
 id: T-074-provision-and-validate-distribution-repositories
 title: Provision and validate distribution repositories
-status: in_progress
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#distribution-channels
 dependencies:
     - T-067-configure-multi-channel-release-workflows
     - T-105-complete-the-protected-ledger-step-when-its-event
     - T-107-upload-release-assets-create-if-absent-so-a-retry
-updated_at: "2026-09-20T08:23:22Z"
+updated_at: "2026-09-20T09:36:16Z"
 ---
 
 # T-074-provision-and-validate-distribution-repositories Provision and validate distribution repositories
@@ -107,3 +107,17 @@ Provision and validate the external GitHub CLI extension companion and Homebrew 
 - 2026-09-20T07:39:58Z: The approval gate is proven and no longer the blocker. The rehearsal is now blocked on T-115: a retry of v0.0.2 cannot reconcile the already published source release, so the resuming-retry acceptance item stays unproven. v0.0.2 is still published and marked Latest; its withdrawal through the release.yml withdraw dispatch is outstanding and needs a maintainer to run it.
 - 2026-09-20T07:48:29Z: The independent-approval gate is proven for both the staged event (pull request #10) and the withdrawal notice (pull request #11), and is no longer the blocker. The final rehearsal is blocked on two release-path defects it exposed: T-115, a retry cannot reconcile an already published source release; and T-116, the withdrawal deletion step runs against the read-only default workflow token and leaves the release, tag, and extension draft behind. The v0.0.2 rehearsal is fully cleaned up: no release, tag, or staging branch remains in fmueller/orgtop, fmueller/gh-orgtop, or fmueller/homebrew-tap, and docs/withdrawals/v0.0.2.md outlives them.
 - 2026-09-20T08:20:54Z: Both blockers are closed in the release path: T-115 resolves what a tag already carries before the build and reconciles an already published source release on retry (85eef02), and T-116 moves the withdrawal deletion into scripts/distribution-withdraw-delete.sh under the distribution App token, attempting every repository and naming the ones left dirty (055ed04). Returning to todo for the authorized non-production final rehearsal on a fresh version number; the remaining acceptance items are the publication transitions, the completion manifests, the completed ledger event, final reconciliation, a retry that resumes and reconciles, and a withdrawal that removes both releases and the tag. The rehearsal needs 055ed04 pushed to main and a maintainer to dispatch the tag and the withdraw operation; no agent can perform either.
+- 2026-09-20T09:35:39Z: verification pass
+- 2026-09-20T09:36:16Z: Final rehearsal complete on non-production versions v0.0.3, v0.0.4 and v0.0.5; every acceptance item is now proven and every rehearsal artifact is removed.
+
+Publication (v0.0.3, run 35499664150; v0.0.5, run 35501755880): both source and extension releases published from one build, six raw executables and six archives byte-identical across channels, the tap formula landing on the default branch, byte-identical completion manifests on both releases, the completed ledger event through a protected pull request, and final public reconciliation of every asset against the source checksums.
+
+Resuming retry (v0.0.5, run 35501755880 attempt 2, success): the retry reconciled the already published release rather than failing closed or republishing. Both ledger steps resumed on 'the event is already on main' without opening a second pull request; the release guard saw exactly one release for the tag; all twelve artifacts plus checksums and provenance reported 'reusing the exact ... asset'; both completion manifests compared equal; the tap staging branch already carried the exact formula. The ledger holds exactly one staged and one completed event for 0.0.5.
+
+Withdrawal (v0.0.3 run 35500588522, v0.0.4 run 35501407413, v0.0.5 run 35502452568): the notice and withdrawal event merged through protected pull requests 14, 17 and 20, the tap formula reverted, and both releases and both tags deleted under the distribution App token. fmueller/orgtop, fmueller/gh-orgtop and fmueller/homebrew-tap now carry only their default branches; orgtop carries only v0.1.0; no rehearsal tag remains; the notices outlive them at docs/withdrawals/v0.0.3.md, v0.0.4.md and v0.0.5.md.
+
+Independent approval: proven on every protected transition, pull requests 12 through 20. The App authored each one and approved none.
+
+Three release-path defects found and fixed, each with a test that fails without its fix. 7540207: the asset reconciliation refused the completion manifest, so a retry of a completed publication failed closed with no way forward. 3fe92f4: the tap revert verified itself by decoding the formula blind, so a first-formula revert 404d after its own merge and stranded the releases and tags; found by the v0.0.3 withdrawal, which left both releases and both tags behind. 04d5f5a: the published reconciliations refused the completion manifest at three call sites, which is what stopped the v0.0.4 retry; distribution-verify.sh now takes --published, tolerating that one name on a downloaded set and nowhere else.
+
+T-117 records the one residue left open: a retry recreates the tap staging branch and gh pr merge --delete-branch does not remove it for an already merged pull request.

@@ -1,14 +1,14 @@
 ---
 schema_version: 1
-updated_at: "2026-09-20T08:23:22Z"
+updated_at: "2026-09-20T09:36:16Z"
 active_spec_version: v0.2.0
 active_spec_path: specs/v0.2.0.md
-current_task: T-074-provision-and-validate-distribution-repositories
-current_task_title: Provision and validate distribution repositories
-status_summary: in_progress
+current_task: ""
+current_task_title: ""
+status_summary: idle
 blockers: []
-next_action: Implement T-074-provision-and-validate-distribution-repositories and run targeted tests
-last_verification_result: pass for T-116-withdrawal-delete-token at 2026-09-20T08:19:35Z
+next_action: Select the next eligible task
+last_verification_result: pass for T-074-provision-and-validate-distribution-repositories at 2026-09-20T09:35:39Z
 relevant_artifacts: []
 continuation_notes:
     - This repository is using manual Taskrail-style workflow scaffolding until the product replaces more of the bootstrap steps.
@@ -22,12 +22,11 @@ continuation_notes:
 
 ## Current Focus
 
-- Task: `T-074-provision-and-validate-distribution-repositories`
-- Title: Provision and validate distribution repositories
+- Task: none
 
 ## Status
 
-- in_progress
+- idle
 
 ## Blockers
 
@@ -35,11 +34,11 @@ continuation_notes:
 
 ## Last Verification
 
-- pass for T-116-withdrawal-delete-token at 2026-09-20T08:19:35Z
+- pass for T-074-provision-and-validate-distribution-repositories at 2026-09-20T09:35:39Z
 
 ## Next Action
 
-- Implement T-074-provision-and-validate-distribution-repositories and run targeted tests
+- Select the next eligible task
 
 ## Relevant Artifacts
 
@@ -51,8 +50,8 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 5
-- in_progress: 1
-- completed: 110
+- todo: 6
+- in_progress: 0
+- completed: 111
 - blocked: 0
 - cancelled: 0
