@@ -1149,7 +1149,7 @@ api)
     endpoint="${4-}"
   fi
   if [ "$endpoint" = graphql ]; then
-    printf 'orgtop-distribution[bot]\n'
+    printf 'app/orgtop-distribution\n'
     exit 0
   fi
   if [[ "$endpoint" == repos/*/pulls/* ]]; then
@@ -1217,7 +1217,7 @@ pr)
     if [[ "$json" == *number* ]]; then
       emit_pr() {
         local state="$1" head_oid="$2" head_repo="$3" base="$4" merged="$5" reviews="$6" \
-          head_ref="${7:-${PROTECTED_BRANCH:?}}" author_login="${8:-orgtop-distribution[bot]}"
+          head_ref="${7:-${PROTECTED_BRANCH:?}}" author_login="${8:-app/orgtop-distribution}"
         jq -cn --arg state "$state" --arg head_oid "$head_oid" \
           --arg head_repo "$head_repo" --arg base "$base" --arg merged "$merged" \
           --arg head_ref "$head_ref" --arg author "$author_login" --argjson reviews "$reviews" \
