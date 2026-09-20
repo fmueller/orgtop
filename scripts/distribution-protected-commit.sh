@@ -146,17 +146,37 @@ is_definitive_not_found() {
 }
 
 is_stale_reopen_error() {
-  local output="$1"
-  output="${output%%$'\ngh:'*}"
-  jq -e '
-    ((.message // "") | startswith("Validation Failed"))
-    and any(.errors[]?;
-      .resource == "PullRequest"
-      and .code == "custom"
-      and .field == "state"
-      and ((.message // "") | contains("branch was force-pushed or recreated"))
-    )
-  ' <<<"$output" >/dev/null 2>&1
+  local output="$1" gh_error=no json_output="" line
+  while IFS= read -r line; do
+    line="${line%$'\r'}"
+    if [ "$line" = "gh: Validation Failed (HTTP 422)" ]; then
+      gh_error=yes
+    elif [ -n "$line" ]; then
+      [ -z "$json_output" ] || json_output+=$'\n'
+      json_output+="$line"
+    fi
+  done <<<"$output"
+  jq -s -e --arg gh_error "$gh_error" '
+    if length != 1 then false
+    else
+      .[0] as $error
+      | if (($error | type) != "object") then false
+        elif (($error | has("status")) and (($error.status | tostring) != "422")) then false
+        elif (($error.errors? | type) != "array") then false
+        else
+          (
+            ((($error.message // "") | startswith("Validation Failed"))
+              or $gh_error == "yes")
+            and any($error.errors[];
+              .resource == "PullRequest"
+              and .code == "custom"
+              and .field == "state"
+              and ((.message // "") | contains("branch was force-pushed or recreated"))
+            )
+          )
+        end
+    end
+  ' <<<"$json_output" >/dev/null 2>&1
 }
 
 read_pr_json() {

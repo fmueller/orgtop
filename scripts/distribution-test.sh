@@ -1182,12 +1182,31 @@ api)
         exit 1
         ;;
       reopen_stale|reopen_stale_open_retry|reopen_stale_closed_retry|branch_ref_changed|reopen_stale_attacker_retry|reopen_stale_retry_exhausted)
-        printf '{"message":"Validation Failed: branch was force-pushed or recreated","errors":[{"resource":"PullRequest","code":"custom","field":"state","message":"state cannot be changed: branch was force-pushed or recreated"}]}\n' >&2
+        printf '{"errors":[{"resource":"PullRequest","code":"custom","field":"state","message":"state cannot be changed: branch was force-pushed or recreated"}],"status":"422"}\n' >&2
         printf 'gh: Validation Failed (HTTP 422)\n' >&2
         exit 1
         ;;
       reopen_malformed)
         printf '{"errors":[{"resource":"PullRequest","code":"custom","field":"state","message":"state cannot be changed: branch was force-pushed or recreated"}],"status":"422"}\n' >&2
+        exit 1
+        ;;
+      reopen_non_array_errors)
+        printf '{"status":"422","errors":{"stale":{"resource":"PullRequest","code":"custom","field":"state","message":"state cannot be changed: branch was force-pushed or recreated"}}}\n' >&2
+        printf 'gh: Validation Failed (HTTP 422)\n' >&2
+        exit 1
+        ;;
+      reopen_embedded_marker)
+        printf '{"status":"500","note":"gh: Validation Failed (HTTP 422)","errors":[{"resource":"PullRequest","code":"custom","field":"state","message":"state cannot be changed: branch was force-pushed or recreated"}]}\n' >&2
+        exit 1
+        ;;
+      reopen_contradictory_status)
+        printf '{"status":"500","errors":[{"resource":"PullRequest","code":"custom","field":"state","message":"state cannot be changed: branch was force-pushed or recreated"}]}\n' >&2
+        printf 'gh: Validation Failed (HTTP 422)\n' >&2
+        exit 1
+        ;;
+      reopen_multiple_json)
+        printf '{"warning":"diagnostic"}\n{"status":"422","errors":[{"resource":"PullRequest","code":"custom","field":"state","message":"state cannot be changed: branch was force-pushed or recreated"}]}\n' >&2
+        printf 'gh: Validation Failed (HTTP 422)\n' >&2
         exit 1
         ;;
       esac
@@ -1251,7 +1270,7 @@ pr)
         emit_pr OPEN "$(git -C "$PROTECTED_WORK" rev-parse HEAD)" fmueller/orgtop main null '[]' "${PROTECTED_BRANCH:?}" ''
         exit 0
         ;;
-      closed|closed_approved|reopen_failure|reopen_malformed|merged)
+      closed|closed_approved|reopen_failure|reopen_malformed|reopen_non_array_errors|reopen_embedded_marker|reopen_contradictory_status|reopen_multiple_json|merged)
         if [ "${PROTECTED_SCENARIO}" = closed ] && [ -f "$PROTECTED_LOG.reopened" ]; then
           emit_pr OPEN "$(git -C "$PROTECTED_WORK" rev-parse HEAD)" fmueller/orgtop main null '[]'
         else
@@ -1422,7 +1441,7 @@ pr)
     ;;
   reopen)
     case "${PROTECTED_SCENARIO:?}" in
-    reopen_failure|reopen_stale|reopen_malformed|reopen_stale_open_retry|reopen_stale_closed_retry|branch_ref_changed|reopen_stale_attacker_retry|reopen_stale_retry_exhausted)
+    reopen_failure|reopen_stale|reopen_malformed|reopen_non_array_errors|reopen_embedded_marker|reopen_contradictory_status|reopen_multiple_json|reopen_stale_open_retry|reopen_stale_closed_retry|branch_ref_changed|reopen_stale_attacker_retry|reopen_stale_retry_exhausted)
       printf 'fixture: pull request reopen failed\n' >&2
       exit 1
       ;;
@@ -1709,6 +1728,30 @@ protected_prepare reopen_malformed
 assert_rejects "a malformed stale-branch error fails closed" "could not be reopened" -- protected_run
 if ! git --git-dir "$PROTECTED_REMOTE" show-ref --verify --quiet "refs/heads/$PROTECTED_BRANCH"; then
   fail "a malformed stale-branch error deleted the obsolete branch"
+fi
+
+protected_prepare reopen_non_array_errors
+assert_rejects "a non-array error collection fails closed" "could not be reopened" -- protected_run
+if ! git --git-dir "$PROTECTED_REMOTE" show-ref --verify --quiet "refs/heads/$PROTECTED_BRANCH"; then
+  fail "a non-array error collection deleted the obsolete branch"
+fi
+
+protected_prepare reopen_embedded_marker
+assert_rejects "an embedded CLI marker fails closed" "could not be reopened" -- protected_run
+if ! git --git-dir "$PROTECTED_REMOTE" show-ref --verify --quiet "refs/heads/$PROTECTED_BRANCH"; then
+  fail "an embedded CLI marker deleted the obsolete branch"
+fi
+
+protected_prepare reopen_contradictory_status
+assert_rejects "a contradictory status fails closed" "could not be reopened" -- protected_run
+if ! git --git-dir "$PROTECTED_REMOTE" show-ref --verify --quiet "refs/heads/$PROTECTED_BRANCH"; then
+  fail "a contradictory status deleted the obsolete branch"
+fi
+
+protected_prepare reopen_multiple_json
+assert_rejects "multiple JSON diagnostics fail closed" "could not be reopened" -- protected_run
+if ! git --git-dir "$PROTECTED_REMOTE" show-ref --verify --quiet "refs/heads/$PROTECTED_BRANCH"; then
+  fail "multiple JSON diagnostics deleted the obsolete branch"
 fi
 
 protected_prepare branch_ref_changed
