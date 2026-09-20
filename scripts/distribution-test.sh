@@ -1001,6 +1001,9 @@ second" --tap-commit "$tap_commit"
 # answer under a rule and without one.
 pr_state() {
   local mergeable="$1" author="$2" reviews="$3" checks="${4:-[]}"
+  if [ "$author" = orgtop-distribution ]; then
+    author='orgtop-distribution[bot]'
+  fi
   printf '{"mergeable":"%s","author":{"login":"%s"},"latestReviews":%s,"statusCheckRollup":%s}' \
     "$mergeable" "$author" "$reviews" "$checks"
 }
@@ -1055,6 +1058,9 @@ assert_equal "a changes-requested pull request waits" \
 # independent approval RG-011 requires, whatever GitHub would allow.
 assert_equal "a self-approval is not independent" \
   "$(pull_request_readiness "$(pr_state MERGEABLE orgtop-distribution '[{"state":"APPROVED","author":{"login":"orgtop-distribution"}}]')")" waiting
+
+assert_equal "an alternate-form self-approval is not independent" \
+  "$(pull_request_readiness "$(pr_state MERGEABLE orgtop-distribution '[{"state":"APPROVED","author":{"login":"app/orgtop-distribution"}}]')")" waiting
 
 # A later approval by a second reviewer still counts even when the App itself
 # appears among the reviewers.
@@ -1137,9 +1143,9 @@ if [ "${PROTECTED_SCENARIO:?}" = repo_binding ] && [ "${1-}" = pr ]; then
   esac
 fi
 
-pending='{"mergeable":"MERGEABLE","author":{"login":"orgtop-distribution"},"latestReviews":[],"statusCheckRollup":[{"conclusion":null}]}'
-failed='{"mergeable":"MERGEABLE","author":{"login":"orgtop-distribution"},"latestReviews":[{"state":"APPROVED","author":{"login":"fmueller"}}],"statusCheckRollup":[{"conclusion":"FAILURE"}]}'
-ready='{"mergeable":"MERGEABLE","author":{"login":"orgtop-distribution"},"latestReviews":[{"state":"APPROVED","author":{"login":"fmueller"}}],"statusCheckRollup":[{"conclusion":"SUCCESS"}]}'
+pending='{"mergeable":"MERGEABLE","author":{"login":"orgtop-distribution[bot]"},"latestReviews":[],"statusCheckRollup":[{"conclusion":null}]}'
+failed='{"mergeable":"MERGEABLE","author":{"login":"orgtop-distribution[bot]"},"latestReviews":[{"state":"APPROVED","author":{"login":"fmueller"}}],"statusCheckRollup":[{"conclusion":"FAILURE"}]}'
+ready='{"mergeable":"MERGEABLE","author":{"login":"orgtop-distribution[bot]"},"latestReviews":[{"state":"APPROVED","author":{"login":"fmueller"}}],"statusCheckRollup":[{"conclusion":"SUCCESS"}]}'
 retry_branch="${PROTECTED_BRANCH:?}-retry-${GITHUB_RUN_ID:-local}"
 
 case "${1-}" in
@@ -1149,7 +1155,11 @@ api)
     endpoint="${4-}"
   fi
   if [ "$endpoint" = graphql ]; then
-    printf 'app/orgtop-distribution\n'
+    if [ "${PROTECTED_SCENARIO:?}" = malformed_app_identity ]; then
+      printf 'app/\n'
+    else
+      printf 'app/orgtop-distribution\n'
+    fi
     exit 0
   fi
   if [[ "$endpoint" == repos/*/pulls/* ]]; then
@@ -1217,7 +1227,7 @@ pr)
     if [[ "$json" == *number* ]]; then
       emit_pr() {
         local state="$1" head_oid="$2" head_repo="$3" base="$4" merged="$5" reviews="$6" \
-          head_ref="${7:-${PROTECTED_BRANCH:?}}" author_login="${8:-app/orgtop-distribution}"
+          head_ref="${7:-${PROTECTED_BRANCH:?}}" author_login="${8-orgtop-distribution[bot]}"
         jq -cn --arg state "$state" --arg head_oid "$head_oid" \
           --arg head_repo "$head_repo" --arg base "$base" --arg merged "$merged" \
           --arg head_ref "$head_ref" --arg author "$author_login" --argjson reviews "$reviews" \
@@ -1235,6 +1245,10 @@ pr)
         ;;
       lookup_api_failure|lookup_api_malformed)
         emit_pr OPEN "$(git -C "$PROTECTED_WORK" rev-parse HEAD)" fmueller/orgtop main null '[]'
+        exit 0
+        ;;
+      malformed_app_identity)
+        emit_pr OPEN "$(git -C "$PROTECTED_WORK" rev-parse HEAD)" fmueller/orgtop main null '[]' "${PROTECTED_BRANCH:?}" ''
         exit 0
         ;;
       closed|closed_approved|reopen_failure|reopen_malformed|merged)
@@ -1257,7 +1271,7 @@ pr)
         if [ "$branch" = 8 ] && [ "${PROTECTED_SCENARIO}" = reopen_stale_open_retry ]; then
           emit_pr OPEN "$(git -C "$PROTECTED_WORK" rev-parse HEAD)" fmueller/orgtop main null '[]' "$retry_branch"
         elif [ "$branch" = 8 ] && [ "${PROTECTED_SCENARIO}" = reopen_stale_attacker_retry ]; then
-          emit_pr OPEN "$(git -C "$PROTECTED_WORK" rev-parse HEAD)" fmueller/orgtop main null '[]' "$retry_branch" human-collision
+          emit_pr OPEN "$(git -C "$PROTECTED_WORK" rev-parse HEAD)" fmueller/orgtop main null '[]' "$retry_branch" orgtop-distribution
         elif [ "$branch" = 8 ] && [ -f "$PROTECTED_LOG.created_branch" ]; then
           created_branch="$(cat "$PROTECTED_LOG.created_branch")"
           emit_pr OPEN "$(git -C "$PROTECTED_WORK" rev-parse HEAD)" fmueller/orgtop main null '[]' "$created_branch"
@@ -1266,7 +1280,7 @@ pr)
         elif [ "${PROTECTED_SCENARIO}" = reopen_stale_open_retry ] && [ "$branch" = "$retry_branch" ]; then
           emit_pr OPEN "$(git -C "$PROTECTED_WORK" rev-parse HEAD)" fmueller/orgtop main null '[]' "$branch"
         elif [ "${PROTECTED_SCENARIO}" = reopen_stale_attacker_retry ] && [ "$branch" = "$retry_branch" ]; then
-          emit_pr OPEN "$(git -C "$PROTECTED_WORK" rev-parse HEAD)" fmueller/orgtop main null '[]' "$branch" human-collision
+          emit_pr OPEN "$(git -C "$PROTECTED_WORK" rev-parse HEAD)" fmueller/orgtop main null '[]' "$branch" orgtop-distribution
         elif [ "${PROTECTED_SCENARIO}" = reopen_stale_closed_retry ] && [ "$branch" = "$retry_branch" ]; then
           emit_pr CLOSED "${PROTECTED_STALE_HEAD:?}" fmueller/orgtop main null '[]' "$branch"
         elif [ "${PROTECTED_SCENARIO}" = reopen_stale_retry_exhausted ] && [[ "$branch" == "$retry_branch"* ]]; then
@@ -1637,6 +1651,9 @@ assert_rejects "an attacker-authored retry pull request fails closed" "identity"
 if ! git --git-dir "$PROTECTED_REMOTE" show-ref --verify --quiet "refs/heads/$PROTECTED_BRANCH"; then
   fail "an attacker-authored retry pull request deleted the obsolete branch"
 fi
+
+protected_prepare malformed_app_identity
+assert_rejects "a malformed distribution App identity fails closed" "identity" -- protected_run
 
 protected_prepare reopen_stale_retry_exhausted
 assert_rejects "too many closed retry candidates fail closed" "too many retry" -- protected_run

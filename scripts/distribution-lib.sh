@@ -160,7 +160,8 @@ read_provenance() {
 # pull_request_readiness <json> [expected-head] decides whether the ledger pull
 # request may be merged, from the `gh pr view` fields named in
 # distribution-protected-commit.sh. When expected-head is supplied, the
-# readiness response must identify a non-empty author and that exact commit.
+# readiness response must identify the distribution App in a valid GitHub
+# identity form and that exact commit.
 # It prints `ready`, `waiting`, or `conflicting`, and returns non-zero when the
 # state cannot be read at all.
 #
@@ -179,6 +180,13 @@ read_provenance() {
 pull_request_readiness() {
   local expected_head="${2:-}"
   jq -er '
+    def app_slug:
+        if type != "string" then null
+        elif test("^app/[^/]+$") then .[4:]
+        elif test("^[^/\\[]+\\[bot\\]$") then .[0:-5]
+        else null
+        end;
+
     . as $root
     | ($root.author.login // "") as $author
     | ($root.headRefOid // "") as $head
@@ -186,8 +194,13 @@ pull_request_readiness() {
     # An approval GitHub can no longer attribute to an account is not an
     # independent human approval, and neither is one carrying the App'"'"'s own
     # login: the App opens the pull request.
-    | def independent: (.author.login // "") as $login
-        | $login != "" and $login != $author;
+    | def independent: ($author | app_slug) as $author_slug
+        | (.author.login // null) as $login
+        | ($login | app_slug) as $reviewer_slug
+        | (($login | type) == "string" and $login != "")
+          and (if $author_slug == null then $login != $author
+               else $reviewer_slug != $author_slug and $login != $author_slug
+               end);
 
     # A full reviews response is needed to bind the approval to the exact
     # current head. Keep only the latest review from each reviewer so an older
@@ -202,7 +215,7 @@ pull_request_readiness() {
     def on_current_head:
         if $head == "" then true else (.commit.oid // "") == $head end;
     def readiness_identity_valid:
-        (($root.author.login? // null) | type == "string" and . != "")
+        (($author | app_slug) != null)
         and (($root.headRefOid? // null) | type == "string" and test("^[0-9a-f]{40}$") and . == $expected_head);
     def approved_independently:
         ([effective_reviews[] | select(on_current_head and independent and .state == "APPROVED")] | length > 0)

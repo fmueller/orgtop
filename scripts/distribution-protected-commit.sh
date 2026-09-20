@@ -210,9 +210,17 @@ validate_pr_identity() {
     --arg base "$default_branch" --arg head "$expected_head" \
     --arg require_head "$require_current_head" --arg state "$expected_state" \
     --arg app "$app_login" '
+      def app_slug:
+        if type != "string" then null
+        elif test("^app/[^/]+$") then .[4:]
+        elif test("^[^/\\[]+\\[bot\\]$") then .[0:-5]
+        else null
+        end;
       (.number | type == "number" and floor == . and . > 0)
       and .state == $state
-      and .author.login == $app
+      and (((.author.login // "") | app_slug) != null)
+      and (($app | app_slug) != null)
+      and (((.author.login // "") | app_slug) == ($app | app_slug))
       and ((.headRefOid // "") | test("^[0-9a-f]{40}$"))
       and .headRefName == $branch
       and .headRepository.nameWithOwner == $repo
