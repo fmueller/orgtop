@@ -3,7 +3,7 @@
 #
 # Usage:
 #   distribution-verify.sh --dir DIR --version V --channel source|extension
-#                          [--against SOURCE_DIR]
+#                          [--against SOURCE_DIR] [--published]
 #
 # DIR holds the assets of one draft, downloaded through authenticated URLs. The
 # guard fails closed on an absent, extra, renamed, rebuilt, digest-divergent,
@@ -17,14 +17,23 @@
 # provenance lines — reconciles against itself while redistributing bytes the
 # source never published. That is the "extension raw mismatch" A-073 requires to
 # fail closed, and only a cross-channel comparison can see it.
+#
+# `--published` says DIR was downloaded from a release rather than staged from
+# the build. A release that has completed also carries the completion manifest,
+# which belongs to no channel's artifact set and is guarded separately by
+# distribution-manifest-asset.sh, so it is tolerated there and nowhere else. It
+# is tolerated, never required: a first publication reconciles before the
+# manifest is attached. Without this a retry could not reconcile what it had
+# already published, and RG-011 forbids the republish that would be the only
+# way past.
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=scripts/distribution-lib.sh
 . "$script_dir/distribution-lib.sh"
 
-usage="$0 --dir <dir> --version <version> --channel source|extension [--against <source dir>]"
-dir="" version="" channel="" against=""
+usage="$0 --dir <dir> --version <version> --channel source|extension [--against <source dir>] [--published]"
+dir="" version="" channel="" against="" published=no
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -32,6 +41,7 @@ while [ $# -gt 0 ]; do
   --version) version="${2-}" && shift 2 ;;
   --channel) channel="${2-}" && shift 2 ;;
   --against) against="${2-}" && shift 2 ;;
+  --published) published=yes && shift ;;
   *) usage_error "$usage" ;;
   esac
 done
@@ -54,6 +64,9 @@ while IFS= read -r name; do
 done <<<"$expected_with_metadata"
 
 while IFS= read -r name; do
+  if [ "$published" = yes ] && [ "$name" = "$completion_manifest_asset" ]; then
+    continue
+  fi
   grep -qxF "$name" <<<"$expected_with_metadata" || die "the $channel draft carries an unexpected asset '$name'"
 done <<<"$present"
 

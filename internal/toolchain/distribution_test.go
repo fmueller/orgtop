@@ -1116,3 +1116,44 @@ func TestDistributionLedgerIsCanonical(t *testing.T) {
 		}
 	}
 }
+
+// TestReconciliationOfAPublishedSetToleratesTheCompletionManifest keeps a retry
+// able to reconcile what it already published. Every reconciliation that reads
+// a set downloaded from a release sees whatever that release holds, and a
+// release that has completed also holds distribution-complete.json — attached
+// after publication, belonging to no channel's artifact set, and guarded by
+// distribution-manifest-asset.sh instead. Without --published those
+// reconciliations call it an unexpected asset and the retry fails closed with
+// nowhere to go, since RG-011 forbids the republish that would be the only way
+// past. The v0.0.4 rehearsal retry failed exactly there.
+//
+// The staging reconciliation, which reads the build output rather than a
+// release, must not carry the flag: nothing attaches a manifest there, and
+// tolerating one would quietly widen the set that guard accepts.
+func TestReconciliationOfAPublishedSetToleratesTheCompletionManifest(t *testing.T) {
+	t.Parallel()
+
+	var staged, published int
+	for _, command := range jobStepValues(loadYAML(t, releaseWorkflow), "release", "run") {
+		for _, line := range strings.Split(command, "./scripts/distribution-verify.sh")[1:] {
+			if index := strings.Index(line, "\n\n"); index >= 0 {
+				line = line[:index]
+			}
+			if strings.Contains(line, "--published") {
+				published++
+			} else {
+				staged++
+			}
+		}
+	}
+
+	if published == 0 {
+		t.Fatal("release.yml must reconcile the published assets it downloads from each release")
+	}
+	if staged == 0 {
+		t.Error("release.yml must still reconcile the staged build output without --published")
+	}
+	if published < 3 {
+		t.Errorf("every reconciliation of a downloaded set must pass --published; only %d do", published)
+	}
+}

@@ -302,8 +302,10 @@ jobs:
           mkdir -p "${RUNNER_TEMP}/source"
           gh release download "${GITHUB_REF_NAME}" --dir "${RUNNER_TEMP}/source"
 
+      # --published: this set came off the release, so on a retry of a
+      # completed publication it also carries the completion manifest.
       - name: Reconcile the source draft
-        run: ./scripts/distribution-verify.sh --dir "${RUNNER_TEMP}/source" --version "${GITHUB_REF_NAME#v}" --channel source
+        run: ./scripts/distribution-verify.sh --dir "${RUNNER_TEMP}/source" --version "${GITHUB_REF_NAME#v}" --channel source --published
 
       - name: Verify the built executable reports this version
         run: |
@@ -381,7 +383,7 @@ jobs:
       - name: Reconcile the extension draft
         run: |
           ./scripts/distribution-verify.sh --dir "${RUNNER_TEMP}/extension-published" \
-            --version "${GITHUB_REF_NAME#v}" --channel extension --against "${RUNNER_TEMP}/source"
+            --version "${GITHUB_REF_NAME#v}" --channel extension --against "${RUNNER_TEMP}/source" --published
 
       # The staging branch is public and may reveal planned metadata, but it is
       # inactive: the tap default branch still selects the prior formula and the
@@ -507,7 +509,7 @@ jobs:
             # published.
             reference=()
             if [ "$channel" = extension ]; then reference=(--against "${RUNNER_TEMP}/public-source"); fi
-            ./scripts/distribution-verify.sh --dir "$dir" --version "$version" --channel "$channel" "${reference[@]}"
+            ./scripts/distribution-verify.sh --dir "$dir" --version "$version" --channel "$channel" "${reference[@]}" --published
           done
 
           gh api "repos/${TAP_REPOSITORY}/contents/Formula/orgtop.rb?ref=main" \

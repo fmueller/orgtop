@@ -693,6 +693,32 @@ printf 'x' >"$extra/orgtop_0.2.0_plan9_amd64.tar.gz"
 assert_rejects "an extra asset" "unexpected asset" -- \
   "$verify" --dir "$extra" --version "$version" --channel source
 
+# A published release that has completed carries the completion manifest, which
+# is not part of any channel's artifact set: it is attached after publication by
+# distribution-manifest-asset.sh, under its own compare-exactly rules. Every
+# reconciliation of a retry downloads it along with the assets, so --published
+# names that expectation. Without it the retry could not reconcile what it had
+# already published, and RG-011 forbids the republish that would be the only way
+# past.
+completed="$(copy_stage completed)"
+printf 'completion manifest' >"$completed/distribution-complete.json"
+assert_rejects "a completion manifest in a staged set" "unexpected asset" -- \
+  "$verify" --dir "$completed" --version "$version" --channel source
+"$verify" --dir "$completed" --version "$version" --channel source --published
+assert_equal "a published set reconciles beside its completion manifest" "$?" "0"
+
+# Tolerated, not required: a first publication reconciles before the manifest
+# is attached, so --published must not start demanding it.
+"$verify" --dir "$stage" --version "$version" --channel source --published
+assert_equal "a published set without a completion manifest still reconciles" "$?" "0"
+
+# And --published tolerates exactly that one name; anything else still fails.
+completed_extra="$(copy_stage completed-extra)"
+printf 'completion manifest' >"$completed_extra/distribution-complete.json"
+printf 'x' >"$completed_extra/orgtop_0.2.0_plan9_amd64.tar.gz"
+assert_rejects "a published set carrying a stray asset" "unexpected asset" -- \
+  "$verify" --dir "$completed_extra" --version "$version" --channel source --published
+
 renamed="$(copy_stage renamed)"
 mv "$renamed/gh-orgtop-windows-amd64.exe" "$renamed/gh-orgtop-windows-amd64"
 assert_rejects "a raw Windows asset without .exe" "gh-orgtop-windows-amd64.exe" -- \
