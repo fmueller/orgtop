@@ -1,12 +1,12 @@
 ---
 id: T-116-withdrawal-delete-token
 title: Give the withdrawal deletion step a token that can delete
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#distribution-channels
 dependencies:
     - T-067-configure-multi-channel-release-workflows
-updated_at: "2026-09-20T07:47:34Z"
+updated_at: "2026-09-20T08:19:38Z"
 ---
 
 # T-116-withdrawal-delete-token Give the withdrawal deletion step a token that can delete
@@ -63,3 +63,4 @@ were removed by hand afterwards.
 ## Implementation Notes
 
 - The App token is already available to the job as `steps.app.outputs.token`.
+- 2026-09-20T08:19:35Z: verification pass

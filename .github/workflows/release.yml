@@ -785,44 +785,18 @@ jobs:
           fi
           echo "guard: the tap default branch no longer selects ${VERSION}"
 
-      # Delete-if-present, then verify. A swallowed permission failure would
-      # leave the version half withdrawn while the workflow reported success,
-      # which is the partial state the withdrawal exists to end.
+      # The App token holds `contents: write` on every channel repository;
+      # the default workflow token is read-only and stays that way, so the
+      # deletion never reaches for it. The loop itself lives in a script the
+      # fixture suite exercises, because untested inline YAML is what hid both
+      # this defect and the empty-companion one.
       - name: Delete the releases and tags
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
-          SOURCE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          for repo in "${SOURCE_REPOSITORY}" "${EXTENSION_REPOSITORY}"; do
-            token="${GH_TOKEN}"
-            if [ "$repo" = "${SOURCE_REPOSITORY}" ]; then token="${SOURCE_TOKEN}"; fi
-
-            # By id, from a listing that includes drafts. GitHub's
-            # get-release-by-tag endpoint does not see a draft, so deleting by
-            # tag name resolves nothing for a version withdrawn while still
-            # staged: it reports success, takes the git tag with it, and leaves
-            # the draft and its assets behind.
-            release_id="$(GH_TOKEN="$token" gh api --paginate "repos/$repo/releases" \
-              --jq ".[] | select(.tag_name == \"v${VERSION}\") | .id" | head -n1)"
-            if [ -n "$release_id" ]; then
-              GH_TOKEN="$token" gh api -X DELETE "repos/$repo/releases/$release_id"
-            fi
-
-            # The tag is its own ref, and a draft never had one. Delete it only
-            # when it exists, so a draft-only withdrawal is not a failure.
-            if GH_TOKEN="$token" gh api "repos/$repo/git/ref/tags/v${VERSION}" >/dev/null 2>&1; then
-              GH_TOKEN="$token" gh api -X DELETE "repos/$repo/git/refs/tags/v${VERSION}"
-            fi
-
-            if GH_TOKEN="$token" gh release view "v${VERSION}" --repo "$repo" >/dev/null 2>&1; then
-              echo "guard: the v${VERSION} release still exists in $repo" >&2
-              exit 1
-            fi
-            if GH_TOKEN="$token" gh api "repos/$repo/git/ref/tags/v${VERSION}" >/dev/null 2>&1; then
-              echo "guard: the v${VERSION} tag still exists in $repo" >&2
-              exit 1
-            fi
-          done
+          ./scripts/distribution-withdraw-delete.sh --version "${VERSION}" \
+            --repository "${SOURCE_REPOSITORY}" \
+            --repository "${EXTENSION_REPOSITORY}"
 
       - name: Verify the notice outlives the deleted releases
         env:

@@ -1994,4 +1994,235 @@ chmod +x "$companion_fake_gh_bin/gh"
   assert_rejects "a tap under another name" "named homebrew-tap" -- companion_run
 )
 
+# ---------------------------------------------------------------------------
+# Withdrawal deletion
+# ---------------------------------------------------------------------------
+
+# Withdrawal removes the release and the tag from every channel repository.
+# The loop used to live inline in release.yml, where nothing exercised it: it
+# authenticated the source repository with the read-only default workflow
+# token, so the delete 403'd, and because the failure aborted the loop the
+# extension repository was never reached. Both halves are fixtures here.
+withdraw_delete="$script_dir/distribution-withdraw-delete.sh"
+withdraw_fake_gh_bin="$tmp_dir/withdraw-fake-gh"
+withdraw_state="$tmp_dir/withdraw-state"
+mkdir -p "$withdraw_fake_gh_bin"
+
+# A fixture GitHub holding the releases and tags of each repository as files,
+# so a delete is observable and a refusal can be injected per repository.
+cat >"$withdraw_fake_gh_bin/gh" <<'EOF'
+#!/usr/bin/env bash
+set -uo pipefail
+
+slug() { printf '%s' "$1" | tr -c 'A-Za-z0-9' '_'; }
+
+method=GET
+jq_filter=""
+path=""
+repo_arg=""
+tag_arg=""
+command="${1-}"
+shift || true
+
+case "$command" in
+api)
+  while [ $# -gt 0 ]; do
+    case "$1" in
+    -X) method="${2-}" && shift 2 ;;
+    --jq) jq_filter="${2-}" && shift 2 ;;
+    --paginate) shift ;;
+    -*) shift ;;
+    *) path="$1" && shift ;;
+    esac
+  done
+  ;;
+release)
+  [ "${1-}" = view ] || {
+    printf 'fixture: unsupported release subcommand %s\n' "${1-}" >&2
+    exit 2
+  }
+  shift
+  tag_arg="${1-}" && shift
+  while [ $# -gt 0 ]; do
+    case "$1" in
+    --repo) repo_arg="${2-}" && shift 2 ;;
+    *) shift ;;
+    esac
+  done
+  ;;
+*)
+  printf 'fixture: unsupported gh command %s\n' "$command" >&2
+  exit 2
+  ;;
+esac
+
+if [ "$command" = release ]; then
+  dir="$FAKE_STATE/$(slug "$repo_arg")"
+  jq -e --arg tag "$tag_arg" 'any(.[]; .tag_name == $tag)' "$dir/releases.json" >/dev/null || exit 1
+  printf 'release %s\n' "$tag_arg"
+  exit 0
+fi
+
+case "$path" in
+repos/*/releases)
+  repo="${path%/releases}"
+  repo="${repo#repos/}"
+  dir="$FAKE_STATE/$(slug "$repo")"
+  if [ -e "$dir/refuse-list" ]; then
+    printf 'gh: Resource not accessible by integration (HTTP 403)\n' >&2
+    exit 1
+  fi
+  if [ -n "$jq_filter" ]; then
+    jq -r "$jq_filter" "$dir/releases.json"
+  else
+    cat "$dir/releases.json"
+  fi
+  ;;
+repos/*/releases/*)
+  repo="${path#repos/}"
+  id="${repo##*/}"
+  repo="${repo%/releases/*}"
+  dir="$FAKE_STATE/$(slug "$repo")"
+  [ "$method" = DELETE ] || {
+    printf 'fixture: unsupported release method %s\n' "$method" >&2
+    exit 2
+  }
+  if [ -e "$dir/refuse-delete-release" ]; then
+    printf 'gh: Resource not accessible by integration (HTTP 403)\n' >&2
+    exit 1
+  fi
+  # A repository marked pretend-delete answers the delete with success and
+  # keeps the release, which is the shape a swallowed failure would take.
+  if [ ! -e "$dir/pretend-delete" ]; then
+    jq --argjson id "$id" 'map(select(.id != $id))' "$dir/releases.json" >"$dir/releases.next"
+    mv "$dir/releases.next" "$dir/releases.json"
+  fi
+  ;;
+repos/*/git/ref/tags/*)
+  repo="${path#repos/}"
+  tag="${repo##*/}"
+  repo="${repo%/git/ref/tags/*}"
+  dir="$FAKE_STATE/$(slug "$repo")"
+  grep -qxF "$tag" "$dir/tags" 2>/dev/null || exit 1
+  printf '{"ref":"refs/tags/%s"}\n' "$tag"
+  ;;
+repos/*/git/refs/tags/*)
+  repo="${path#repos/}"
+  tag="${repo##*/}"
+  repo="${repo%/git/refs/tags/*}"
+  dir="$FAKE_STATE/$(slug "$repo")"
+  [ "$method" = DELETE ] || {
+    printf 'fixture: unsupported tag method %s\n' "$method" >&2
+    exit 2
+  }
+  if [ -e "$dir/refuse-delete-tag" ]; then
+    printf 'gh: Resource not accessible by integration (HTTP 403)\n' >&2
+    exit 1
+  fi
+  grep -vxF "$tag" "$dir/tags" >"$dir/tags.next" || true
+  mv "$dir/tags.next" "$dir/tags"
+  ;;
+*)
+  printf 'fixture: unsupported api path %s\n' "$path" >&2
+  exit 2
+  ;;
+esac
+EOF
+chmod +x "$withdraw_fake_gh_bin/gh"
+
+# withdraw_repo <owner/name> <releases json> <tags...> seeds one repository.
+withdraw_repo() {
+  local repo="$1" releases="$2" dir
+  shift 2
+  dir="$withdraw_state/$(printf '%s' "$repo" | tr -c 'A-Za-z0-9' '_')"
+  rm -rf "$dir"
+  mkdir -p "$dir"
+  printf '%s' "$releases" >"$dir/releases.json"
+  printf '%s\n' "$@" >"$dir/tags"
+}
+
+# withdraw_mark <owner/name> <marker> injects a refusal for one repository.
+withdraw_mark() {
+  printf '' >"$withdraw_state/$(printf '%s' "$1" | tr -c 'A-Za-z0-9' '_')/$2"
+}
+
+withdraw_published() {
+  withdraw_repo fmueller/orgtop '[{"id":11,"tag_name":"v9.9.9","draft":false}]' v9.9.9
+  withdraw_repo fmueller/gh-orgtop '[{"id":22,"tag_name":"v9.9.9","draft":false}]' v9.9.9
+}
+
+withdraw_remaining() {
+  jq -r 'length' "$withdraw_state/$(printf '%s' "$1" | tr -c 'A-Za-z0-9' '_')/releases.json"
+}
+
+withdraw_tags() {
+  cat "$withdraw_state/$(printf '%s' "$1" | tr -c 'A-Za-z0-9' '_')/tags"
+}
+
+(
+  export PATH="$withdraw_fake_gh_bin:$PATH"
+  export FAKE_STATE="$withdraw_state"
+
+  withdraw_run() {
+    "$withdraw_delete" --version 9.9.9 \
+      --repository fmueller/orgtop --repository fmueller/gh-orgtop
+  }
+
+  # A published version: both releases and both tags go.
+  withdraw_published
+  withdraw_output="$(withdraw_run)" || fail "a published withdrawal was refused: $withdraw_output"
+  assert_equal "the source release is deleted" "$(withdraw_remaining fmueller/orgtop)" 0
+  assert_equal "the extension release is deleted" "$(withdraw_remaining fmueller/gh-orgtop)" 0
+  assert_equal "the source tag is deleted" "$(withdraw_tags fmueller/orgtop)" ""
+  assert_equal "the extension tag is deleted" "$(withdraw_tags fmueller/gh-orgtop)" ""
+
+  # A draft-only version has no tag, and its release is invisible to the
+  # get-release-by-tag endpoint, so it is found by id from a listing that
+  # includes drafts and the absent tag is not a failure.
+  withdraw_repo fmueller/orgtop '[{"id":31,"tag_name":"v9.9.9","draft":true}]'
+  withdraw_repo fmueller/gh-orgtop '[{"id":32,"tag_name":"v9.9.9","draft":true}]'
+  withdraw_output="$(withdraw_run)" || fail "a draft-only withdrawal was refused: $withdraw_output"
+  assert_equal "the source draft is deleted" "$(withdraw_remaining fmueller/orgtop)" 0
+  assert_equal "the extension draft is deleted" "$(withdraw_remaining fmueller/gh-orgtop)" 0
+
+  # The defect this script exists for: the source delete was attempted with the
+  # read-only workflow token and 403'd, and under set -e that took the
+  # extension repository with it. One repository failing must not skip the
+  # other, and every repository left dirty must be named.
+  withdraw_published
+  withdraw_mark fmueller/orgtop refuse-delete-release
+  withdraw_output="$(withdraw_run 2>&1)" && fail "a refused deletion was reported as success: $withdraw_output"
+  assert_contains "a refused deletion names the repository" "$withdraw_output" "fmueller/orgtop"
+  assert_equal "the source release survives a refusal" "$(withdraw_remaining fmueller/orgtop)" 1
+  assert_equal "the extension is cleaned despite the source refusal" \
+    "$(withdraw_remaining fmueller/gh-orgtop)" 0
+  assert_equal "the extension tag is cleaned despite the source refusal" \
+    "$(withdraw_tags fmueller/gh-orgtop)" ""
+
+  # A refused tag deletion is reported for the same reason.
+  withdraw_published
+  withdraw_mark fmueller/gh-orgtop refuse-delete-tag
+  withdraw_output="$(withdraw_run 2>&1)" && fail "a refused tag deletion was reported as success: $withdraw_output"
+  assert_contains "a refused tag deletion names the repository" "$withdraw_output" "fmueller/gh-orgtop"
+
+  # A delete answered with success that leaves the release in place fails
+  # closed rather than reporting a complete withdrawal.
+  withdraw_published
+  withdraw_mark fmueller/orgtop pretend-delete
+  withdraw_output="$(withdraw_run 2>&1)" && fail "a surviving release was reported as withdrawn: $withdraw_output"
+  assert_contains "a surviving release fails closed" "$withdraw_output" "still"
+
+  # Listing failing is a failure of that repository, not a silent no-op.
+  withdraw_published
+  withdraw_mark fmueller/orgtop refuse-list
+  withdraw_output="$(withdraw_run 2>&1)" && fail "an unreadable repository was reported as withdrawn: $withdraw_output"
+  assert_contains "an unreadable repository is named" "$withdraw_output" "fmueller/orgtop"
+
+  # Nothing to delete is a clean withdrawal: a retried withdrawal must not fail
+  # on the state the first attempt already reached.
+  withdraw_repo fmueller/orgtop '[]'
+  withdraw_repo fmueller/gh-orgtop '[]'
+  withdraw_output="$(withdraw_run)" || fail "an already clean withdrawal was refused: $withdraw_output"
+)
+
 echo "PASS: distribution guards"

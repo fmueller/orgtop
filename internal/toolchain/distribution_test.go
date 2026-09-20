@@ -15,6 +15,7 @@ import (
 var (
 	distributionTest    = filepath.Join(repoRoot, "scripts", "distribution-test.sh")
 	distributionLedger  = filepath.Join(repoRoot, "docs", "distribution-ledger.jsonl")
+	withdrawDelete      = filepath.Join(repoRoot, "scripts", "distribution-withdraw-delete.sh")
 	distributionScripts = []string{
 		"distribution-formula.sh",
 		"distribution-ledger.sh",
@@ -29,6 +30,7 @@ var (
 		"distribution-stage-assets.sh",
 		"distribution-upload-assets.sh",
 		"distribution-verify.sh",
+		"distribution-withdraw-delete.sh",
 	}
 	// The fixture suite covers every deterministic guard. These two only make
 	// authenticated GitHub calls against repositories no test may touch, so the
@@ -507,22 +509,87 @@ func TestWithdrawalToleratesAnUnpublishedFormula(t *testing.T) {
 func TestWithdrawalDeletesDraftsByIdentity(t *testing.T) {
 	t.Parallel()
 
-	var deletion string
-	for _, command := range jobStepValues(loadYAML(t, releaseWorkflow), "withdraw", "run") {
-		if strings.Contains(command, "still exists in") {
-			deletion = command
-			break
-		}
-	}
-	if deletion == "" {
-		t.Fatal("release.yml must delete the releases and tags of a withdrawn version")
-	}
+	deletion := readFile(t, withdrawDelete)
 
 	if strings.Contains(deletion, "gh release delete") {
 		t.Error("the withdrawal must not delete by tag name: that resolution cannot see a draft, so it removes the tag and keeps the release")
 	}
-	if !strings.Contains(deletion, "releases/$") && !strings.Contains(deletion, "releases/${") {
+	if !strings.Contains(deletion, `releases/$id`) {
 		t.Error("the withdrawal must delete the release by its own id, resolved from a listing that includes drafts")
+	}
+	if !strings.Contains(deletion, "--paginate") {
+		t.Error("the withdrawal must resolve the release from a paginated listing, which is the only view that includes drafts")
+	}
+}
+
+// TestWithdrawalDeletionUsesADeletingToken pins the token the deletion runs
+// with. The workflow's default token is read-only by design, and the
+// withdrawal job deliberately does not elevate it, so authenticating the source
+// repository with `secrets.GITHUB_TOKEN` made the delete 403 — and under `set
+// -e` that failure took the extension repository with it, leaving a version the
+// ledger already recorded as withdrawn published in both channels. The
+// distribution App holds `contents: write` on all three repositories.
+func TestWithdrawalDeletionUsesADeletingToken(t *testing.T) {
+	t.Parallel()
+
+	workflow := loadYAML(t, releaseWorkflow)
+
+	job := jobAt(workflow, "withdraw")
+	if permissions := child(job, "permissions"); permissions != nil {
+		t.Errorf("the withdrawal job must not elevate the default token; it declares permissions: %v", permissions)
+	}
+
+	var deletion *yaml.Node
+	for _, step := range child(job, "steps").Content {
+		if strings.Contains(value(child(step, "run")), "distribution-withdraw-delete.sh") {
+			deletion = step
+			break
+		}
+	}
+	if deletion == nil {
+		t.Fatal("the withdrawal must delete the releases and tags through scripts/distribution-withdraw-delete.sh")
+	}
+
+	env := child(deletion, "env")
+	if env == nil {
+		t.Fatal("the deletion step must pass a token")
+	}
+	for i := 0; i+1 < len(env.Content); i += 2 {
+		if strings.Contains(env.Content[i+1].Value, "secrets.GITHUB_TOKEN") {
+			t.Errorf("the deletion step must not authenticate with the read-only workflow token: %s", env.Content[i].Value)
+		}
+	}
+	if !strings.Contains(value(child(env, "GH_TOKEN")), "steps.app.outputs.token") {
+		t.Error("the deletion step must authenticate with the distribution App token, which holds contents: write on every channel repository")
+	}
+
+	run := value(child(deletion, "run"))
+	for _, required := range []string{"${SOURCE_REPOSITORY}", "${EXTENSION_REPOSITORY}"} {
+		if !strings.Contains(run, required) {
+			t.Errorf("the deletion must cover %s", required)
+		}
+	}
+}
+
+// TestWithdrawalDeletionReportsEveryDirtyRepository keeps one repository's
+// refusal from deciding anything for the next. The inline loop this replaced
+// ran under `set -e`, so the first failure ended the step and the repositories
+// after it were never attempted, let alone reported.
+func TestWithdrawalDeletionReportsEveryDirtyRepository(t *testing.T) {
+	t.Parallel()
+
+	script := readFile(t, withdrawDelete)
+
+	if strings.Contains(script, "set -e") {
+		t.Error("the deletion must not abort on the first repository that fails; the ones after it would never be attempted")
+	}
+	if !strings.Contains(script, "could not clean") {
+		t.Error("the deletion must name every repository it could not clean")
+	}
+	for _, required := range []string{"still exists in", "die "} {
+		if !strings.Contains(script, required) {
+			t.Errorf("the deletion must verify the removal and fail closed; it does not %q", required)
+		}
 	}
 }
 
@@ -925,7 +992,9 @@ func TestWithdrawalRestoresEveryChannel(t *testing.T) {
 		t.Error("the withdrawal must delete the tap staging branch it created")
 	}
 
-	// A swallowed deletion failure is indistinguishable from success.
+	// A swallowed deletion failure is indistinguishable from success. The
+	// deletion itself lives in a script the fixture suite exercises, so what is
+	// asserted here is that the withdrawal still runs it.
 	for _, command := range commands {
 		for _, line := range strings.Split(command, "\n") {
 			if strings.Contains(line, "gh release delete") && strings.Contains(line, "|| true") {
@@ -933,8 +1002,8 @@ func TestWithdrawalRestoresEveryChannel(t *testing.T) {
 			}
 		}
 	}
-	if !strings.Contains(script, "still exists in") {
-		t.Error("the withdrawal must verify the releases and tags are actually gone")
+	if !strings.Contains(script, "distribution-withdraw-delete.sh") {
+		t.Error("the withdrawal must delete the releases and tags of every channel repository")
 	}
 }
 
