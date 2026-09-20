@@ -157,8 +157,11 @@ read_provenance() {
   done <"$file"
 }
 
-# pull_request_readiness <json> decides whether the ledger pull request may be
-# merged, from the `gh pr view` fields named in distribution-protected-commit.sh.
+# pull_request_readiness <json> [expected-head] decides whether the ledger pull
+# request may be merged, from the `gh pr view` fields named in
+# distribution-protected-commit.sh. When expected-head is supplied, the
+# readiness response must identify the distribution App in a valid GitHub
+# identity form and that exact commit.
 # It prints `ready`, `waiting`, or `conflicting`, and returns non-zero when the
 # state cannot be read at all.
 #
@@ -175,19 +178,48 @@ read_provenance() {
 # through a command substitution, where an exit would end only the subshell and
 # leave the poll loop retrying a state it never understood.
 pull_request_readiness() {
+  local expected_head="${2:-}"
   jq -er '
+    def app_slug:
+        if type != "string" then null
+        elif test("^app/[^/]+$") then .[4:]
+        elif test("^[^/\\[]+\\[bot\\]$") then .[0:-5]
+        else null
+        end;
+
+    . as $root
+    | ($root.author.login // "") as $author
+    | ($root.headRefOid // "") as $head
+
     # An approval GitHub can no longer attribute to an account is not an
     # independent human approval, and neither is one carrying the App'"'"'s own
     # login: the App opens the pull request.
-    def independent: (.author.login // "") as $login
-      | $login != "" and $login != $author;
+    | def independent: ($author | app_slug) as $author_slug
+        | (.author.login // null) as $login
+        | ($login | app_slug) as $reviewer_slug
+        | (($login | type) == "string" and $login != "")
+          and (if $author_slug == null then $login != $author
+               else $reviewer_slug != $author_slug and $login != $author_slug
+               end);
 
-    # latestReviews carries one entry per reviewer, so an approval that a later
-    # objection from the same person replaced is already gone. An objection
-    # standing from anyone else is not settled by somebody else'"'"'s approval.
+    # A full reviews response is needed to bind the approval to the exact
+    # current head. Keep only the latest review from each reviewer so an older
+    # approval cannot survive a later objection by that same reviewer. The
+    # legacy latestReviews fixture remains supported for the focused unit cases.
+    def review_stream:
+        if ($root.reviews? != null) then $root.reviews else ($root.latestReviews // []) end;
+    def effective_reviews:
+        [review_stream[]? | select(.author.login? != null)]
+        | group_by(.author.login)
+        | map(max_by(.submittedAt // ""));
+    def on_current_head:
+        if $head == "" then true else (.commit.oid // "") == $head end;
+    def readiness_identity_valid:
+        (($author | app_slug) != null)
+        and (($root.headRefOid? // null) | type == "string" and test("^[0-9a-f]{40}$") and . == $expected_head);
     def approved_independently:
-      ([.latestReviews[]? | select(independent and .state == "APPROVED")] | length > 0)
-      and ([.latestReviews[]? | select(independent and .state == "CHANGES_REQUESTED")] | length == 0);
+        ([effective_reviews[] | select(on_current_head and independent and .state == "APPROVED")] | length > 0)
+        and ([effective_reviews[] | select(on_current_head and independent and .state == "CHANGES_REQUESTED")] | length == 0);
 
     # statusCheckRollup mixes check runs, which report a conclusion, with classic
     # commit statuses, which report only a state and never a conclusion. Reading
@@ -199,11 +231,12 @@ pull_request_readiness() {
       end;
     def checks_settled: [.statusCheckRollup[]? | select(settled | not)] | length == 0;
 
-    if .mergeable == "CONFLICTING" then "conflicting"
+    if (($expected_head == "" or readiness_identity_valid) | not) then error("invalid readiness identity")
+    elif .mergeable == "CONFLICTING" then "conflicting"
     elif .mergeable == "MERGEABLE" and approved_independently and checks_settled then "ready"
     else "waiting"
     end
-  ' --arg author "$(printf '%s' "$1" | jq -r '.author.login // ""' 2>/dev/null)" <<<"$1" 2>/dev/null ||
+  ' --arg expected_head "$expected_head" <<<"$1" 2>/dev/null ||
     {
       printf 'guard: the pull request state could not be read\n' >&2
       return 1
