@@ -1186,6 +1186,34 @@ api)
         printf 'gh: Validation Failed (HTTP 422)\n' >&2
         exit 1
         ;;
+      reopen_adjacent_marker)
+        printf '{"message":"Validation Failed","errors":[{"resource":"PullRequest","code":"custom","field":"state","message":"state cannot be changed. The ledger/orgtop-v0.0.2-staged branch was force-pushed or recreated."}],"documentation_url":"https://docs.github.com/rest/pulls/pulls#update-a-pull-request","status":"422"}gh: Validation Failed (HTTP 422)\n' >&2
+        exit 1
+        ;;
+      reopen_marker_before_json)
+        printf 'gh: Validation Failed (HTTP 422)\n{"message":"Validation Failed","errors":[{"resource":"PullRequest","code":"custom","field":"state","message":"state cannot be changed: branch was force-pushed or recreated"}],"status":"422"}\n' >&2
+        exit 1
+        ;;
+      reopen_duplicate_marker)
+        printf '{"message":"Validation Failed","errors":[{"resource":"PullRequest","code":"custom","field":"state","message":"state cannot be changed: branch was force-pushed or recreated"}],"status":"422"}\n' >&2
+        printf 'gh: Validation Failed (HTTP 422)\n' >&2
+        printf 'gh: Validation Failed (HTTP 422)\n' >&2
+        exit 1
+        ;;
+      reopen_marker_whitespace)
+        printf '{"message":"Validation Failed","errors":[{"resource":"PullRequest","code":"custom","field":"state","message":"state cannot be changed: branch was force-pushed or recreated"}],"status":"422"} \n' >&2
+        printf 'gh: Validation Failed (HTTP 422)\n' >&2
+        exit 1
+        ;;
+      reopen_leading_marker_whitespace)
+        printf ' {"message":"Validation Failed","errors":[{"resource":"PullRequest","code":"custom","field":"state","message":"state cannot be changed: branch was force-pushed or recreated"}],"status":"422"}\n' >&2
+        printf 'gh: Validation Failed (HTTP 422)\n' >&2
+        exit 1
+        ;;
+      reopen_leading_json_whitespace)
+        printf ' {"message":"Validation Failed","errors":[{"resource":"PullRequest","code":"custom","field":"state","message":"state cannot be changed: branch was force-pushed or recreated"}],"status":"422"}\n' >&2
+        exit 1
+        ;;
       reopen_malformed)
         printf '{"errors":[{"resource":"PullRequest","code":"custom","field":"state","message":"state cannot be changed: branch was force-pushed or recreated"}],"status":"422"}\n' >&2
         exit 1
@@ -1270,7 +1298,7 @@ pr)
         emit_pr OPEN "$(git -C "$PROTECTED_WORK" rev-parse HEAD)" fmueller/orgtop main null '[]' "${PROTECTED_BRANCH:?}" ''
         exit 0
         ;;
-      closed|closed_approved|reopen_failure|reopen_malformed|reopen_non_array_errors|reopen_embedded_marker|reopen_contradictory_status|reopen_multiple_json|merged)
+      closed|closed_approved|reopen_failure|reopen_malformed|reopen_non_array_errors|reopen_embedded_marker|reopen_contradictory_status|reopen_multiple_json|reopen_marker_before_json|reopen_duplicate_marker|reopen_marker_whitespace|reopen_leading_marker_whitespace|reopen_leading_json_whitespace|merged)
         if [ "${PROTECTED_SCENARIO}" = closed ] && [ -f "$PROTECTED_LOG.reopened" ]; then
           emit_pr OPEN "$(git -C "$PROTECTED_WORK" rev-parse HEAD)" fmueller/orgtop main null '[]'
         else
@@ -1286,7 +1314,7 @@ pr)
         fi
         exit 0
         ;;
-      reopen_stale|reopen_stale_open_retry|reopen_stale_closed_retry|branch_ref_changed|reopen_stale_attacker_retry|reopen_stale_retry_exhausted)
+      reopen_stale|reopen_adjacent_marker|reopen_stale_open_retry|reopen_stale_closed_retry|branch_ref_changed|reopen_stale_attacker_retry|reopen_stale_retry_exhausted)
         if [ "$branch" = 8 ] && [ "${PROTECTED_SCENARIO}" = reopen_stale_open_retry ]; then
           emit_pr OPEN "$(git -C "$PROTECTED_WORK" rev-parse HEAD)" fmueller/orgtop main null '[]' "$retry_branch"
         elif [ "$branch" = 8 ] && [ "${PROTECTED_SCENARIO}" = reopen_stale_attacker_retry ]; then
@@ -1382,7 +1410,7 @@ pr)
         response="$pending"
       fi
       ;;
-    reopen_stale|reopen_stale_open_retry|reopen_stale_closed_retry|branch_ref_changed|reopen_stale_attacker_retry)
+    reopen_stale|reopen_adjacent_marker|reopen_stale_open_retry|reopen_stale_closed_retry|branch_ref_changed|reopen_stale_attacker_retry)
       response="$ready"
       ;;
     delayed)
@@ -1441,7 +1469,7 @@ pr)
     ;;
   reopen)
     case "${PROTECTED_SCENARIO:?}" in
-    reopen_failure|reopen_stale|reopen_malformed|reopen_non_array_errors|reopen_embedded_marker|reopen_contradictory_status|reopen_multiple_json|reopen_stale_open_retry|reopen_stale_closed_retry|branch_ref_changed|reopen_stale_attacker_retry|reopen_stale_retry_exhausted)
+    reopen_failure|reopen_stale|reopen_malformed|reopen_non_array_errors|reopen_embedded_marker|reopen_contradictory_status|reopen_multiple_json|reopen_adjacent_marker|reopen_marker_before_json|reopen_duplicate_marker|reopen_marker_whitespace|reopen_leading_marker_whitespace|reopen_leading_json_whitespace|reopen_stale_open_retry|reopen_stale_closed_retry|branch_ref_changed|reopen_stale_attacker_retry|reopen_stale_retry_exhausted)
       printf 'fixture: pull request reopen failed\n' >&2
       exit 1
       ;;
@@ -1651,6 +1679,14 @@ if git --git-dir "$PROTECTED_REMOTE" show-ref --verify --quiet "refs/heads/$PROT
   fail "a stale closed pull request left its obsolete branch behind"
 fi
 
+protected_prepare reopen_adjacent_marker
+protected_output="$(protected_run)"
+assert_contains "adjacent JSON and CLI framing uses a fresh retry branch" "$protected_output" "event is on main"
+assert_equal "adjacent JSON and CLI framing reopens exactly once" "$(grep -c 'gh pr reopen' "$PROTECTED_LOG")" "1"
+if git --git-dir "$PROTECTED_REMOTE" show-ref --verify --quiet "refs/heads/$PROTECTED_BRANCH"; then
+  fail "adjacent JSON and CLI framing left its obsolete branch behind"
+fi
+
 protected_prepare reopen_stale_open_retry
 protected_output="$(protected_run)"
 assert_contains "an open retry pull request is safely refreshed" "$protected_output" "event is on main"
@@ -1740,6 +1776,36 @@ protected_prepare reopen_embedded_marker
 assert_rejects "an embedded CLI marker fails closed" "could not be reopened" -- protected_run
 if ! git --git-dir "$PROTECTED_REMOTE" show-ref --verify --quiet "refs/heads/$PROTECTED_BRANCH"; then
   fail "an embedded CLI marker deleted the obsolete branch"
+fi
+
+protected_prepare reopen_marker_before_json
+assert_rejects "a marker before JSON fails closed" "could not be reopened" -- protected_run
+if ! git --git-dir "$PROTECTED_REMOTE" show-ref --verify --quiet "refs/heads/$PROTECTED_BRANCH"; then
+  fail "a marker before JSON deleted the obsolete branch"
+fi
+
+protected_prepare reopen_duplicate_marker
+assert_rejects "a duplicate CLI marker fails closed" "could not be reopened" -- protected_run
+if ! git --git-dir "$PROTECTED_REMOTE" show-ref --verify --quiet "refs/heads/$PROTECTED_BRANCH"; then
+  fail "a duplicate CLI marker deleted the obsolete branch"
+fi
+
+protected_prepare reopen_marker_whitespace
+assert_rejects "whitespace-separated JSON and CLI framing fails closed" "could not be reopened" -- protected_run
+if ! git --git-dir "$PROTECTED_REMOTE" show-ref --verify --quiet "refs/heads/$PROTECTED_BRANCH"; then
+  fail "whitespace-separated JSON and CLI framing deleted the obsolete branch"
+fi
+
+protected_prepare reopen_leading_marker_whitespace
+assert_rejects "leading marker framing whitespace fails closed" "could not be reopened" -- protected_run
+if ! git --git-dir "$PROTECTED_REMOTE" show-ref --verify --quiet "refs/heads/$PROTECTED_BRANCH"; then
+  fail "leading marker framing whitespace deleted the obsolete branch"
+fi
+
+protected_prepare reopen_leading_json_whitespace
+assert_rejects "leading JSON framing whitespace fails closed" "could not be reopened" -- protected_run
+if ! git --git-dir "$PROTECTED_REMOTE" show-ref --verify --quiet "refs/heads/$PROTECTED_BRANCH"; then
+  fail "leading JSON framing whitespace deleted the obsolete branch"
 fi
 
 protected_prepare reopen_contradictory_status

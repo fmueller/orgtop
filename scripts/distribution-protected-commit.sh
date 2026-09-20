@@ -146,16 +146,31 @@ is_definitive_not_found() {
 }
 
 is_stale_reopen_error() {
-  local output="$1" gh_error=no json_output="" line
-  while IFS= read -r line; do
-    line="${line%$'\r'}"
-    if [ "$line" = "gh: Validation Failed (HTTP 422)" ]; then
-      gh_error=yes
-    elif [ -n "$line" ]; then
-      [ -z "$json_output" ] || json_output+=$'\n'
-      json_output+="$line"
-    fi
-  done <<<"$output"
+  local output="$1" gh_error=no json_output marker='gh: Validation Failed (HTTP 422)'
+
+  # gh emits the JSON diagnostic followed either immediately by its exact
+  # marker or on the next line. Anything else containing the marker is
+  # diagnostic noise, not a stale-branch signal.
+  output="${output//$'\r\n'/$'\n'}"
+  output="${output%$'\r'}"
+  case "$output" in
+  *"$marker")
+    json_output="${output%"$marker"}"
+    case "$json_output" in
+    *"$marker"*) return 1 ;;
+    *$'\n') json_output="${json_output%$'\n'}" ;;
+    esac
+    gh_error=yes
+    ;;
+  *"$marker"*)
+    return 1
+    ;;
+  *)
+    json_output="$output"
+    ;;
+  esac
+  [[ -n "$json_output" && "$json_output" != [[:space:]]* && "$json_output" != *[[:space:]] ]] || return 1
+
   jq -s -e --arg gh_error "$gh_error" '
     if length != 1 then false
     else
