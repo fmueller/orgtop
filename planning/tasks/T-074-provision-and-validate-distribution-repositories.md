@@ -1,14 +1,14 @@
 ---
 id: T-074-provision-and-validate-distribution-repositories
 title: Provision and validate distribution repositories
-status: todo
+status: in_progress
 priority: high
 spec_ref: specs/v0.2.0.md#distribution-channels
 dependencies:
     - T-067-configure-multi-channel-release-workflows
     - T-105-complete-the-protected-ledger-step-when-its-event
     - T-107-upload-release-assets-create-if-absent-so-a-retry
-updated_at: "2026-09-20T08:20:54Z"
+updated_at: "2026-09-20T08:23:22Z"
 ---
 
 # T-074-provision-and-validate-distribution-repositories Provision and validate distribution repositories

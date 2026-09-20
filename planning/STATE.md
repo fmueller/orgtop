@@ -1,13 +1,13 @@
 ---
 schema_version: 1
-updated_at: "2026-09-20T08:20:54Z"
+updated_at: "2026-09-20T08:23:22Z"
 active_spec_version: v0.2.0
 active_spec_path: specs/v0.2.0.md
-current_task: ""
-current_task_title: ""
-status_summary: idle
+current_task: T-074-provision-and-validate-distribution-repositories
+current_task_title: Provision and validate distribution repositories
+status_summary: in_progress
 blockers: []
-next_action: Select the next eligible task
+next_action: Implement T-074-provision-and-validate-distribution-repositories and run targeted tests
 last_verification_result: pass for T-116-withdrawal-delete-token at 2026-09-20T08:19:35Z
 relevant_artifacts: []
 continuation_notes:
@@ -22,11 +22,12 @@ continuation_notes:
 
 ## Current Focus
 
-- Task: none
+- Task: `T-074-provision-and-validate-distribution-repositories`
+- Title: Provision and validate distribution repositories
 
 ## Status
 
-- idle
+- in_progress
 
 ## Blockers
 
@@ -38,7 +39,7 @@ continuation_notes:
 
 ## Next Action
 
-- Select the next eligible task
+- Implement T-074-provision-and-validate-distribution-repositories and run targeted tests
 
 ## Relevant Artifacts
 
@@ -50,8 +51,8 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 6
-- in_progress: 0
+- todo: 5
+- in_progress: 1
 - completed: 110
 - blocked: 0
 - cancelled: 0
