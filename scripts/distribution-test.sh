@@ -22,6 +22,7 @@ append="$script_dir/distribution-ledger-append.sh"
 notice_script="$script_dir/distribution-notice.sh"
 protected_commit="$script_dir/distribution-protected-commit.sh"
 release_guard="$script_dir/distribution-release-guard.sh"
+companion_guard="$script_dir/distribution-companion-guard.sh"
 # shellcheck source=scripts/distribution-lib.sh
 . "$script_dir/distribution-lib.sh"
 
@@ -1861,5 +1862,96 @@ assert_rejects "a different same-version event fails closed" "contradictory" -- 
 protected_prepare timeout
 PROTECTED_ATTEMPTS=2
 assert_rejects "a missing event times out rather than claiming completion" "not approved and green" -- protected_run
+
+# ---------------------------------------------------------------------------
+# Companion repository guard
+# ---------------------------------------------------------------------------
+
+# The companion repositories are checked before anything is built, because
+# staging into the wrong repository is not recoverable by retry, and because a
+# repository that cannot receive a published release must not be discovered at
+# the publish transition, when the source release is already public.
+companion_fake_gh_bin="$tmp_dir/companion-fake-gh"
+mkdir -p "$companion_fake_gh_bin"
+cat >"$companion_fake_gh_bin/gh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+[ "${1-}" = api ] || {
+  printf 'fixture: unsupported gh command %s\n' "${1-}" >&2
+  exit 2
+}
+path="${2-}"
+fixture_var() {
+  printf 'FAKE_%s_%s' "$1" "$(printf '%s' "$2" | tr -c 'A-Za-z0-9' '_')"
+}
+
+case "$path" in
+repos/*/commits*)
+  repo="${path%/commits*}"
+  repo="${repo#repos/}"
+  var="$(fixture_var COMMITS "$repo")"
+  if [ "${!var-}" = empty ]; then
+    # The exact shape GitHub returns for a repository carrying no commit.
+    printf 'gh: Git Repository is empty. (HTTP 409)\n' >&2
+    exit 1
+  fi
+  printf '[{"sha":"1111111111111111111111111111111111111111"}]'
+  ;;
+repos/*)
+  repo="${path#repos/}"
+  var="$(fixture_var REPO "$repo")"
+  [ -n "${!var-}" ] || {
+    printf 'fixture: no repository fixture for %s\n' "$repo" >&2
+    exit 1
+  }
+  printf '%s' "${!var}"
+  ;;
+*)
+  printf 'fixture: unsupported api path %s\n' "$path" >&2
+  exit 2
+  ;;
+esac
+EOF
+chmod +x "$companion_fake_gh_bin/gh"
+
+(
+  export PATH="$companion_fake_gh_bin:$PATH"
+
+  export FAKE_REPO_fmueller_gh_orgtop='{"owner":{"login":"fmueller"},"name":"gh-orgtop","topics":["gh-extension"]}'
+  export FAKE_REPO_fmueller_homebrew_tap='{"owner":{"login":"fmueller"},"name":"homebrew-tap","topics":[]}'
+
+  companion_run() {
+    "$companion_guard" --extension fmueller/gh-orgtop --tap fmueller/homebrew-tap
+  }
+
+  companion_output="$(companion_run)"
+  assert_contains "provisioned companions are accepted" "$companion_output" "gh-orgtop"
+  assert_contains "provisioned companions are accepted" "$companion_output" "homebrew-tap"
+
+  # The defect this guard exists for: GitHub accepts a draft release in a
+  # repository carrying no commit and refuses to publish it, so an empty
+  # companion fails at the publish transition rather than before the build.
+  export FAKE_COMMITS_fmueller_gh_orgtop=empty
+  assert_rejects "an empty extension repository" "carries no commit" -- companion_run
+  unset FAKE_COMMITS_fmueller_gh_orgtop
+
+  export FAKE_COMMITS_fmueller_homebrew_tap=empty
+  assert_rejects "an empty tap repository" "carries no commit" -- companion_run
+  unset FAKE_COMMITS_fmueller_homebrew_tap
+
+  export FAKE_REPO_fmueller_gh_orgtop='{"owner":{"login":"someone"},"name":"gh-orgtop","topics":["gh-extension"]}'
+  assert_rejects "an extension owned by another account" "owned by fmueller" -- companion_run
+
+  export FAKE_REPO_fmueller_gh_orgtop='{"owner":{"login":"fmueller"},"name":"gh-orgtop","topics":[]}'
+  assert_rejects "an extension without the discovery topic" "gh-extension" -- companion_run
+
+  export FAKE_REPO_fmueller_gh_orgtop='{"owner":{"login":"fmueller"},"name":"orgtop-gh","topics":["gh-extension"]}'
+  assert_rejects "an extension without the gh- name" "named gh-orgtop" -- companion_run
+
+  export FAKE_REPO_fmueller_gh_orgtop='{"owner":{"login":"fmueller"},"name":"gh-orgtop","topics":["gh-extension"]}'
+  export FAKE_REPO_fmueller_homebrew_tap='{"owner":{"login":"fmueller"},"name":"tap","topics":[]}'
+  assert_rejects "a tap under another name" "named homebrew-tap" -- companion_run
+)
 
 echo "PASS: distribution guards"

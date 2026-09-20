@@ -126,22 +126,14 @@ jobs:
       # Ownership, the gh- prefix, and the topic are what GitHub CLI discovery
       # needs. They are not publisher proof, and the documentation says so; they
       # are checked here because staging into the wrong repository is not
-      # recoverable by retry.
+      # recoverable by retry. The guard also refuses an empty companion, which
+      # GitHub accepts a draft into and then refuses to publish.
       - name: Verify the companion repositories
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
         run: |
-          extension="$(gh api "repos/${EXTENSION_REPOSITORY}" \
-            --jq '[.owner.login, .name, ((.topics // []) | index("gh-extension") != null | tostring)] | join(" ")')"
-          if [ "$extension" != "fmueller gh-orgtop true" ]; then
-            echo "guard: ${EXTENSION_REPOSITORY} must be owned by fmueller, named gh-orgtop, and carry the gh-extension topic; got: $extension" >&2
-            exit 1
-          fi
-          tap="$(gh api "repos/${TAP_REPOSITORY}" --jq '[.owner.login, .name] | join(" ")')"
-          if [ "$tap" != "fmueller homebrew-tap" ]; then
-            echo "guard: ${TAP_REPOSITORY} must be owned by fmueller and named homebrew-tap; got: $tap" >&2
-            exit 1
-          fi
+          ./scripts/distribution-companion-guard.sh \
+            --extension "${EXTENSION_REPOSITORY}" --tap "${TAP_REPOSITORY}"
 
       # One build, from the tag commit, with the pinned toolchain. It produces
       # the six archives, the six renamed raw assets, and checksums.txt, and
