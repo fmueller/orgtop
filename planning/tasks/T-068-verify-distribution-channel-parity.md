@@ -1,7 +1,7 @@
 ---
 id: T-068-verify-distribution-channel-parity
 title: Verify distribution channel parity
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.2.0.md#distribution-channels
 dependencies:
@@ -12,7 +12,7 @@ dependencies:
     - T-110-qualify-activity-counts-and-empty-states-by
     - T-111-keep-stream-detail-navigation-discoverable-at
     - T-112-disclose-the-fixed-interesting-now-recency-window
-updated_at: "2026-08-29T09:22:04Z"
+updated_at: "2026-09-20T10:24:41Z"
 ---
 
 # T-068-verify-distribution-channel-parity Verify distribution channel parity
@@ -40,3 +40,4 @@ Build and verify the closed channel artifact matrix and installation contracts w
 - Do not publish tags or external repositories during task verification.
 - Verify artifacts built after the five pre-release UI improvements T-108 through
   T-112; earlier binary parity evidence does not cover their final behavior.
+- 2026-09-20T10:24:26Z: verification pass

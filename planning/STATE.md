@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-updated_at: "2026-09-20T09:50:52Z"
+updated_at: "2026-09-20T10:24:41Z"
 active_spec_version: v0.2.0
 active_spec_path: specs/v0.2.0.md
 current_task: ""
@@ -8,7 +8,7 @@ current_task_title: ""
 status_summary: idle
 blockers: []
 next_action: Select the next eligible task
-last_verification_result: pass for T-114-protected-ledger-merge-atomic at 2026-09-20T09:50:48Z
+last_verification_result: pass for T-068-verify-distribution-channel-parity at 2026-09-20T10:24:26Z
 relevant_artifacts: []
 continuation_notes:
     - This repository is using manual Taskrail-style workflow scaffolding until the product replaces more of the bootstrap steps.
@@ -34,7 +34,7 @@ continuation_notes:
 
 ## Last Verification
 
-- pass for T-114-protected-ledger-merge-atomic at 2026-09-20T09:50:48Z
+- pass for T-068-verify-distribution-channel-parity at 2026-09-20T10:24:26Z
 
 ## Next Action
 
@@ -50,8 +50,8 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 5
+- todo: 4
 - in_progress: 0
-- completed: 112
+- completed: 114
 - blocked: 0
 - cancelled: 0
