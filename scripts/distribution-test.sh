@@ -1140,7 +1140,7 @@ fi
 pending='{"mergeable":"MERGEABLE","author":{"login":"orgtop-distribution"},"latestReviews":[],"statusCheckRollup":[{"conclusion":null}]}'
 failed='{"mergeable":"MERGEABLE","author":{"login":"orgtop-distribution"},"latestReviews":[{"state":"APPROVED","author":{"login":"fmueller"}}],"statusCheckRollup":[{"conclusion":"FAILURE"}]}'
 ready='{"mergeable":"MERGEABLE","author":{"login":"orgtop-distribution"},"latestReviews":[{"state":"APPROVED","author":{"login":"fmueller"}}],"statusCheckRollup":[{"conclusion":"SUCCESS"}]}'
-retry_branch="${PROTECTED_BRANCH:?}-retry-local"
+retry_branch="${PROTECTED_BRANCH:?}-retry-${GITHUB_RUN_ID:-local}"
 
 case "${1-}" in
 api)
@@ -1470,13 +1470,14 @@ EOF
 chmod +x "$protected_fake_gh_bin/gh"
 
 protected_prepare() {
-  local name="$1" remote seed initial
+  local name="$1" remote seed initial retry_branch
   remote="$tmp_dir/protected-$name.git"
   seed="$tmp_dir/protected-$name-seed"
   PROTECTED_REMOTE="$remote"
   PROTECTED_SCENARIO="$name"
   PROTECTED_LOG="$tmp_dir/protected-$name.log"
   PROTECTED_BRANCH="ledger/test-$name"
+  retry_branch="${PROTECTED_BRANCH}-retry-${GITHUB_RUN_ID:-local}"
   PROTECTED_ATTEMPTS=2
   rm -rf "$remote" "$seed" "$tmp_dir/protected-$name-work"
   git init --bare -q "$remote"
@@ -1548,7 +1549,7 @@ protected_prepare() {
   malformed) git --git-dir "$remote" update-ref refs/heads/main "$PROTECTED_MALFORMED_COMMIT" ;;
   blank) git --git-dir "$remote" update-ref refs/heads/main "$PROTECTED_BLANK_COMMIT" ;;
   truncated) git --git-dir "$remote" update-ref refs/heads/main "$PROTECTED_TRUNCATED_COMMIT" ;;
-  reopen_stale_open_retry|reopen_stale_attacker_retry) git --git-dir "$remote" update-ref "refs/heads/$PROTECTED_BRANCH-retry-local" "$initial" ;;
+  reopen_stale_open_retry|reopen_stale_attacker_retry) git --git-dir "$remote" update-ref "refs/heads/$retry_branch" "$initial" ;;
   esac
 
   git clone -q "$remote" "$tmp_dir/protected-$name-work"
@@ -1612,7 +1613,7 @@ protected_output="$(protected_run)"
 assert_contains "a stale closed pull request uses a fresh retry branch" "$protected_output" "event is on main"
 assert_equal "a stale closed pull request is reopened exactly once" "$(grep -c 'gh pr reopen' "$PROTECTED_LOG")" "1"
 assert_equal "a stale closed pull request uses the run-scoped branch" \
-  "$(cat "$PROTECTED_LOG.created_branch")" "$PROTECTED_BRANCH-retry-local"
+  "$(cat "$PROTECTED_LOG.created_branch")" "${PROTECTED_BRANCH}-retry-${GITHUB_RUN_ID:-local}"
 if git --git-dir "$PROTECTED_REMOTE" show-ref --verify --quiet "refs/heads/$PROTECTED_BRANCH"; then
   fail "a stale closed pull request left its obsolete branch behind"
 fi
@@ -1629,7 +1630,7 @@ protected_prepare reopen_stale_closed_retry
 protected_output="$(protected_run)"
 assert_contains "a closed retry candidate advances to a new branch" "$protected_output" "event is on main"
 assert_equal "a closed retry candidate uses a suffixed branch" \
-  "$(cat "$PROTECTED_LOG.created_branch")" "$PROTECTED_BRANCH-retry-local-1"
+  "$(cat "$PROTECTED_LOG.created_branch")" "${PROTECTED_BRANCH}-retry-${GITHUB_RUN_ID:-local}-1"
 
 protected_prepare reopen_stale_attacker_retry
 assert_rejects "an attacker-authored retry pull request fails closed" "identity" -- protected_run
