@@ -1258,6 +1258,32 @@ api)
     fi
     exit 0
   fi
+  if [[ "$endpoint" == repos/*/rules/branches/* ]]; then
+    case "${PROTECTED_SCENARIO:?}" in
+    protection_unavailable)
+      printf 'HTTP 403: branch rules lookup failed\n' >&2
+      exit 1
+      ;;
+    protection_missing)
+      printf '[{"type":"pull_request","parameters":{"required_approving_review_count":1}},{"type":"required_status_checks","parameters":{"strict_required_status_checks_policy":false}}]\n'
+      exit 0
+      ;;
+    protection_classic)
+      printf 'HTTP 404: no branch rules\n' >&2
+      exit 1
+      ;;
+    esac
+    printf '[{"type":"pull_request","parameters":{"required_approving_review_count":1}},{"type":"required_status_checks","parameters":{"strict_required_status_checks_policy":true}}]\n'
+    exit 0
+  fi
+  if [[ "$endpoint" == repos/*/branches/*/protection ]]; then
+    if [ "${PROTECTED_SCENARIO:?}" = protection_classic ]; then
+      printf '{"required_pull_request_reviews":{"required_approving_review_count":1},"required_status_checks":{"strict":true}}\n'
+      exit 0
+    fi
+    printf 'HTTP 403: branch protection lookup failed\n' >&2
+    exit 1
+  fi
   if [[ "$endpoint" == repos/*/pulls/* ]]; then
     if [ "${PROTECTED_SCENARIO:?}" = repo_binding ] && [[ "$endpoint" != repos/fmueller/orgtop/pulls/* ]]; then
       printf 'fixture: pull request API command was not bound to the source repository\n' >&2
@@ -1335,10 +1361,14 @@ api)
         ;;
       esac
     fi
+    base_sha="$(git --git-dir "${PROTECTED_REMOTE:?}" rev-parse refs/heads/main)"
+    if [ "${PROTECTED_SCENARIO}" = base_sha_mismatch ]; then
+      base_sha="${PROTECTED_LANDED_COMMIT:?}"
+    fi
     if [ "${PROTECTED_SCENARIO}" = mismatched_base_repository ]; then
-      printf 'attacker/other\n'
+      printf 'attacker/other %s\n' "$base_sha"
     else
-      printf 'fmueller/orgtop\n'
+      printf 'fmueller/orgtop %s\n' "$base_sha"
     fi
   else
     printf 'main\n'
@@ -1533,6 +1563,21 @@ pr)
     merge_race)
       response="$ready"
       ;;
+    base_advanced_exact)
+      if [ "$views" -eq 1 ]; then
+        git --git-dir "$PROTECTED_REMOTE" update-ref refs/heads/main "$PROTECTED_LANDED_COMMIT"
+      fi
+      response="$ready"
+      ;;
+    base_advanced_contradictory)
+      if [ "$views" -eq 1 ]; then
+        git --git-dir "$PROTECTED_REMOTE" update-ref refs/heads/main "$PROTECTED_CONTRADICTORY_COMMIT"
+      fi
+      response="$ready"
+      ;;
+    base_sha_mismatch|merge_not_pinned|protection_classic)
+      response="$ready"
+      ;;
     failed)
       response="$failed"
       ;;
@@ -1602,6 +1647,11 @@ pr)
       printf 'fixture: merge did not carry the current head guard\n' >&2
       exit 1
     fi
+    if [ "${PROTECTED_SCENARIO:?}" = merge_not_pinned ]; then
+      git --git-dir "$PROTECTED_REMOTE" update-ref refs/heads/main "${PROTECTED_REBASED_COMMIT:?}"
+      printf 'merged fixture pull request\n'
+      exit 0
+    fi
     if [ "${PROTECTED_SCENARIO:?}" = merge_race ]; then
       git --git-dir "$PROTECTED_REMOTE" update-ref refs/heads/main "$PROTECTED_LANDED_COMMIT"
       printf 'fixture: the pull request merged out of band\n' >&2
@@ -1658,6 +1708,12 @@ protected_prepare() {
   git -C "$seed" commit -q -m landed
   PROTECTED_LANDED_COMMIT="$(git -C "$seed" rev-parse HEAD)"
 
+  git -C "$seed" checkout -q -B protected-rebased "$PROTECTED_LANDED_COMMIT"
+  printf 'unrelated\n' >"$seed/docs/unrelated.md"
+  git -C "$seed" add docs/unrelated.md
+  git -C "$seed" commit -q -m rebased
+  PROTECTED_REBASED_COMMIT="$(git -C "$seed" rev-parse HEAD)"
+
   git -C "$seed" checkout -q -B protected-contradictory "$initial"
   "$append" --ledger "$seed/docs/distribution-ledger.jsonl" --event-file "$contradiction" >/dev/null
   git -C "$seed" add docs/distribution-ledger.jsonl
@@ -1694,6 +1750,7 @@ protected_prepare() {
 
   git -C "$seed" push -q origin \
     "$PROTECTED_LANDED_COMMIT:refs/heads/protected-landed" \
+    "$PROTECTED_REBASED_COMMIT:refs/heads/protected-rebased" \
     "$PROTECTED_CONTRADICTORY_COMMIT:refs/heads/protected-contradictory" \
     "$PROTECTED_DUPLICATE_COMMIT:refs/heads/protected-duplicate" \
     "$PROTECTED_MALFORMED_COMMIT:refs/heads/protected-malformed" \
@@ -1712,15 +1769,18 @@ protected_prepare() {
   git clone -q "$remote" "$tmp_dir/protected-$name-work"
   PROTECTED_WORK="$tmp_dir/protected-$name-work"
   : >"$PROTECTED_LOG"
-  rm -f "$PROTECTED_LOG.views" "$PROTECTED_LOG.identity_views" "$PROTECTED_LOG.created_branch" "$PROTECTED_LOG.retry_candidate_views"
+  rm -f "$PROTECTED_LOG.views" "$PROTECTED_LOG.identity_views" "$PROTECTED_LOG.created_branch" \
+    "$PROTECTED_LOG.retry_candidate_views" "$PROTECTED_LOG.summary"
   export PROTECTED_REMOTE PROTECTED_SCENARIO PROTECTED_LOG PROTECTED_BRANCH
   export PROTECTED_STALE_HEAD PROTECTED_LANDED_COMMIT PROTECTED_CONTRADICTORY_COMMIT PROTECTED_WORK
+  export PROTECTED_REBASED_COMMIT
 }
 
 protected_run() {
   (
     cd "$PROTECTED_WORK"
     GH_TOKEN=fixture-token \
+      GITHUB_STEP_SUMMARY="$PROTECTED_LOG.summary" \
       LEDGER_PATH=docs/distribution-ledger.jsonl \
       DISTRIBUTION_POLL_SECONDS=0 \
       DISTRIBUTION_POLL_ATTEMPTS="$PROTECTED_ATTEMPTS" \
@@ -1957,6 +2017,48 @@ assert_rejects "a different same-version event fails closed" "contradictory" -- 
 protected_prepare timeout
 PROTECTED_ATTEMPTS=2
 assert_rejects "a missing event times out rather than claiming completion" "not approved and green" -- protected_run
+
+# An approval and green checks prove the pull request, not the base it lands on.
+# These fixtures cover the concurrent-base-change window between the last proven
+# base read and a successful merge: the guard refuses to merge unless GitHub
+# itself would reject a stale base, and unless this run can still prove the base
+# it validated is the base the merge lands on.
+protected_prepare protection_missing
+PROTECTED_ATTEMPTS=1
+assert_rejects "a default branch without an up-to-date rule fails closed" "up to date" -- protected_run
+assert_equal "an unprovable branch rule never opens a pull request" "$(grep -c 'gh pr ' "$PROTECTED_LOG" || true)" "0"
+assert_contains "a refused transition records durable evidence" "$(cat "$PROTECTED_LOG.summary")" "up to date"
+
+protected_prepare protection_unavailable
+PROTECTED_ATTEMPTS=1
+assert_rejects "an unreadable branch rule set fails closed" "up to date" -- protected_run
+assert_equal "an unreadable branch rule set never opens a pull request" "$(grep -c 'gh pr ' "$PROTECTED_LOG" || true)" "0"
+
+protected_prepare protection_classic
+protected_output="$(protected_run)"
+assert_contains "classic branch protection proves the atomic merge" "$protected_output" "event is on main"
+
+protected_prepare base_advanced_exact
+PROTECTED_ATTEMPTS=1
+protected_output="$(protected_run)"
+assert_contains "an exact event landing before the merge completes the transition" "$protected_output" "already on main"
+assert_equal "an exact concurrent event never merges a duplicate" "$(grep -c 'gh pr merge' "$PROTECTED_LOG" || true)" "0"
+
+protected_prepare base_advanced_contradictory
+PROTECTED_ATTEMPTS=1
+assert_rejects "a contradictory event landing before the merge fails closed" "contradictory" -- protected_run
+assert_equal "a contradictory concurrent event never merges" "$(grep -c 'gh pr merge' "$PROTECTED_LOG" || true)" "0"
+
+protected_prepare base_sha_mismatch
+PROTECTED_ATTEMPTS=1
+assert_rejects "a base the pull request no longer shares fails closed" "advanced" -- protected_run
+assert_equal "a base this run never validated never merges" "$(grep -c 'gh pr merge' "$PROTECTED_LOG" || true)" "0"
+assert_contains "an unvalidated base records durable evidence" "$(cat "$PROTECTED_LOG.summary")" "advanced"
+
+protected_prepare merge_not_pinned
+PROTECTED_ATTEMPTS=1
+assert_rejects "a merge onto an unverified base fails closed" "verified base" -- protected_run
+assert_contains "an unverified base merge records durable evidence" "$(cat "$PROTECTED_LOG.summary")" "verified base"
 
 # ---------------------------------------------------------------------------
 # Companion repository guard

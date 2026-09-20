@@ -48,9 +48,37 @@ and `scripts/distribution-lib.sh` takes that decision from the reviews rather
 than from GitHub's `reviewDecision`: that field stays null unless a branch
 protection or ruleset requires review, so reading it would stall the release on
 a default branch carrying no rule. The approval requirement is therefore the
-workflow's own and holds with or without branch protection — but note that
-without a rule nothing stops a direct push to the default branch outside the
-release path.
+workflow's own and holds with or without branch protection.
+
+### Required rules on the source default branch
+
+An approval and green checks prove the pull request, not the base it lands on.
+Between the last base the workflow validated and a successful merge, another
+ledger event can land on `main`, and a merge afterwards would persist a
+duplicate or a contradictory event that no later check can take back. Within the
+pull-request-only boundary GitHub enforces that window one way, so `main` of
+`fmueller/orgtop` must carry a ruleset with both:
+
+- a `pull_request` rule requiring at least one approving review, and
+- a `required_status_checks` rule with
+  `strict_required_status_checks_policy: true` ("require branches to be up to
+  date before merging"), which makes GitHub reject the merge once `main`
+  advances past the pull request's base.
+
+`scripts/distribution-protected-commit.sh` reads those rules through
+`repos/{repo}/rules/branches/{branch}`, which the App's `metadata: read`
+permission covers, and refuses the transition before opening anything when it
+cannot prove both. A repository still on classic branch protection satisfies the
+same requirement through `required_pull_request_reviews` and
+`required_status_checks.strict`, but reading that resource needs an
+`administration: read` permission the App is not granted, so the ruleset form is
+the supported configuration.
+
+The guard additionally pins the transition to the base it validated: it re-reads
+`main` immediately before merging, refuses when GitHub's base commit for the
+pull request is not that commit, and refuses after a merge whose squashed commit
+does not sit directly on it. Each refusal is durable evidence: it is written to
+the job summary with the branch, the event, the base, and the reason.
 
 ## The ledger
 

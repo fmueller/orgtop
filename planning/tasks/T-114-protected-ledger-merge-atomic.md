@@ -1,12 +1,12 @@
 ---
 id: T-114-protected-ledger-merge-atomic
 title: Make protected ledger merges atomic across concurrent base changes
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#distribution-channels
 dependencies:
     - T-074-provision-and-validate-distribution-repositories
-updated_at: "2026-09-19T23:14:48Z"
+updated_at: "2026-09-20T09:50:52Z"
 ---
 
 # T-114-protected-ledger-merge-atomic Make protected ledger merges atomic across concurrent base changes
@@ -44,3 +44,4 @@ Follow-up derived from T-074-provision-and-validate-distribution-repositories's 
 - T-074 intentionally defers this follow-up because changing repository
   rulesets or bypassing the protected pull-request boundary was not authorized
   by that rehearsal.
+- 2026-09-20T09:50:48Z: verification pass

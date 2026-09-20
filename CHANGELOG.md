@@ -35,6 +35,13 @@ workflow refuses to publish otherwise.
   as complete. `docs/distribution-ledger.jsonl` records each staged, completed,
   and withdrawn version, and a withdrawal keeps a durable notice under
   `docs/withdrawals/`.
+- A ledger transition is now proven atomic against a default branch that moves
+  underneath it. The release workflow requires the source default branch to
+  require an approving review and an up-to-date branch before merge, re-reads
+  the branch immediately before merging, and refuses a merge that did not land
+  on the base it validated, so an event landing concurrently can no longer
+  persist a duplicate or contradictory ledger record. Every refusal is recorded
+  in the job summary with the branch, event, base, and reason.
 - `--path` selects path Scopes. A bare `PATTERN` filters every `--repo`
   selection, a qualified `OWNER/REPOSITORY:PATTERN` stands on its own, and both
   forms may be repeated and mixed. Equivalent Scopes are deduplicated and keep

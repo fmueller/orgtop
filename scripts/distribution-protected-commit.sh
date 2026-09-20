@@ -68,7 +68,77 @@ if ! app_login="$(gh api graphql -f query='query { viewer { login } }' --jq '.da
   die "the distribution App login could not be identified"
 fi
 
+# A refusal here protects the ledger, so it has to leave something behind that
+# outlives the job log: the next operator has to know which transition stopped,
+# on which base, and why, without rerunning the release to find out.
+verified_base=""
+fail_closed() {
+  local reason="$1"
+  if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+    {
+      printf '## Distribution ledger transition refused\n\n'
+      printf -- '- branch: `%s`\n' "$branch"
+      printf -- '- event: `%s` for `%s`\n' "$event_kind" "$event_version"
+      printf -- '- default branch: `%s`\n' "$default_branch"
+      printf -- '- verified base: `%s`\n' "${verified_base:-unknown}"
+      printf -- '- reason: %s\n' "$reason"
+    } >>"$GITHUB_STEP_SUMMARY"
+  fi
+  die "$reason"
+}
+
+# An independent approval and green checks prove the pull request; neither
+# proves that the base it was reviewed against is still the base it merges onto.
+# Within the pull-request-only boundary GitHub enforces that one way: a rule
+# requiring the branch to be up to date before merging, which makes GitHub
+# itself reject the merge once the default branch has advanced. Without it an
+# exact or contradictory event landing between the last base read and the merge
+# would persist. The guard therefore refuses to transition a ledger on a default
+# branch whose rules it cannot read as both up-to-date-requiring and
+# review-requiring, rather than merging into a window it cannot close.
+protection_proves_atomic_merge() {
+  local rules protection
+  if rules="$(gh api "repos/$source_repository/rules/branches/$default_branch" 2>/dev/null)" &&
+    jq -e '
+      type == "array"
+      and any(.[]?; .type == "pull_request"
+        and ((.parameters.required_approving_review_count // 0) >= 1))
+      and any(.[]?; .type == "required_status_checks"
+        and (.parameters.strict_required_status_checks_policy == true))
+    ' <<<"$rules" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  # A repository still carrying classic branch protection expresses the same two
+  # requirements under different names; reading it needs a permission the App
+  # may not hold, so it is a fallback rather than the primary source.
+  if protection="$(gh api "repos/$source_repository/branches/$default_branch/protection" 2>/dev/null)" &&
+    jq -e '
+      type == "object"
+      and ((.required_pull_request_reviews.required_approving_review_count // 0) >= 1)
+      and (.required_status_checks.strict == true)
+    ' <<<"$protection" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  return 1
+}
+
+protection_proves_atomic_merge ||
+  fail_closed "$default_branch must require an approving review and an up to date branch before merge; the ledger transition cannot be proven atomic"
+
 git "${authenticated[@]}" fetch origin "$default_branch"
+
+# The exact commit whose ledger this run validated. Every later decision — the
+# merge, and the proof that the merge landed on the base that was reviewed — is
+# taken against this value rather than against whatever the default branch holds
+# at the moment it is read again.
+read_verified_base() {
+  verified_base="$(git rev-parse "origin/$default_branch")" ||
+    fail_closed "the $default_branch head could not be read"
+}
+
+read_verified_base
 
 default_branch_event() {
   local line line_version line_kind matches=0
@@ -195,7 +265,7 @@ is_stale_reopen_error() {
 }
 
 read_pr_json() {
-  local selector="$1" json number base_repository
+  local selector="$1" json number base base_repository base_sha
   if ! json="$(gh pr view "$selector" --repo "$source_repository" --json "$pr_fields" 2>&1)"; then
     printf '%s\n' "$json"
     return 1
@@ -204,16 +274,23 @@ read_pr_json() {
     printf '%s\n' "$json"
     return 2
   fi
-  if ! base_repository="$(gh api "repos/$source_repository/pulls/$number" --jq '.base.repo.full_name' 2>&1)"; then
-    printf '%s\n' "$base_repository"
+  if ! base="$(gh api "repos/$source_repository/pulls/$number" \
+    --jq '"\(.base.repo.full_name) \(.base.sha)"' 2>&1)"; then
+    printf '%s\n' "$base"
     return 1
   fi
-  [[ "$base_repository" =~ ^[^/]+/[^/]+$ ]] || {
-    printf '%s\n' "$base_repository"
+  base_repository="${base%% *}"
+  base_sha="${base##* }"
+  [[ "$base_repository" =~ ^[^/[:space:]]+/[^/[:space:]]+$ ]] || {
+    printf '%s\n' "$base"
     return 1
   }
-  jq --arg base_repository "$base_repository" \
-    '. + {baseRepository: {nameWithOwner: $base_repository}}' <<<"$json"
+  [[ "$base_sha" =~ ^[0-9a-f]{40}$ ]] || {
+    printf '%s\n' "$base"
+    return 1
+  }
+  jq --arg base_repository "$base_repository" --arg base_sha "$base_sha" \
+    '. + {baseRepository: {nameWithOwner: $base_repository}, baseSha: $base_sha}' <<<"$json"
 }
 
 if pr_json="$(read_pr_json "$branch")"; then
@@ -262,6 +339,7 @@ validate_pr_identity() {
       and .headRepositoryOwner.login == ($repo | split("/")[0])
       and .baseRefName == $base
       and .baseRepository.nameWithOwner == $repo
+      and ((.baseSha // "") | test("^[0-9a-f]{40}$"))
       and (.state != "OPEN" or .mergedAt == null)
       and (if $require_head == "yes" then .headRefOid == $head else true end)
     ' <<<"$json" >/dev/null; then
@@ -383,6 +461,7 @@ esac
 attempt=0
 while [ "$attempt" -lt "$poll_attempts" ]; do
   git "${authenticated[@]}" fetch origin "$default_branch"
+  read_verified_base
   if default_branch_event; then
     echo "guard: the event is already on $default_branch"
     exit 0
@@ -391,12 +470,35 @@ while [ "$attempt" -lt "$poll_attempts" ]; do
   read_pr_readiness " during the poll"
   case "$readiness" in
   ready)
+    # The approval and the checks were proven against the base read above, not
+    # against the base the merge will land on. Read the default branch once more
+    # here: an exact or a contradictory event may have landed in that window,
+    # and merging afterwards would persist a duplicate or a contradiction that
+    # no later check can take back.
+    git "${authenticated[@]}" fetch origin "$default_branch"
+    read_verified_base
+    if default_branch_event; then
+      echo "guard: the event is already on $default_branch"
+      exit 0
+    fi
+
     # Re-read both identity and readiness immediately before merge. The
     # --match-head-commit guard closes the remaining race between this check
     # and GitHub's merge operation without ever accepting a changed head.
     read_pr_readiness " before merge"
     [ "$readiness" = ready ] ||
       die "the ledger pull request was no longer ready before merge"
+
+    # GitHub's own view of the base has to be the base this run validated. When
+    # the two disagree the default branch moved underneath the transition, and
+    # the up-to-date rule has to reject the merge anyway; refusing here keeps
+    # the refusal explicit and evidenced rather than reading it out of a merge
+    # error string.
+    pr_base_sha="$(jq -er '.baseSha // empty' <<<"$pr_json")" ||
+      fail_closed "the ledger pull request base commit could not be read"
+    [ "$pr_base_sha" = "$verified_base" ] ||
+      fail_closed "$default_branch advanced from $verified_base to $pr_base_sha; refusing to merge onto a base this run has not validated"
+    merge_base="$verified_base"
 
     if ! gh pr merge "$pr_number" --repo "$source_repository" --match-head-commit "$expected_head" --squash --delete-branch; then
       # The pull request may have merged out of band after the poll check. A
@@ -411,6 +513,16 @@ while [ "$attempt" -lt "$poll_attempts" ]; do
     git "${authenticated[@]}" fetch origin "$default_branch"
     default_branch_event ||
       die "the merge did not land the exact event on $default_branch"
+
+    # A squash merge has exactly one parent, and it must be the commit whose
+    # ledger this run validated. Anything else means the merge was rebased onto
+    # a base nobody here checked, so the ledger it produced is not the ledger
+    # that was reviewed.
+    merged_head="$(git rev-parse "origin/$default_branch")" ||
+      fail_closed "the merged $default_branch head could not be read"
+    merged_parent="$(git rev-parse --verify --quiet "$merged_head^1" || true)"
+    [ "$merged_parent" = "$merge_base" ] ||
+      fail_closed "the merge landed on '$merged_parent' rather than the verified base $merge_base"
     echo "guard: the event is on $default_branch"
     exit 0
     ;;
