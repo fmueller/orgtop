@@ -5,7 +5,7 @@ status: todo
 priority: high
 spec_ref: specs/v0.2.0.md#distribution-channels
 dependencies:
-    - T-074-provision-and-validate-distribution-repositories
+    - T-067-configure-multi-channel-release-workflows
 updated_at: "2026-09-20T07:39:09Z"
 ---
 
@@ -33,7 +33,10 @@ Observed in run 35496598314 (rerun), tag v0.0.2, published release 392347493
 with 14 assets alongside spurious empty draft 392350389, which was deleted
 during cleanup.
 
-Follow-up derived from T-074-provision-and-validate-distribution-repositories's verification or discovery.
+Discovered by T-074-provision-and-validate-distribution-repositories's v0.0.2 rehearsal. It is an
+implementation prerequisite of that rehearsal rather than a follow-up to it,
+so it depends on the completed T-067 release workflow configuration, in the
+same shape as T-105 and T-107.
 
 ## Acceptance
 
