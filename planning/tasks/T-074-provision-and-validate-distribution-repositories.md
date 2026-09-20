@@ -1,14 +1,14 @@
 ---
 id: T-074-provision-and-validate-distribution-repositories
 title: Provision and validate distribution repositories
-status: in_progress
+status: blocked
 priority: high
 spec_ref: specs/v0.2.0.md#distribution-channels
 dependencies:
     - T-067-configure-multi-channel-release-workflows
     - T-105-complete-the-protected-ledger-step-when-its-event
     - T-107-upload-release-assets-create-if-absent-so-a-retry
-updated_at: "2026-09-19T19:23:24Z"
+updated_at: "2026-09-20T05:56:26Z"
 ---
 
 # T-074-provision-and-validate-distribution-repositories Provision and validate distribution repositories
@@ -101,3 +101,5 @@ Provision and validate the external GitHub CLI extension companion and Homebrew 
 - 2026-09-19T09:36:04Z: T-074 final rehearsal is blocked until T-107's retry-safe asset upload and T-105's protected-ledger poll fix are complete; T-074 remains incomplete
 - 2026-09-19T09:36:04Z: T-105 and T-107 are implementation prerequisites of the final T-074 rehearsal; both follow the completed T-067 release workflow configuration.
 - 2026-09-19T19:23:08Z: T-105 and T-107 are completed; proceed to the authorized non-production final rehearsal and live reconciliation.
+- 2026-09-20T05:56:20Z: verification fail
+- 2026-09-20T05:56:26Z: Final non-production rehearsal is blocked by required independent approval: protected ledger PR #9 was App-authored, all checks passed, but no human approval was present. Do not bypass; rerun the authorized rehearsal after independent approval is available.
