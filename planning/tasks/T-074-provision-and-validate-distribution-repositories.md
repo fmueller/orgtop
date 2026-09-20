@@ -1,14 +1,14 @@
 ---
 id: T-074-provision-and-validate-distribution-repositories
 title: Provision and validate distribution repositories
-status: blocked
+status: todo
 priority: high
 spec_ref: specs/v0.2.0.md#distribution-channels
 dependencies:
     - T-067-configure-multi-channel-release-workflows
     - T-105-complete-the-protected-ledger-step-when-its-event
     - T-107-upload-release-assets-create-if-absent-so-a-retry
-updated_at: "2026-09-20T07:48:29Z"
+updated_at: "2026-09-20T08:20:54Z"
 ---
 
 # T-074-provision-and-validate-distribution-repositories Provision and validate distribution repositories
@@ -106,3 +106,4 @@ Provision and validate the external GitHub CLI extension companion and Homebrew 
 - 2026-09-20T07:39:50Z: verification fail
 - 2026-09-20T07:39:58Z: The approval gate is proven and no longer the blocker. The rehearsal is now blocked on T-115: a retry of v0.0.2 cannot reconcile the already published source release, so the resuming-retry acceptance item stays unproven. v0.0.2 is still published and marked Latest; its withdrawal through the release.yml withdraw dispatch is outstanding and needs a maintainer to run it.
 - 2026-09-20T07:48:29Z: The independent-approval gate is proven for both the staged event (pull request #10) and the withdrawal notice (pull request #11), and is no longer the blocker. The final rehearsal is blocked on two release-path defects it exposed: T-115, a retry cannot reconcile an already published source release; and T-116, the withdrawal deletion step runs against the read-only default workflow token and leaves the release, tag, and extension draft behind. The v0.0.2 rehearsal is fully cleaned up: no release, tag, or staging branch remains in fmueller/orgtop, fmueller/gh-orgtop, or fmueller/homebrew-tap, and docs/withdrawals/v0.0.2.md outlives them.
+- 2026-09-20T08:20:54Z: Both blockers are closed in the release path: T-115 resolves what a tag already carries before the build and reconciles an already published source release on retry (85eef02), and T-116 moves the withdrawal deletion into scripts/distribution-withdraw-delete.sh under the distribution App token, attempting every repository and naming the ones left dirty (055ed04). Returning to todo for the authorized non-production final rehearsal on a fresh version number; the remaining acceptance items are the publication transitions, the completion manifests, the completed ledger event, final reconciliation, a retry that resumes and reconciles, and a withdrawal that removes both releases and the tag. The rehearsal needs 055ed04 pushed to main and a maintainer to dispatch the tag and the withdraw operation; no agent can perform either.
