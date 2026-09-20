@@ -6,7 +6,8 @@
 #                                  --channel source|extension
 #
 # DIR contains the build output for one channel. Expected assets already
-# attached to the draft are downloaded and compared byte for byte. Missing
+# attached to the draft are downloaded and compared byte for byte. The
+# completion manifest of an already completed publication is left alone. Missing
 # assets are uploaded without `--clobber`; no remote asset is deleted or
 # overwritten. The comparison phase completes before any upload, so a
 # digest-divergent existing asset fails closed without adding other missing
@@ -77,8 +78,16 @@ contains_name() {
   return 1
 }
 
+# The completion manifest is this workflow's own asset, attached later in the
+# same publication by distribution-manifest-asset.sh under its own
+# compare-exactly rules. A retry after a completed publication therefore finds
+# it already present; calling it unexpected here left such a retry with no way
+# forward, since RG-011 forbids replacing the published bytes it would need to
+# get past. It is tolerated and otherwise untouched: not compared, not
+# re-uploaded, and never part of the expected set this script builds.
 for name in "${attached[@]}"; do
   [ -n "$name" ] || continue
+  [ "$name" = "$completion_manifest_asset" ] && continue
   contains_name "$name" "${expected[@]}" ||
     die "$repo release carries unexpected asset '$name'"
 done

@@ -22,6 +22,7 @@ readonly formula_path="Formula/orgtop.rb"
 readonly release_workflow_path=".github/workflows/release.yml"
 readonly checksums_asset="checksums.txt"
 readonly provenance_asset="provenance.intoto.jsonl"
+readonly completion_manifest_asset="distribution-complete.json"
 
 # Every guard reads the platform matrix from this one script rather than
 # restating names it would then have to keep in step.

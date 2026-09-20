@@ -31,7 +31,7 @@ done
 require_tag "$tag"
 [ -n "$repo" ] && [ -f "$manifest" ] || usage_error "$usage"
 
-asset=distribution-complete.json
+asset="$completion_manifest_asset"
 expected="$(digest_of_file "$manifest")"
 
 attached_output=""

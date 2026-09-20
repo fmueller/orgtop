@@ -411,6 +411,35 @@ copy_upload_asset_from() {
     "$(grep -c '^upload ' "$FAKE_GH_STATE/operations.log" || true)" "0"
   assert_equal "a full draft remains byte-complete" "$(remote_assets)" "$expected_source_assets"
 
+  # A retry after a completed publication finds the completion manifest already
+  # attached. The manifest is this workflow's own asset, added later in the same
+  # publication by distribution-manifest-asset.sh under its own compare-exactly
+  # rules, so the reconciliation must step over it rather than call it an
+  # unexpected asset. Refusing it here stranded the retry: the release could not
+  # be reconciled, republished, or resumed.
+  new_upload_state upload-completed
+  while IFS= read -r name; do copy_upload_asset "$name"; done <<<"$expected_source_assets"
+  printf 'completion manifest' >"$FAKE_GH_STATE/assets/distribution-complete.json"
+  manifest_before="$(sha256sum "$FAKE_GH_STATE/assets/distribution-complete.json" | cut -d' ' -f1)"
+  "$upload" --tag "$tag" --repo fmueller/orgtop --dir "$stage" --channel source
+  assert_equal "a completed release reconciles beside its completion manifest" \
+    "$(remote_assets)" "$(printf '%s\ndistribution-complete.json\n' "$expected_source_assets" | LC_ALL=C sort)"
+  assert_equal "a completed release never re-uploads or replaces the manifest" \
+    "$(grep -c '^upload ' "$FAKE_GH_STATE/operations.log" || true)" "0"
+  assert_equal "a completed release keeps the manifest bytes untouched" \
+    "$(sha256sum "$FAKE_GH_STATE/assets/distribution-complete.json" | cut -d' ' -f1)" "$manifest_before"
+  assert_equal "a completed release does not download the manifest to compare it" \
+    "$(grep -c '^download distribution-complete.json$' "$FAKE_GH_STATE/operations.log" || true)" "0"
+
+  # The manifest is tolerated, not blanket permissiveness: any other unexpected
+  # name still fails closed before a single upload.
+  new_upload_state upload-completed-extra
+  while IFS= read -r name; do copy_upload_asset "$name"; done <<<"$expected_source_assets"
+  printf 'completion manifest' >"$FAKE_GH_STATE/assets/distribution-complete.json"
+  printf 'stray' >"$FAKE_GH_STATE/assets/orgtop_0.2.0_plan9_amd64.tar.gz"
+  assert_rejects "a completed release carrying a stray asset" "unexpected asset" -- \
+    "$upload" --tag "$tag" --repo fmueller/orgtop --dir "$stage" --channel source
+
   # Extension channel retries use the same immutable reconciliation rules as
   # source assets. Keep separate fixtures so a source-only implementation
   # cannot accidentally satisfy this contract.
