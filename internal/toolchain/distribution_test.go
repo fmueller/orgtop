@@ -498,6 +498,46 @@ func TestWithdrawalToleratesAnUnpublishedFormula(t *testing.T) {
 	}
 }
 
+// TestWithdrawalVerifiesTheRevertWithoutDecodingAnAbsentFormula holds the
+// verification after the merge to the same rule as the read before it. A tap
+// that published orgtop as its first formula has nothing to revert to, so the
+// revert deletes Formula/orgtop.rb outright and the file is gone from the
+// default branch — which is the success this step is checking for. Reading it
+// back unguarded 404s, `base64 -d` refuses the empty body, and `bash -e` fails
+// the step, leaving the releases and the tag that the following steps exist to
+// delete. The v0.0.3 withdrawal failed exactly there, after its revert had
+// already merged.
+func TestWithdrawalVerifiesTheRevertWithoutDecodingAnAbsentFormula(t *testing.T) {
+	t.Parallel()
+
+	var revert string
+	for _, command := range jobStepValues(loadYAML(t, releaseWorkflow), "withdraw", "run") {
+		if strings.Contains(command, "Formula/orgtop.rb?ref=main") {
+			revert = command
+			break
+		}
+	}
+	if revert == "" {
+		t.Fatal("release.yml must reconcile the tap formula when a version is withdrawn")
+	}
+
+	merge := strings.Index(revert, "gh pr merge")
+	if merge < 0 {
+		t.Fatal("the revert must merge the reverting pull request")
+	}
+	verification := revert[merge:]
+
+	if !strings.Contains(verification, "Formula/orgtop.rb?ref=main") {
+		t.Fatal("the revert must read the tap formula back after merging to verify it")
+	}
+	if strings.Contains(verification, "'.content' | base64 -d)") {
+		t.Error("the verification decodes the tap formula blind; an absent formula 404s and fails the step after the revert has already merged")
+	}
+	if !strings.Contains(verification, "2>/dev/null") {
+		t.Error("the verification must tolerate a 404 for an absent tap formula, the outcome a first-formula revert produces")
+	}
+}
+
 // TestWithdrawalDeletesDraftsByIdentity keeps a never-published version
 // removable. GitHub's get-release-by-tag endpoint does not see draft releases,
 // so resolving a release by its tag name finds nothing for a version withdrawn

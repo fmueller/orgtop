@@ -777,8 +777,18 @@ jobs:
           fi
           gh pr merge "$branch" --repo "${TAP_REPOSITORY}" --squash --delete-branch
 
-          reverted="$(gh api "repos/${TAP_REPOSITORY}/contents/Formula/orgtop.rb?ref=main" \
-            --jq '.content' | base64 -d)"
+          # Held to the same rule as the read above. A tap that published
+          # orgtop as its first formula has nothing to revert to, so the revert
+          # removes Formula/orgtop.rb outright; the file being gone is this
+          # check's success, not an error. Decoding it blind 404s and fails the
+          # step after the revert has already merged, stranding the releases and
+          # the tag the steps below exist to delete.
+          if ! reverted_encoded="$(gh api "repos/${TAP_REPOSITORY}/contents/Formula/orgtop.rb?ref=main" \
+            --jq '.content' 2>/dev/null)" || [ -z "$reverted_encoded" ]; then
+            echo "guard: the tap default branch carries no formula after the revert"
+            exit 0
+          fi
+          reverted="$(printf '%s' "$reverted_encoded" | base64 -d)"
           if grep -qxF "  version \"${VERSION}\"" <<<"$reverted"; then
             echo "guard: the tap default branch still selects ${VERSION} after the revert" >&2
             exit 1
