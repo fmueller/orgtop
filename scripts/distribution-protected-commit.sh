@@ -149,7 +149,7 @@ is_stale_reopen_error() {
   local output="$1"
   output="${output%%$'\ngh:'*}"
   jq -e '
-    ((.status // "") | tostring) == "422"
+    .message == "Validation Failed"
     and any(.errors[]?;
       .resource == "PullRequest"
       and .code == "custom"
