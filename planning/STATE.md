@@ -1,14 +1,15 @@
 ---
 schema_version: 1
-updated_at: "2026-09-20T07:17:52Z"
+updated_at: "2026-09-20T07:39:58Z"
 active_spec_version: v0.2.0
 active_spec_path: specs/v0.2.0.md
-current_task: T-074-provision-and-validate-distribution-repositories
-current_task_title: Provision and validate distribution repositories
-status_summary: in_progress
-blockers: []
-next_action: Implement T-074-provision-and-validate-distribution-repositories and run targeted tests
-last_verification_result: fail for T-074-provision-and-validate-distribution-repositories at 2026-09-20T05:56:20Z
+current_task: ""
+current_task_title: ""
+status_summary: blocked
+blockers:
+    - 'T-074-provision-and-validate-distribution-repositories: The approval gate is proven and no longer the blocker. The rehearsal is now blocked on T-115: a retry of v0.0.2 cannot reconcile the already published source release, so the resuming-retry acceptance item stays unproven. v0.0.2 is still published and marked Latest; its withdrawal through the release.yml withdraw dispatch is outstanding and needs a maintainer to run it.'
+next_action: Resolve blocker on T-074-provision-and-validate-distribution-repositories
+last_verification_result: fail for T-074-provision-and-validate-distribution-repositories at 2026-09-20T07:39:50Z
 relevant_artifacts: []
 continuation_notes:
     - This repository is using manual Taskrail-style workflow scaffolding until the product replaces more of the bootstrap steps.
@@ -22,24 +23,23 @@ continuation_notes:
 
 ## Current Focus
 
-- Task: `T-074-provision-and-validate-distribution-repositories`
-- Title: Provision and validate distribution repositories
+- Task: none
 
 ## Status
 
-- in_progress
+- blocked
 
 ## Blockers
 
-- None
+- T-074-provision-and-validate-distribution-repositories: The approval gate is proven and no longer the blocker. The rehearsal is now blocked on T-115: a retry of v0.0.2 cannot reconcile the already published source release, so the resuming-retry acceptance item stays unproven. v0.0.2 is still published and marked Latest; its withdrawal through the release.yml withdraw dispatch is outstanding and needs a maintainer to run it.
 
 ## Last Verification
 
-- fail for T-074-provision-and-validate-distribution-repositories at 2026-09-20T05:56:20Z
+- fail for T-074-provision-and-validate-distribution-repositories at 2026-09-20T07:39:50Z
 
 ## Next Action
 
-- Implement T-074-provision-and-validate-distribution-repositories and run targeted tests
+- Resolve blocker on T-074-provision-and-validate-distribution-repositories
 
 ## Relevant Artifacts
 
@@ -51,8 +51,8 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 5
-- in_progress: 1
+- todo: 6
+- in_progress: 0
 - completed: 108
-- blocked: 0
+- blocked: 1
 - cancelled: 0
