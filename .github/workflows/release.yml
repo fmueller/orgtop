@@ -135,6 +135,21 @@ jobs:
           ./scripts/distribution-companion-guard.sh \
             --extension "${EXTENSION_REPOSITORY}" --tap "${TAP_REPOSITORY}"
 
+      # What the tag already carries, resolved before anything is built.
+      # GoReleaser matches an existing release for the tag through
+      # `use_existing_draft`, and a draft is the only thing that lookup sees, so
+      # a retry against an already published release would create a second
+      # release beside it. That is the state a retry lands in whenever the
+      # source transition succeeded and a later channel failed, which is
+      # precisely the partial release RG-011 expects a retry to reconcile.
+      - name: Resolve the source release state for the tag
+        id: source-release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ./scripts/distribution-release-state.sh \
+            --repo "${SOURCE_REPOSITORY}" --tag "${GITHUB_REF_NAME}" >>"${GITHUB_OUTPUT}"
+
       # One build, from the tag commit, with the pinned toolchain. It produces
       # the six archives, the six renamed raw assets, and checksums.txt, and
       # creates or reconciles the unpublished source draft.
@@ -142,7 +157,22 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CGO_ENABLED: "0"
-        run: goreleaser release --clean --release-notes="${RUNNER_TEMP}/release-notes.md"
+          SOURCE_RELEASE_STATE: ${{ steps.source-release.outputs.state }}
+        run: |
+          # Against a published release the release pipe is skipped: it would
+          # create a second draft for the tag rather than reconcile the
+          # published one, and creating the release is all it does here, since
+          # `skip_upload` already delegates every asset to the
+          # compare-before-upload guard and the steps below reconcile against
+          # whichever release the tag carries. An absent release and an existing
+          # draft keep the create-or-reuse path unchanged.
+          skip=()
+          if [ "${SOURCE_RELEASE_STATE}" = published ]; then
+            skip+=(--skip=publish)
+            echo "guard: reconciling the published release for ${GITHUB_REF_NAME}"
+          fi
+          goreleaser release --clean \
+            --release-notes="${RUNNER_TEMP}/release-notes.md" "${skip[@]}"
 
       # Two releases for one tag is non-reconcilable same-version state, and it
       # is named here rather than inferred later from a digest mismatch between

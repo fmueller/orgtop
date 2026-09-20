@@ -25,6 +25,7 @@ var (
 		"distribution-notice.sh",
 		"distribution-protected-commit.sh",
 		"distribution-release-guard.sh",
+		"distribution-release-state.sh",
 		"distribution-stage-assets.sh",
 		"distribution-upload-assets.sh",
 		"distribution-verify.sh",
@@ -751,6 +752,82 @@ func TestReleaseDuplicateGuardSeesDraftReleases(t *testing.T) {
 	}
 	if !strings.Contains(command, "set -euo pipefail") {
 		t.Error("the duplicate-release guard must fail closed when release inventory or jq commands fail")
+	}
+}
+
+// TestReleaseReconcilesAnAlreadyPublishedRelease closes the retry defect the
+// v0.0.2 rehearsal exposed. GoReleaser resolves an existing release for the tag
+// through `use_existing_draft`, which matches a draft and nothing else: against
+// a tag whose source release is already published — the state a retry lands in
+// whenever the source transition succeeded and a later channel failed — the
+// release pipe creates a fresh draft beside the published release, and the
+// duplicate-release guard then correctly refuses two releases for one tag and
+// leaves the retry unable to progress. The state is therefore resolved before
+// the build, and the release pipe is skipped when the tag already carries a
+// published release: `skip_upload` already delegates every asset to the
+// compare-before-upload guard, so the pipe contributes nothing else.
+func TestReleaseReconcilesAnAlreadyPublishedRelease(t *testing.T) {
+	t.Parallel()
+
+	steps := child(jobAt(loadYAML(t, releaseWorkflow), "release"), "steps")
+	var resolve, build *yaml.Node
+	resolveAt, buildAt := -1, -1
+	for i, step := range steps.Content {
+		name := value(child(step, "name"))
+		switch {
+		case strings.Contains(name, "Resolve the source release state"):
+			resolve, resolveAt = step, i
+		case strings.Contains(name, "Build once and create or reconcile the source draft"):
+			build, buildAt = step, i
+		}
+	}
+	if resolve == nil {
+		t.Fatal("release.yml must resolve the source release state for the tag before it builds")
+	}
+	if build == nil {
+		t.Fatal("release.yml must build the source release")
+	}
+	if resolveAt > buildAt {
+		t.Error("release.yml must resolve the source release state before the build; after it the duplicate-release guard has already failed closed")
+	}
+	if got := value(child(resolve, "id")); got != "source-release" {
+		t.Errorf("the release-state step id = %q, want \"source-release\": the build reads its state output", got)
+	}
+	resolveRun := value(child(resolve, "run"))
+	for _, required := range []string{"distribution-release-state.sh", "SOURCE_REPOSITORY", "GITHUB_OUTPUT"} {
+		if !strings.Contains(resolveRun, required) {
+			t.Errorf("the release-state step must contain %q, got %q", required, resolveRun)
+		}
+	}
+
+	state := value(child(child(build, "env"), "SOURCE_RELEASE_STATE"))
+	if !strings.Contains(state, "steps.source-release.outputs.state") {
+		t.Errorf("the build step must read SOURCE_RELEASE_STATE from the resolver, got %q", state)
+	}
+	buildRun := value(child(build, "run"))
+	if !strings.Contains(buildRun, "--skip=publish") {
+		t.Error("the build step must skip GoReleaser's release pipe against an already published release, or the retry creates a second release for the tag")
+	}
+	if !strings.Contains(buildRun, "published") {
+		t.Error("the build step must skip the release pipe only for the published state; a first publication and a draft retry keep creating or reusing the draft")
+	}
+}
+
+// TestReleaseStateResolverInventoriesDrafts keeps the resolver's inventory the
+// same draft-visible, bounded, fail-closed read the duplicate-release guard
+// uses. A REST releases list omits drafts for the workflow token, which would
+// report a staged draft as absent and send a retry back down the create path.
+func TestReleaseStateResolverInventoriesDrafts(t *testing.T) {
+	t.Parallel()
+
+	resolver := readFile(t, filepath.Join(repoRoot, "scripts", "distribution-release-state.sh"))
+	for _, required := range []string{"set -euo pipefail", "gh release list", "--limit 100", "isDraft", "-ge 100", "state="} {
+		if !strings.Contains(resolver, required) {
+			t.Errorf("the release-state resolver must contain %q", required)
+		}
+	}
+	if strings.Contains(resolver, "--exclude-drafts") {
+		t.Error("the release-state resolver must inventory drafts; excluding them reports a staged draft as absent")
 	}
 }
 

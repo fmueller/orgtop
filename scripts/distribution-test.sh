@@ -22,6 +22,7 @@ append="$script_dir/distribution-ledger-append.sh"
 notice_script="$script_dir/distribution-notice.sh"
 protected_commit="$script_dir/distribution-protected-commit.sh"
 release_guard="$script_dir/distribution-release-guard.sh"
+release_state="$script_dir/distribution-release-state.sh"
 companion_guard="$script_dir/distribution-companion-guard.sh"
 # shellcheck source=scripts/distribution-lib.sh
 . "$script_dir/distribution-lib.sh"
@@ -337,6 +338,45 @@ copy_upload_asset_from() {
   assert_rejects "a failed release inventory" "release inventory request failed" -- \
     "$release_guard" --repo fmueller/orgtop --tag "$tag"
   unset FAKE_GH_FAIL_RELEASE_LIST FAKE_GH_RELEASE_LIST_JSON
+
+  # The release-state resolver runs before the build and decides whether
+  # GoReleaser's release pipe may create the release for the tag. A published
+  # release is not a draft, so `use_existing_draft` cannot see it and the pipe
+  # would create a second release beside it; that state has to be named here,
+  # before the build, because after it the duplicate-release guard fails closed
+  # and the retry can no longer make progress.
+  new_upload_state release-state
+  export FAKE_GH_RELEASE_LIST_JSON='[]'
+  assert_equal "no release for the tag" \
+    "$("$release_state" --repo fmueller/orgtop --tag "$tag")" "state=absent"
+
+  export FAKE_GH_RELEASE_LIST_JSON='[{"tagName":"v0.1.0","isDraft":false},{"tagName":"v0.2.0","isDraft":true}]'
+  assert_equal "an unpublished draft for the tag" \
+    "$("$release_state" --repo fmueller/orgtop --tag "$tag")" "state=draft"
+
+  export FAKE_GH_RELEASE_LIST_JSON='[{"tagName":"v0.1.0","isDraft":false},{"tagName":"v0.2.0","isDraft":false}]'
+  assert_equal "a published release for the tag" \
+    "$("$release_state" --repo fmueller/orgtop --tag "$tag")" "state=published"
+
+  # Two releases for one tag stays non-reconcilable same-version state: the
+  # resolver refuses it rather than picking one of them for the retry.
+  export FAKE_GH_RELEASE_LIST_JSON='[{"tagName":"v0.2.0","isDraft":true},{"tagName":"v0.2.0","isDraft":false}]'
+  assert_rejects "two releases for one tag" "carries 2 releases" -- \
+    "$release_state" --repo fmueller/orgtop --tag "$tag"
+
+  export FAKE_GH_RELEASE_LIST_JSON="$(jq -cn '[range(0;100) | {tagName:("v" + (tostring) + ".0.0"), isDraft:false}]')"
+  assert_rejects "a truncated release-state inventory" "reached its 100-release limit" -- \
+    "$release_state" --repo fmueller/orgtop --tag "$tag"
+
+  export FAKE_GH_FAIL_RELEASE_LIST=yes
+  assert_rejects "a failed release-state inventory" "release inventory request failed" -- \
+    "$release_state" --repo fmueller/orgtop --tag "$tag"
+  unset FAKE_GH_FAIL_RELEASE_LIST FAKE_GH_RELEASE_LIST_JSON
+
+  assert_rejects "release state without a tag" "usage:" -- \
+    "$release_state" --repo fmueller/orgtop
+  assert_rejects "release state with a bare version" "is not an ASCII semantic version tag" -- \
+    "$release_state" --repo fmueller/orgtop --tag 0.2.0
 
   # Empty draft: every expected source asset is uploaded, including both
   # metadata assets, and the final remote set is exactly the 14-item source

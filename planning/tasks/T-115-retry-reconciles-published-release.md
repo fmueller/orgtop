@@ -1,12 +1,12 @@
 ---
 id: T-115-retry-reconciles-published-release
 title: Reconcile a retry against an already published source release
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#distribution-channels
 dependencies:
     - T-067-configure-multi-channel-release-workflows
-updated_at: "2026-09-20T07:39:09Z"
+updated_at: "2026-09-20T07:59:15Z"
 ---
 
 # T-115-retry-reconciles-published-release Reconcile a retry against an already published source release
@@ -66,3 +66,4 @@ same shape as T-105 and T-107.
 - GoReleaser resolves the release in one `goreleaser release` invocation that
   also builds; separating build from release resolution is the likely shape of
   the fix, and it must not change first-publication behavior.
+- 2026-09-20T07:59:11Z: verification pass
