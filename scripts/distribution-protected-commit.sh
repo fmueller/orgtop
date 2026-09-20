@@ -29,6 +29,7 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ledger_path="${LEDGER_PATH:-docs/distribution-ledger.jsonl}"
 poll_seconds="${DISTRIBUTION_POLL_SECONDS:-30}"
 poll_attempts="${DISTRIBUTION_POLL_ATTEMPTS:-60}"
+retry_candidate_limit=10
 
 usage="$0 --branch <branch> --title <title> --ledger-event <file> [--extra-path <path>]"
 branch="" title="" event_file="" extra_path=""
@@ -62,6 +63,10 @@ default_branch="$(gh api "repos/$source_repository" --jq '.default_branch')"
 # passed per command rather than configured, so the token never reaches disk.
 [ -n "${GH_TOKEN:-}" ] || die "GH_TOKEN must be the distribution App installation token"
 authenticated=(-c "http.extraheader=AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)")
+if ! app_login="$(gh api graphql -f query='query { viewer { login } }' --jq '.data.viewer.login' 2>/dev/null)" ||
+  [ -z "$app_login" ] || [[ "$app_login" == *$'\n'* ]]; then
+  die "the distribution App login could not be identified"
+fi
 
 git "${authenticated[@]}" fetch origin "$default_branch"
 
@@ -129,7 +134,7 @@ git "${committer[@]}" commit -m "$title"
 git "${authenticated[@]}" push --force-with-lease origin "$branch"
 
 expected_head="$(git rev-parse HEAD)"
-pr_fields="number,state,mergedAt,headRefName,headRefOid,headRepository,headRepositoryOwner,baseRefName,reviews"
+pr_fields="number,state,mergedAt,author,headRefName,headRefOid,headRepository,headRepositoryOwner,baseRefName,reviews"
 readiness_fields="mergeable,author,headRefOid,reviews,latestReviews,statusCheckRollup"
 
 is_definitive_not_found() {
@@ -138,6 +143,20 @@ is_definitive_not_found() {
   [ "$output" = "no pull requests found" ] ||
     [ "$output" = "no pull requests found for branch" ] ||
     [ "$output" = "no pull requests found for branch \"$branch\"" ]
+}
+
+is_stale_reopen_error() {
+  local output="$1"
+  output="${output%%$'\ngh:'*}"
+  jq -e '
+    ((.status // "") | tostring) == "422"
+    and any(.errors[]?;
+      .resource == "PullRequest"
+      and .code == "custom"
+      and .field == "state"
+      and ((.message // "") | contains("branch was force-pushed or recreated"))
+    )
+  ' <<<"$output" >/dev/null 2>&1
 }
 
 read_pr_json() {
@@ -189,9 +208,11 @@ validate_pr_identity() {
   local json="$1" require_current_head="$2" expected_state="$3"
   if ! jq -e --arg branch "$branch" --arg repo "$source_repository" \
     --arg base "$default_branch" --arg head "$expected_head" \
-    --arg require_head "$require_current_head" --arg state "$expected_state" '
+    --arg require_head "$require_current_head" --arg state "$expected_state" \
+    --arg app "$app_login" '
       (.number | type == "number" and floor == . and . > 0)
       and .state == $state
+      and .author.login == $app
       and ((.headRefOid // "") | test("^[0-9a-f]{40}$"))
       and .headRefName == $branch
       and .headRepository.nameWithOwner == $repo
@@ -235,8 +256,70 @@ CLOSED)
   if jq -e '[.reviews[]? | select(.state == "APPROVED")] | length > 0' <<<"$pr_json" >/dev/null; then
     die "the existing closed ledger pull request carries prior approval; refusing to reuse it"
   fi
-  if ! gh pr reopen "$pr_number" --repo "$source_repository" >/dev/null; then
-    die "the existing closed ledger pull request could not be reopened"
+  if ! gh pr reopen "$pr_number" --repo "$source_repository" >/dev/null 2>&1; then
+    # GitHub refuses to reopen a closed pull request after its head branch was
+    # force-pushed or recreated. That is exactly what cleanup followed by a
+    # same-tag retry does, so create a fresh, uniquely named branch and pull
+    # request rather than treating the historical pull request as reusable.
+    if ! rest_output="$(gh api -X PATCH "repos/$source_repository/pulls/$pr_number" -f state=open 2>&1)"; then
+      if ! is_stale_reopen_error "$rest_output"; then
+        die "the existing closed ledger pull request could not be reopened"
+      fi
+      original_branch="$branch"
+      retry_suffix="${GITHUB_RUN_ID:-local}"
+      retry_index=0
+      while :; do
+        if [ "$retry_index" -ge "$retry_candidate_limit" ]; then
+          die "too many retry ledger pull-request candidates are already closed"
+        fi
+        retry_branch="${original_branch}-retry-${retry_suffix}"
+        [ "$retry_index" -eq 0 ] || retry_branch+="-$retry_index"
+
+        branch="$retry_branch"
+        if candidate_json="$(read_pr_json "$branch")"; then
+          candidate_state="$(jq -r '.state // empty' <<<"$candidate_json")"
+          case "$candidate_state" in
+          OPEN)
+            # Reusing an open retry pull request is safe only after its identity
+            # is checked. Its head is then refreshed and checked again below, so
+            # a rerun cannot retain an approval for an older commit.
+            validate_pr_identity "$candidate_json" no OPEN
+            git "${authenticated[@]}" fetch origin "$branch"
+            git branch -f "$branch" "$expected_head"
+            git "${authenticated[@]}" push --force-with-lease origin "$branch"
+            ;;
+          CLOSED)
+            retry_index=$((retry_index + 1))
+            continue
+            ;;
+          *)
+            die "the retry ledger pull request is $candidate_state; refusing to reuse it"
+            ;;
+          esac
+        else
+          lookup_status="$?"
+          if [ "$lookup_status" -ne 1 ] || ! is_definitive_not_found "$candidate_json"; then
+            die "the retry ledger pull request could not be inspected"
+          fi
+          git branch -f "$branch" "$expected_head"
+          git "${authenticated[@]}" push --force-with-lease origin "$branch"
+          gh pr create --repo "$source_repository" --base "$default_branch" --head "$branch" --title "$title" \
+            --body "Records one RG-011 distribution-ledger event. Merging this pull request is a required transition of the release workflow, which is waiting for it."
+        fi
+
+        if ! git "${authenticated[@]}" push \
+          --force-with-lease="refs/heads/$original_branch:$expected_head" \
+          origin ":refs/heads/$original_branch"; then
+          die "the obsolete ledger branch changed before retry cleanup"
+        fi
+        if ! pr_json="$(read_pr_json "$branch")"; then
+          die "the retry ledger pull request could not be inspected after refresh"
+        fi
+        pr_number="$(jq -er '.number | select(type == "number")' <<<"$pr_json")" ||
+          die "the retry ledger pull request number could not be read"
+        break
+      done
+    fi
   fi
   if ! pr_json="$(read_pr_json "$pr_number")"; then
     die "the reopened ledger pull request could not be inspected"

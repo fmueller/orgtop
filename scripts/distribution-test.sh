@@ -1140,10 +1140,18 @@ fi
 pending='{"mergeable":"MERGEABLE","author":{"login":"orgtop-distribution"},"latestReviews":[],"statusCheckRollup":[{"conclusion":null}]}'
 failed='{"mergeable":"MERGEABLE","author":{"login":"orgtop-distribution"},"latestReviews":[{"state":"APPROVED","author":{"login":"fmueller"}}],"statusCheckRollup":[{"conclusion":"FAILURE"}]}'
 ready='{"mergeable":"MERGEABLE","author":{"login":"orgtop-distribution"},"latestReviews":[{"state":"APPROVED","author":{"login":"fmueller"}}],"statusCheckRollup":[{"conclusion":"SUCCESS"}]}'
+retry_branch="${PROTECTED_BRANCH:?}-retry-local"
 
 case "${1-}" in
 api)
   endpoint="${2-}"
+  if [ "$endpoint" = -X ] || [ "$endpoint" = --method ]; then
+    endpoint="${4-}"
+  fi
+  if [ "$endpoint" = graphql ]; then
+    printf 'orgtop-distribution[bot]\n'
+    exit 0
+  fi
   if [[ "$endpoint" == repos/*/pulls/* ]]; then
     if [ "${PROTECTED_SCENARIO:?}" = repo_binding ] && [[ "$endpoint" != repos/fmueller/orgtop/pulls/* ]]; then
       printf 'fixture: pull request API command was not bound to the source repository\n' >&2
@@ -1156,6 +1164,23 @@ api)
     if [ "${PROTECTED_SCENARIO}" = lookup_api_malformed ]; then
       printf 'not-a-repository\n'
       exit 0
+    fi
+    if [[ " $* " == *" -X PATCH "* ]]; then
+      case "${PROTECTED_SCENARIO}" in
+      reopen_failure)
+        printf 'fixture: pull request reopen failed\n' >&2
+        exit 1
+        ;;
+      reopen_stale|reopen_stale_open_retry|reopen_stale_closed_retry|branch_ref_changed|reopen_stale_attacker_retry|reopen_stale_retry_exhausted)
+        printf '{"message":"Validation Failed","errors":[{"resource":"PullRequest","code":"custom","field":"state","message":"state cannot be changed: branch was force-pushed or recreated"}],"status":"422"}\n' >&2
+        printf 'gh: Validation Failed (HTTP 422)\n' >&2
+        exit 1
+        ;;
+      reopen_malformed)
+        printf '{"message":"Validation Failed: branch was force-pushed or recreated"}\n' >&2
+        exit 1
+        ;;
+      esac
     fi
     if [ "${PROTECTED_SCENARIO}" = mismatched_base_repository ]; then
       printf 'attacker/other\n'
@@ -1192,11 +1217,11 @@ pr)
     if [[ "$json" == *number* ]]; then
       emit_pr() {
         local state="$1" head_oid="$2" head_repo="$3" base="$4" merged="$5" reviews="$6" \
-          head_ref="${7:-${PROTECTED_BRANCH:?}}"
+          head_ref="${7:-${PROTECTED_BRANCH:?}}" author_login="${8:-orgtop-distribution[bot]}"
         jq -cn --arg state "$state" --arg head_oid "$head_oid" \
           --arg head_repo "$head_repo" --arg base "$base" --arg merged "$merged" \
-          --arg head_ref "$head_ref" --argjson reviews "$reviews" \
-          '{number:8,state:$state,mergedAt:(if $merged == "null" then null else $merged end),headRefName:$head_ref,headRefOid:$head_oid,headRepository:{nameWithOwner:$head_repo},headRepositoryOwner:{login:($head_repo | split("/")[0])},baseRefName:$base,reviews:$reviews}'
+          --arg head_ref "$head_ref" --arg author "$author_login" --argjson reviews "$reviews" \
+          '{number:8,state:$state,mergedAt:(if $merged == "null" then null else $merged end),author:{login:$author},headRefName:$head_ref,headRefOid:$head_oid,headRepository:{nameWithOwner:$head_repo},headRepositoryOwner:{login:($head_repo | split("/")[0])},baseRefName:$base,reviews:$reviews}'
       }
 
       case "${PROTECTED_SCENARIO:?}" in
@@ -1212,7 +1237,7 @@ pr)
         emit_pr OPEN "$(git -C "$PROTECTED_WORK" rev-parse HEAD)" fmueller/orgtop main null '[]'
         exit 0
         ;;
-      closed|closed_approved|reopen_failure|merged)
+      closed|closed_approved|reopen_failure|reopen_malformed|merged)
         if [ "${PROTECTED_SCENARIO}" = closed ] && [ -f "$PROTECTED_LOG.reopened" ]; then
           emit_pr OPEN "$(git -C "$PROTECTED_WORK" rev-parse HEAD)" fmueller/orgtop main null '[]'
         else
@@ -1225,6 +1250,42 @@ pr)
             merged='2026-09-19T20:00:00Z'
           fi
           emit_pr CLOSED "${PROTECTED_STALE_HEAD:?}" fmueller/orgtop main "$merged" "$reviews"
+        fi
+        exit 0
+        ;;
+      reopen_stale|reopen_stale_open_retry|reopen_stale_closed_retry|branch_ref_changed|reopen_stale_attacker_retry|reopen_stale_retry_exhausted)
+        if [ "$branch" = 8 ] && [ "${PROTECTED_SCENARIO}" = reopen_stale_open_retry ]; then
+          emit_pr OPEN "$(git -C "$PROTECTED_WORK" rev-parse HEAD)" fmueller/orgtop main null '[]' "$retry_branch"
+        elif [ "$branch" = 8 ] && [ "${PROTECTED_SCENARIO}" = reopen_stale_attacker_retry ]; then
+          emit_pr OPEN "$(git -C "$PROTECTED_WORK" rev-parse HEAD)" fmueller/orgtop main null '[]' "$retry_branch" human-collision
+        elif [ "$branch" = 8 ] && [ -f "$PROTECTED_LOG.created_branch" ]; then
+          created_branch="$(cat "$PROTECTED_LOG.created_branch")"
+          emit_pr OPEN "$(git -C "$PROTECTED_WORK" rev-parse HEAD)" fmueller/orgtop main null '[]' "$created_branch"
+        elif [ "$branch" = "$PROTECTED_BRANCH" ]; then
+          emit_pr CLOSED "${PROTECTED_STALE_HEAD:?}" fmueller/orgtop main null '[]'
+        elif [ "${PROTECTED_SCENARIO}" = reopen_stale_open_retry ] && [ "$branch" = "$retry_branch" ]; then
+          emit_pr OPEN "$(git -C "$PROTECTED_WORK" rev-parse HEAD)" fmueller/orgtop main null '[]' "$branch"
+        elif [ "${PROTECTED_SCENARIO}" = reopen_stale_attacker_retry ] && [ "$branch" = "$retry_branch" ]; then
+          emit_pr OPEN "$(git -C "$PROTECTED_WORK" rev-parse HEAD)" fmueller/orgtop main null '[]' "$branch" human-collision
+        elif [ "${PROTECTED_SCENARIO}" = reopen_stale_closed_retry ] && [ "$branch" = "$retry_branch" ]; then
+          emit_pr CLOSED "${PROTECTED_STALE_HEAD:?}" fmueller/orgtop main null '[]' "$branch"
+        elif [ "${PROTECTED_SCENARIO}" = reopen_stale_retry_exhausted ] && [[ "$branch" == "$retry_branch"* ]]; then
+          retry_views_file="$PROTECTED_LOG.retry_candidate_views"
+          retry_views=0
+          if [ -f "$retry_views_file" ]; then retry_views="$(cat "$retry_views_file")"; fi
+          retry_views=$((retry_views + 1))
+          printf '%s\n' "$retry_views" >"$retry_views_file"
+          if [ "$retry_views" -le 10 ]; then
+            emit_pr CLOSED "${PROTECTED_STALE_HEAD:?}" fmueller/orgtop main null '[]' "$branch"
+          else
+            printf 'no pull requests found for branch\n' >&2
+            exit 1
+          fi
+        elif [ -f "$PROTECTED_LOG.created" ]; then
+          emit_pr OPEN "$(git -C "$PROTECTED_WORK" rev-parse HEAD)" fmueller/orgtop main null '[]' "$(cat "$PROTECTED_LOG.created_branch")"
+        else
+          printf 'no pull requests found for branch\n' >&2
+          exit 1
         fi
         exit 0
         ;;
@@ -1288,6 +1349,9 @@ pr)
         response="$pending"
       fi
       ;;
+    reopen_stale|reopen_stale_open_retry|reopen_stale_closed_retry|branch_ref_changed|reopen_stale_attacker_retry)
+      response="$ready"
+      ;;
     delayed)
       if [ "$views" -eq 1 ]; then
         git --git-dir "$PROTECTED_REMOTE" update-ref refs/heads/main "$PROTECTED_LANDED_COMMIT"
@@ -1343,15 +1407,26 @@ pr)
     printf '%s\n' "$response"
     ;;
   reopen)
-    if [ "${PROTECTED_SCENARIO:?}" = reopen_failure ]; then
+    case "${PROTECTED_SCENARIO:?}" in
+    reopen_failure|reopen_stale|reopen_malformed|reopen_stale_open_retry|reopen_stale_closed_retry|branch_ref_changed|reopen_stale_attacker_retry|reopen_stale_retry_exhausted)
       printf 'fixture: pull request reopen failed\n' >&2
       exit 1
-    fi
+      ;;
+    esac
     : >"$PROTECTED_LOG.reopened"
     printf 'reopened fixture pull request\n'
     ;;
   create)
     : >"$PROTECTED_LOG.created"
+    while [ "$#" -gt 0 ]; do
+      case "$1" in
+      --head) printf '%s\n' "${2-}" >"$PROTECTED_LOG.created_branch"; shift 2 ;;
+      *) shift ;;
+      esac
+    done
+    if [ "${PROTECTED_SCENARIO:?}" = branch_ref_changed ]; then
+      git --git-dir "$PROTECTED_REMOTE" update-ref "refs/heads/$PROTECTED_BRANCH" "$PROTECTED_LANDED_COMMIT"
+    fi
     printf 'created fixture pull request\n'
     ;;
   merge)
@@ -1473,12 +1548,13 @@ protected_prepare() {
   malformed) git --git-dir "$remote" update-ref refs/heads/main "$PROTECTED_MALFORMED_COMMIT" ;;
   blank) git --git-dir "$remote" update-ref refs/heads/main "$PROTECTED_BLANK_COMMIT" ;;
   truncated) git --git-dir "$remote" update-ref refs/heads/main "$PROTECTED_TRUNCATED_COMMIT" ;;
+  reopen_stale_open_retry|reopen_stale_attacker_retry) git --git-dir "$remote" update-ref "refs/heads/$PROTECTED_BRANCH-retry-local" "$initial" ;;
   esac
 
   git clone -q "$remote" "$tmp_dir/protected-$name-work"
   PROTECTED_WORK="$tmp_dir/protected-$name-work"
   : >"$PROTECTED_LOG"
-  rm -f "$PROTECTED_LOG.views" "$PROTECTED_LOG.identity_views"
+  rm -f "$PROTECTED_LOG.views" "$PROTECTED_LOG.identity_views" "$PROTECTED_LOG.created_branch" "$PROTECTED_LOG.retry_candidate_views"
   export PROTECTED_REMOTE PROTECTED_SCENARIO PROTECTED_LOG PROTECTED_BRANCH
   export PROTECTED_STALE_HEAD PROTECTED_LANDED_COMMIT PROTECTED_CONTRADICTORY_COMMIT PROTECTED_WORK
 }
@@ -1531,6 +1607,42 @@ protected_output="$(protected_run)"
 assert_contains "a closed pull request is reopened for a retry" "$protected_output" "event is on main"
 assert_equal "a closed pull request is reopened exactly once" "$(grep -c 'gh pr reopen' "$PROTECTED_LOG")" "1"
 
+protected_prepare reopen_stale
+protected_output="$(protected_run)"
+assert_contains "a stale closed pull request uses a fresh retry branch" "$protected_output" "event is on main"
+assert_equal "a stale closed pull request is reopened exactly once" "$(grep -c 'gh pr reopen' "$PROTECTED_LOG")" "1"
+assert_equal "a stale closed pull request uses the run-scoped branch" \
+  "$(cat "$PROTECTED_LOG.created_branch")" "$PROTECTED_BRANCH-retry-local"
+if git --git-dir "$PROTECTED_REMOTE" show-ref --verify --quiet "refs/heads/$PROTECTED_BRANCH"; then
+  fail "a stale closed pull request left its obsolete branch behind"
+fi
+
+protected_prepare reopen_stale_open_retry
+protected_output="$(protected_run)"
+assert_contains "an open retry pull request is safely refreshed" "$protected_output" "event is on main"
+assert_equal "an open retry pull request is reused rather than duplicated" "$(grep -c 'gh pr create' "$PROTECTED_LOG" || true)" "0"
+if git --git-dir "$PROTECTED_REMOTE" show-ref --verify --quiet "refs/heads/$PROTECTED_BRANCH"; then
+  fail "an open retry pull request left its obsolete branch behind"
+fi
+
+protected_prepare reopen_stale_closed_retry
+protected_output="$(protected_run)"
+assert_contains "a closed retry candidate advances to a new branch" "$protected_output" "event is on main"
+assert_equal "a closed retry candidate uses a suffixed branch" \
+  "$(cat "$PROTECTED_LOG.created_branch")" "$PROTECTED_BRANCH-retry-local-1"
+
+protected_prepare reopen_stale_attacker_retry
+assert_rejects "an attacker-authored retry pull request fails closed" "identity" -- protected_run
+if ! git --git-dir "$PROTECTED_REMOTE" show-ref --verify --quiet "refs/heads/$PROTECTED_BRANCH"; then
+  fail "an attacker-authored retry pull request deleted the obsolete branch"
+fi
+
+protected_prepare reopen_stale_retry_exhausted
+assert_rejects "too many closed retry candidates fail closed" "too many retry" -- protected_run
+if ! git --git-dir "$PROTECTED_REMOTE" show-ref --verify --quiet "refs/heads/$PROTECTED_BRANCH"; then
+  fail "retry candidate exhaustion deleted the obsolete branch"
+fi
+
 protected_prepare closed_approved
 PROTECTED_ATTEMPTS=1
 assert_rejects "a closed pull request with prior approval fails closed" "prior approval" -- protected_run
@@ -1574,6 +1686,18 @@ assert_equal "a previously merged pull request never reopens" "$(grep -c 'gh pr 
 
 protected_prepare reopen_failure
 assert_rejects "a pull request reopen failure fails closed" "could not be reopened" -- protected_run
+
+protected_prepare reopen_malformed
+assert_rejects "a malformed stale-branch error fails closed" "could not be reopened" -- protected_run
+if ! git --git-dir "$PROTECTED_REMOTE" show-ref --verify --quiet "refs/heads/$PROTECTED_BRANCH"; then
+  fail "a malformed stale-branch error deleted the obsolete branch"
+fi
+
+protected_prepare branch_ref_changed
+assert_rejects "a changed obsolete branch fails closed" "changed before retry cleanup" -- protected_run
+if ! git --git-dir "$PROTECTED_REMOTE" show-ref --verify --quiet "refs/heads/$PROTECTED_BRANCH"; then
+  fail "a changed obsolete branch was deleted despite the lease"
+fi
 
 protected_prepare merge_race
 PROTECTED_ATTEMPTS=1
