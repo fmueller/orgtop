@@ -4,6 +4,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"gopkg.in/yaml.v3"
 )
 
 // The distribution guards, and the one Task target that exercises them. They
@@ -22,6 +24,7 @@ var (
 		"distribution-matrix.sh",
 		"distribution-notice.sh",
 		"distribution-protected-commit.sh",
+		"distribution-release-guard.sh",
 		"distribution-stage-assets.sh",
 		"distribution-upload-assets.sh",
 		"distribution-verify.sh",
@@ -626,6 +629,77 @@ func TestReleaseStagesGoReleaserArtifactsForUpload(t *testing.T) {
 	}
 }
 
+// TestReleaseWorkflowPreservesShellContinuations ensures the three guarded
+// commands with shell continuations are YAML literal blocks. A folded scalar
+// turns the backslash-newline into a backslash-space, making Bash pass the
+// entire continuation as one escaped argument and stopping the release before
+// any asset reconciliation.
+func TestReleaseWorkflowPreservesShellContinuations(t *testing.T) {
+	t.Parallel()
+
+	want := map[string]struct {
+		command       string
+		arguments     []string
+		continuations int
+	}{
+		"Stage source draft assets": {
+			command:       "distribution-stage-assets.sh",
+			continuations: 2,
+			arguments: []string{
+				`--version "${GITHUB_REF_NAME#v}" --dist dist`,
+				`--output "${RUNNER_TEMP}/source-upload"`,
+			},
+		},
+		"Verify staged source assets before upload": {
+			command:       "distribution-verify.sh",
+			continuations: 2,
+			arguments: []string{
+				`--dir "${RUNNER_TEMP}/source-upload"`,
+				`--version "${GITHUB_REF_NAME#v}" --channel source`,
+			},
+		},
+		"Upload or reconcile the source draft assets": {
+			command:       "distribution-upload-assets.sh",
+			continuations: 2,
+			arguments: []string{
+				`--tag "${GITHUB_REF_NAME}" --repo "${SOURCE_REPOSITORY}"`,
+				`--dir "${RUNNER_TEMP}/source-upload" --channel source`,
+			},
+		},
+	}
+	steps := child(jobAt(loadYAML(t, releaseWorkflow), "release"), "steps")
+	if steps == nil {
+		t.Fatal("release.yml must declare a `release` job with steps")
+	}
+
+	for name, expected := range want {
+		var run *yaml.Node
+		for _, step := range steps.Content {
+			if value(child(step, "name")) == name {
+				run = child(step, "run")
+				break
+			}
+		}
+		if run == nil {
+			t.Fatalf("release.yml must declare a run command for %q", name)
+		}
+		if run.Style&yaml.LiteralStyle == 0 {
+			t.Errorf("release.yml step %q must use a literal run block so shell continuations survive YAML parsing", name)
+		}
+		if !strings.Contains(run.Value, expected.command) {
+			t.Errorf("release.yml step %q must run %q, got %q", name, expected.command, run.Value)
+		}
+		for _, argument := range expected.arguments {
+			if !strings.Contains(run.Value, argument) {
+				t.Errorf("release.yml step %q must preserve argument line %q, got %q", name, argument, run.Value)
+			}
+		}
+		if got := strings.Count(run.Value, "\\\n"); got != expected.continuations {
+			t.Errorf("release.yml step %q must preserve %d shell continuations, got %d in %q", name, expected.continuations, got, run.Value)
+		}
+	}
+}
+
 // TestReleaseRefusesDuplicateSameVersionReleases keeps the duplication
 // diagnosable. Two releases for one tag is non-reconcilable same-version state
 // under RG-011, and it has to be named where it happens: found only through a
@@ -635,14 +709,48 @@ func TestReleaseRefusesDuplicateSameVersionReleases(t *testing.T) {
 	t.Parallel()
 
 	var guarded bool
-	for _, command := range jobStepValues(loadYAML(t, releaseWorkflow), "release", "run") {
-		if strings.Contains(command, "more than one release") {
+	for _, name := range jobStepValues(loadYAML(t, releaseWorkflow), "release", "name") {
+		if strings.Contains(name, "more than one release") {
 			guarded = true
 			break
 		}
 	}
 	if !guarded {
 		t.Error("release.yml must refuse a tag carrying more than one release, in the channel it built, before it reconciles digests")
+	}
+}
+
+// TestReleaseDuplicateGuardSeesDraftReleases keeps the one-release invariant
+// effective while a release is still staged. The REST releases list used by
+// the workflow token can omit drafts, which makes a valid draft look absent
+// immediately after GoReleaser creates it and stops the release before any
+// asset reconciliation. `gh release list` is the draft-visible inventory the
+// later release-view and upload steps already use.
+func TestReleaseDuplicateGuardSeesDraftReleases(t *testing.T) {
+	t.Parallel()
+
+	workflow := readFile(t, releaseWorkflow)
+	if !strings.Contains(workflow, "distribution-release-guard.sh") {
+		t.Fatal("release.yml must run the duplicate-release guard")
+	}
+	command := readFile(t, filepath.Join(repoRoot, "scripts", "distribution-release-guard.sh"))
+	if !strings.Contains(command, "gh release list") {
+		t.Error("the duplicate-release guard must inventory releases with gh release list so it includes drafts")
+	}
+	if !strings.Contains(command, "--limit 100") {
+		t.Error("the duplicate-release guard must use the exact bounded inventory limit 100")
+	}
+	if !strings.Contains(command, "--json tagName") || strings.Contains(command, "--exclude-drafts") {
+		t.Error("the duplicate-release guard must inspect the draft-visible tagName field")
+	}
+	if !strings.Contains(command, "release_inventory") || !strings.Contains(command, "jq 'length'") {
+		t.Error("the duplicate-release guard must measure the complete draft-visible inventory before counting tags")
+	}
+	if !strings.Contains(command, "-ge 100") {
+		t.Error("the duplicate-release guard must fail closed when the release inventory reaches its bound")
+	}
+	if !strings.Contains(command, "set -euo pipefail") {
+		t.Error("the duplicate-release guard must fail closed when release inventory or jq commands fail")
 	}
 }
 
