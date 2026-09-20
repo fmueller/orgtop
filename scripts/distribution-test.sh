@@ -1182,7 +1182,7 @@ api)
         exit 1
         ;;
       reopen_stale|reopen_stale_open_retry|reopen_stale_closed_retry|branch_ref_changed|reopen_stale_attacker_retry|reopen_stale_retry_exhausted)
-        printf '{"message":"Validation Failed","errors":[{"resource":"PullRequest","code":"custom","field":"state","message":"state cannot be changed: branch was force-pushed or recreated"}]}\n' >&2
+        printf '{"message":"Validation Failed: branch was force-pushed or recreated","errors":[{"resource":"PullRequest","code":"custom","field":"state","message":"state cannot be changed: branch was force-pushed or recreated"}]}\n' >&2
         printf 'gh: Validation Failed (HTTP 422)\n' >&2
         exit 1
         ;;
