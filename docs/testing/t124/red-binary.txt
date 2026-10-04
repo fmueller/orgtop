@@ -1,0 +1,168 @@
+PASS link-malformed cold current repository
+FAIL link-malformed cold path evidence
+FAIL link-malformed cold membership
+PASS link-malformed cold dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100']
+PASS link-malformed-cold responsive quit
+FAIL link-malformed cold persistence [(1, 1)]
+PASS link-malformed repeat current repository
+FAIL link-malformed repeat path evidence
+FAIL link-malformed repeat membership
+FAIL link-malformed repeat dispatched pages []
+PASS link-malformed-repeat responsive quit
+FAIL link-malformed repeat persistence [(1, 1)]
+PASS link-malformed corrected current repository
+PASS link-malformed corrected path evidence
+PASS link-malformed corrected membership
+FAIL link-malformed corrected dispatched pages []
+PASS link-malformed-corrected responsive quit
+PASS link-malformed corrected persistence [(1, 1)]
+PASS link-malformed reused current repository
+PASS link-malformed reused path evidence
+PASS link-malformed reused membership
+PASS link-malformed reused dispatched pages []
+PASS link-malformed-reused responsive quit
+PASS link-malformed reused persistence [(1, 1)]
+PASS link-reverse cold current repository
+FAIL link-reverse cold path evidence
+FAIL link-reverse cold membership
+FAIL link-reverse cold dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100', '/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100&page=3', '/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100&page=2']
+PASS link-reverse-cold responsive quit
+FAIL link-reverse cold persistence [(3, 1)]
+PASS link-reverse repeat current repository
+FAIL link-reverse repeat path evidence
+FAIL link-reverse repeat membership
+FAIL link-reverse repeat dispatched pages []
+PASS link-reverse-repeat responsive quit
+FAIL link-reverse repeat persistence [(3, 1)]
+PASS link-reverse corrected current repository
+PASS link-reverse corrected path evidence
+PASS link-reverse corrected membership
+FAIL link-reverse corrected dispatched pages []
+PASS link-reverse-corrected responsive quit
+FAIL link-reverse corrected persistence [(3, 1)]
+PASS link-reverse reused current repository
+PASS link-reverse reused path evidence
+PASS link-reverse reused membership
+PASS link-reverse reused dispatched pages []
+PASS link-reverse-reused responsive quit
+FAIL link-reverse reused persistence [(3, 1)]
+PASS link-duplicate-query cold current repository
+FAIL link-duplicate-query cold path evidence
+FAIL link-duplicate-query cold membership
+FAIL link-duplicate-query cold dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100', '/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100&page=2&page=999']
+PASS link-duplicate-query-cold responsive quit
+FAIL link-duplicate-query cold persistence [(2, 1)]
+PASS link-duplicate-query repeat current repository
+FAIL link-duplicate-query repeat path evidence
+FAIL link-duplicate-query repeat membership
+FAIL link-duplicate-query repeat dispatched pages []
+PASS link-duplicate-query-repeat responsive quit
+FAIL link-duplicate-query repeat persistence [(2, 1)]
+PASS link-duplicate-query corrected current repository
+PASS link-duplicate-query corrected path evidence
+PASS link-duplicate-query corrected membership
+FAIL link-duplicate-query corrected dispatched pages []
+PASS link-duplicate-query-corrected responsive quit
+FAIL link-duplicate-query corrected persistence [(2, 1)]
+PASS link-duplicate-query reused current repository
+PASS link-duplicate-query reused path evidence
+PASS link-duplicate-query reused membership
+PASS link-duplicate-query reused dispatched pages []
+PASS link-duplicate-query-reused responsive quit
+FAIL link-duplicate-query reused persistence [(2, 1)]
+PASS link-cycle cold current repository
+PASS link-cycle cold path evidence
+PASS link-cycle cold membership
+PASS link-cycle cold dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100', '/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100&page=2']
+PASS link-cycle-cold responsive quit
+PASS link-cycle cold persistence []
+PASS link-cycle repeat current repository
+PASS link-cycle repeat path evidence
+PASS link-cycle repeat membership
+PASS link-cycle repeat dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100', '/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100&page=2']
+PASS link-cycle-repeat responsive quit
+PASS link-cycle repeat persistence []
+PASS link-cycle corrected current repository
+PASS link-cycle corrected path evidence
+PASS link-cycle corrected membership
+PASS link-cycle corrected dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100']
+PASS link-cycle-corrected responsive quit
+PASS link-cycle corrected persistence [(1, 1)]
+PASS link-cycle reused current repository
+PASS link-cycle reused path evidence
+PASS link-cycle reused membership
+PASS link-cycle reused dispatched pages []
+PASS link-cycle-reused responsive quit
+PASS link-cycle reused persistence [(1, 1)]
+PASS paged-good cold current repository
+PASS paged-good cold path evidence
+PASS paged-good cold membership
+PASS paged-good cold dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100', '/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100&page=2']
+PASS paged-good-cold responsive quit
+PASS paged-good cold persistence [(2, 1)]
+PASS paged-good repeat current repository
+PASS paged-good repeat path evidence
+PASS paged-good repeat membership
+PASS paged-good repeat dispatched pages []
+PASS paged-good-repeat responsive quit
+PASS paged-good repeat persistence [(2, 1)]
+PASS paged-good corrected current repository
+PASS paged-good corrected path evidence
+PASS paged-good corrected membership
+PASS paged-good corrected dispatched pages []
+PASS paged-good-corrected responsive quit
+PASS paged-good corrected persistence [(2, 1)]
+PASS paged-good reused current repository
+PASS paged-good reused path evidence
+PASS paged-good reused membership
+PASS paged-good reused dispatched pages []
+PASS paged-good-reused responsive quit
+PASS paged-good reused persistence [(2, 1)]
+PASS empty cold current repository
+PASS empty cold path evidence
+PASS empty cold membership
+PASS empty cold dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100']
+PASS empty-cold responsive quit
+PASS empty cold persistence [(0, 1)]
+PASS empty repeat current repository
+PASS empty repeat path evidence
+PASS empty repeat membership
+PASS empty repeat dispatched pages []
+PASS empty-repeat responsive quit
+PASS empty repeat persistence [(0, 1)]
+PASS empty corrected current repository
+PASS empty corrected path evidence
+PASS empty corrected membership
+PASS empty corrected dispatched pages []
+PASS empty-corrected responsive quit
+PASS empty corrected persistence [(0, 1)]
+PASS empty reused current repository
+PASS empty reused path evidence
+PASS empty reused membership
+PASS empty reused dispatched pages []
+PASS empty-reused responsive quit
+PASS empty reused persistence [(0, 1)]
+PASS paged-missing cold current repository
+PASS paged-missing cold path evidence
+PASS paged-missing cold membership
+PASS paged-missing cold dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100', '/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100&page=2']
+PASS paged-missing-cold responsive quit
+PASS paged-missing cold persistence []
+PASS paged-missing repeat current repository
+PASS paged-missing repeat path evidence
+PASS paged-missing repeat membership
+PASS paged-missing repeat dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100', '/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100&page=2']
+PASS paged-missing-repeat responsive quit
+PASS paged-missing repeat persistence []
+PASS paged-missing corrected current repository
+PASS paged-missing corrected path evidence
+PASS paged-missing corrected membership
+PASS paged-missing corrected dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100']
+PASS paged-missing-corrected responsive quit
+PASS paged-missing corrected persistence [(1, 1)]
+PASS paged-missing reused current repository
+PASS paged-missing reused path evidence
+PASS paged-missing reused membership
+PASS paged-missing reused dispatched pages []
+PASS paged-missing-reused responsive quit
+PASS paged-missing reused persistence [(1, 1)]

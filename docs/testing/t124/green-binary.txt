@@ -1,0 +1,310 @@
+PASS link-malformed-no-cache current
+PASS link-malformed-no-cache explicit unknown ['OrgTop · OVERVIEW · POLLING · PATH ?1 · acme/api · updated 23:12:45', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  No confirmed activity · 1 unknown', '', '']
+PASS link-malformed-no-cache no raw body
+PASS link-malformed-no-cache responsive quit
+PASS link-malformed cold current repository
+PASS link-malformed cold path evidence
+PASS link-malformed cold membership
+PASS link-malformed cold dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100']
+PASS link-malformed-cold responsive quit
+PASS link-malformed cold persistence []
+PASS link-malformed repeat current repository
+PASS link-malformed repeat path evidence
+PASS link-malformed repeat membership
+PASS link-malformed repeat dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100']
+PASS link-malformed-repeat responsive quit
+PASS link-malformed repeat persistence []
+PASS link-malformed corrected current repository
+PASS link-malformed corrected path evidence
+PASS link-malformed corrected membership
+PASS link-malformed corrected dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100']
+PASS link-malformed-corrected responsive quit
+PASS link-malformed corrected persistence [(1, 1)]
+PASS link-malformed reused current repository
+PASS link-malformed reused path evidence
+PASS link-malformed reused membership
+PASS link-malformed reused dispatched pages []
+PASS link-malformed-reused responsive quit
+PASS link-malformed reused persistence [(1, 1)]
+PASS link-reverse-no-cache current
+PASS link-reverse-no-cache explicit unknown ['OrgTop · OVERVIEW · POLLING · PATH ?1 · acme/api · updated 23:12:56', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  No confirmed activity · 1 unknown', '', '']
+PASS link-reverse-no-cache no raw body
+PASS link-reverse-no-cache responsive quit
+PASS link-reverse cold current repository
+PASS link-reverse cold path evidence
+PASS link-reverse cold membership
+PASS link-reverse cold dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100', '/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100&page=3']
+PASS link-reverse-cold responsive quit
+PASS link-reverse cold persistence []
+PASS link-reverse repeat current repository
+PASS link-reverse repeat path evidence
+PASS link-reverse repeat membership
+PASS link-reverse repeat dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100', '/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100&page=3']
+PASS link-reverse-repeat responsive quit
+PASS link-reverse repeat persistence []
+PASS link-reverse corrected current repository
+PASS link-reverse corrected path evidence
+PASS link-reverse corrected membership
+PASS link-reverse corrected dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100']
+PASS link-reverse-corrected responsive quit
+PASS link-reverse corrected persistence [(1, 1)]
+PASS link-reverse reused current repository
+PASS link-reverse reused path evidence
+PASS link-reverse reused membership
+PASS link-reverse reused dispatched pages []
+PASS link-reverse-reused responsive quit
+PASS link-reverse reused persistence [(1, 1)]
+PASS link-duplicate-query-no-cache current
+PASS link-duplicate-query-no-cache explicit unknown ['OrgTop · OVERVIEW · POLLING · PATH ?1 · acme/api · updated 23:13:08', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  No confirmed activity · 1 unknown', '', '']
+PASS link-duplicate-query-no-cache no raw body
+PASS link-duplicate-query-no-cache responsive quit
+PASS link-duplicate-query cold current repository
+PASS link-duplicate-query cold path evidence
+PASS link-duplicate-query cold membership
+PASS link-duplicate-query cold dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100']
+PASS link-duplicate-query-cold responsive quit
+PASS link-duplicate-query cold persistence []
+PASS link-duplicate-query repeat current repository
+PASS link-duplicate-query repeat path evidence
+PASS link-duplicate-query repeat membership
+PASS link-duplicate-query repeat dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100']
+PASS link-duplicate-query-repeat responsive quit
+PASS link-duplicate-query repeat persistence []
+PASS link-duplicate-query corrected current repository
+PASS link-duplicate-query corrected path evidence
+PASS link-duplicate-query corrected membership
+PASS link-duplicate-query corrected dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100']
+PASS link-duplicate-query-corrected responsive quit
+PASS link-duplicate-query corrected persistence [(1, 1)]
+PASS link-duplicate-query reused current repository
+PASS link-duplicate-query reused path evidence
+PASS link-duplicate-query reused membership
+PASS link-duplicate-query reused dispatched pages []
+PASS link-duplicate-query-reused responsive quit
+PASS link-duplicate-query reused persistence [(1, 1)]
+PASS link-cycle-no-cache current
+PASS link-cycle-no-cache explicit unknown ['OrgTop · OVERVIEW · POLLING · PATH ?1 · acme/api · updated 23:13:19', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  No confirmed activity · 1 unknown', '', '']
+PASS link-cycle-no-cache no raw body
+PASS link-cycle-no-cache responsive quit
+PASS link-cycle cold current repository
+PASS link-cycle cold path evidence
+PASS link-cycle cold membership
+PASS link-cycle cold dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100', '/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100&page=2']
+PASS link-cycle-cold responsive quit
+PASS link-cycle cold persistence []
+PASS link-cycle repeat current repository
+PASS link-cycle repeat path evidence
+PASS link-cycle repeat membership
+PASS link-cycle repeat dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100', '/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100&page=2']
+PASS link-cycle-repeat responsive quit
+PASS link-cycle repeat persistence []
+PASS link-cycle corrected current repository
+PASS link-cycle corrected path evidence
+PASS link-cycle corrected membership
+PASS link-cycle corrected dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100']
+PASS link-cycle-corrected responsive quit
+PASS link-cycle corrected persistence [(1, 1)]
+PASS link-cycle reused current repository
+PASS link-cycle reused path evidence
+PASS link-cycle reused membership
+PASS link-cycle reused dispatched pages []
+PASS link-cycle-reused responsive quit
+PASS link-cycle reused persistence [(1, 1)]
+PASS link-extra-quote-no-cache current
+PASS link-extra-quote-no-cache explicit unknown ['OrgTop · OVERVIEW · POLLING · PATH ?1 · acme/api · updated 23:13:30', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  No confirmed activity · 1 unknown', '', '']
+PASS link-extra-quote-no-cache no raw body
+PASS link-extra-quote-no-cache responsive quit
+PASS link-extra-quote cold current repository
+PASS link-extra-quote cold path evidence
+PASS link-extra-quote cold membership
+PASS link-extra-quote cold dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100']
+PASS link-extra-quote-cold responsive quit
+PASS link-extra-quote cold persistence []
+PASS link-extra-quote repeat current repository
+PASS link-extra-quote repeat path evidence
+PASS link-extra-quote repeat membership
+PASS link-extra-quote repeat dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100']
+PASS link-extra-quote-repeat responsive quit
+PASS link-extra-quote repeat persistence []
+PASS link-extra-quote corrected current repository
+PASS link-extra-quote corrected path evidence
+PASS link-extra-quote corrected membership
+PASS link-extra-quote corrected dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100']
+PASS link-extra-quote-corrected responsive quit
+PASS link-extra-quote corrected persistence [(1, 1)]
+PASS link-extra-quote reused current repository
+PASS link-extra-quote reused path evidence
+PASS link-extra-quote reused membership
+PASS link-extra-quote reused dispatched pages []
+PASS link-extra-quote-reused responsive quit
+PASS link-extra-quote reused persistence [(1, 1)]
+PASS link-no-separator-no-cache current
+PASS link-no-separator-no-cache explicit unknown ['OrgTop · OVERVIEW · POLLING · PATH ?1 · acme/api · updated 23:13:41', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  No confirmed activity · 1 unknown', '', '']
+PASS link-no-separator-no-cache no raw body
+PASS link-no-separator-no-cache responsive quit
+PASS link-no-separator cold current repository
+PASS link-no-separator cold path evidence
+PASS link-no-separator cold membership
+PASS link-no-separator cold dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100']
+PASS link-no-separator-cold responsive quit
+PASS link-no-separator cold persistence []
+PASS link-no-separator repeat current repository
+PASS link-no-separator repeat path evidence
+PASS link-no-separator repeat membership
+PASS link-no-separator repeat dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100']
+PASS link-no-separator-repeat responsive quit
+PASS link-no-separator repeat persistence []
+PASS link-no-separator corrected current repository
+PASS link-no-separator corrected path evidence
+PASS link-no-separator corrected membership
+PASS link-no-separator corrected dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100']
+PASS link-no-separator-corrected responsive quit
+PASS link-no-separator corrected persistence [(1, 1)]
+PASS link-no-separator reused current repository
+PASS link-no-separator reused path evidence
+PASS link-no-separator reused membership
+PASS link-no-separator reused dispatched pages []
+PASS link-no-separator-reused responsive quit
+PASS link-no-separator reused persistence [(1, 1)]
+PASS link-list-no-separator-no-cache current
+PASS link-list-no-separator-no-cache explicit unknown ['OrgTop · OVERVIEW · POLLING · PATH ?1 · acme/api · updated 23:13:52', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  No confirmed activity · 1 unknown', '', '']
+PASS link-list-no-separator-no-cache no raw body
+PASS link-list-no-separator-no-cache responsive quit
+PASS link-list-no-separator cold current repository
+PASS link-list-no-separator cold path evidence
+PASS link-list-no-separator cold membership
+PASS link-list-no-separator cold dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100']
+PASS link-list-no-separator-cold responsive quit
+PASS link-list-no-separator cold persistence []
+PASS link-list-no-separator repeat current repository
+PASS link-list-no-separator repeat path evidence
+PASS link-list-no-separator repeat membership
+PASS link-list-no-separator repeat dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100']
+PASS link-list-no-separator-repeat responsive quit
+PASS link-list-no-separator repeat persistence []
+PASS link-list-no-separator corrected current repository
+PASS link-list-no-separator corrected path evidence
+PASS link-list-no-separator corrected membership
+PASS link-list-no-separator corrected dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100']
+PASS link-list-no-separator-corrected responsive quit
+PASS link-list-no-separator corrected persistence [(1, 1)]
+PASS link-list-no-separator reused current repository
+PASS link-list-no-separator reused path evidence
+PASS link-list-no-separator reused membership
+PASS link-list-no-separator reused dispatched pages []
+PASS link-list-no-separator-reused responsive quit
+PASS link-list-no-separator reused persistence [(1, 1)]
+PASS link-no-equals-no-cache current
+PASS link-no-equals-no-cache explicit unknown ['OrgTop · OVERVIEW · POLLING · PATH ?1 · acme/api · updated 23:14:03', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  No confirmed activity · 1 unknown', '', '']
+PASS link-no-equals-no-cache no raw body
+PASS link-no-equals-no-cache responsive quit
+PASS link-no-equals cold current repository
+PASS link-no-equals cold path evidence
+PASS link-no-equals cold membership
+PASS link-no-equals cold dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100']
+PASS link-no-equals-cold responsive quit
+PASS link-no-equals cold persistence []
+PASS link-no-equals repeat current repository
+PASS link-no-equals repeat path evidence
+PASS link-no-equals repeat membership
+PASS link-no-equals repeat dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100']
+PASS link-no-equals-repeat responsive quit
+PASS link-no-equals repeat persistence []
+PASS link-no-equals corrected current repository
+PASS link-no-equals corrected path evidence
+PASS link-no-equals corrected membership
+PASS link-no-equals corrected dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100']
+PASS link-no-equals-corrected responsive quit
+PASS link-no-equals corrected persistence [(1, 1)]
+PASS link-no-equals reused current repository
+PASS link-no-equals reused path evidence
+PASS link-no-equals reused membership
+PASS link-no-equals reused dispatched pages []
+PASS link-no-equals-reused responsive quit
+PASS link-no-equals reused persistence [(1, 1)]
+PASS paged-good-no-cache current
+PASS paged-good-no-cache complete ['OrgTop · OVERVIEW · POLLING · acme/api · updated 23:14:14', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  1 activity · 0 PR events · 1 push', '', '']
+PASS paged-good-no-cache membership
+PASS paged-good-no-cache no raw body
+PASS paged-good-no-cache responsive quit
+PASS paged-good cold current repository
+PASS paged-good cold path evidence
+PASS paged-good cold membership
+PASS paged-good cold dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100', '/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100&page=2']
+PASS paged-good-cold responsive quit
+PASS paged-good cold persistence [(2, 1)]
+PASS paged-good repeat current repository
+PASS paged-good repeat path evidence
+PASS paged-good repeat membership
+PASS paged-good repeat dispatched pages []
+PASS paged-good-repeat responsive quit
+PASS paged-good repeat persistence [(2, 1)]
+PASS paged-good corrected current repository
+PASS paged-good corrected path evidence
+PASS paged-good corrected membership
+PASS paged-good corrected dispatched pages []
+PASS paged-good-corrected responsive quit
+PASS paged-good corrected persistence [(2, 1)]
+PASS paged-good reused current repository
+PASS paged-good reused path evidence
+PASS paged-good reused membership
+PASS paged-good reused dispatched pages []
+PASS paged-good-reused responsive quit
+PASS paged-good reused persistence [(2, 1)]
+PASS empty-no-cache current
+PASS empty-no-cache complete ['OrgTop · OVERVIEW · POLLING · acme/api · updated 23:14:25', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  No activity in retained snapshot', '', '']
+PASS empty-no-cache membership
+PASS empty-no-cache no raw body
+PASS empty-no-cache responsive quit
+PASS empty cold current repository
+PASS empty cold path evidence
+PASS empty cold membership
+PASS empty cold dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100']
+PASS empty-cold responsive quit
+PASS empty cold persistence [(0, 1)]
+PASS empty repeat current repository
+PASS empty repeat path evidence
+PASS empty repeat membership
+PASS empty repeat dispatched pages []
+PASS empty-repeat responsive quit
+PASS empty repeat persistence [(0, 1)]
+PASS empty corrected current repository
+PASS empty corrected path evidence
+PASS empty corrected membership
+PASS empty corrected dispatched pages []
+PASS empty-corrected responsive quit
+PASS empty corrected persistence [(0, 1)]
+PASS empty reused current repository
+PASS empty reused path evidence
+PASS empty reused membership
+PASS empty reused dispatched pages []
+PASS empty-reused responsive quit
+PASS empty reused persistence [(0, 1)]
+PASS paged-missing-no-cache current
+PASS paged-missing-no-cache explicit unknown ['OrgTop · OVERVIEW · POLLING · PATH ?1 · acme/api · updated 23:14:36', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  No confirmed activity · 1 unknown', '', '']
+PASS paged-missing-no-cache no raw body
+PASS paged-missing-no-cache responsive quit
+PASS paged-missing cold current repository
+PASS paged-missing cold path evidence
+PASS paged-missing cold membership
+PASS paged-missing cold dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100', '/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100&page=2']
+PASS paged-missing-cold responsive quit
+PASS paged-missing cold persistence []
+PASS paged-missing repeat current repository
+PASS paged-missing repeat path evidence
+PASS paged-missing repeat membership
+PASS paged-missing repeat dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100', '/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100&page=2']
+PASS paged-missing-repeat responsive quit
+PASS paged-missing repeat persistence []
+PASS paged-missing corrected current repository
+PASS paged-missing corrected path evidence
+PASS paged-missing corrected membership
+PASS paged-missing corrected dispatched pages ['/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100']
+PASS paged-missing-corrected responsive quit
+PASS paged-missing corrected persistence [(1, 1)]
+PASS paged-missing reused current repository
+PASS paged-missing reused path evidence
+PASS paged-missing reused membership
+PASS paged-missing reused dispatched pages []
+PASS paged-missing-reused responsive quit
+PASS paged-missing reused persistence [(1, 1)]

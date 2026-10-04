@@ -1,0 +1,34 @@
+--- FAIL: TestCommitPaginationProof (0.00s)
+    --- FAIL: TestCommitPaginationProof/relation_list (0.00s)
+        enrich_pagination_test.go:56: kind/paths/requests = complete/1/1, want complete/2/2
+    --- FAIL: TestCommitPaginationProof/missing_brackets (0.00s)
+        enrich_pagination_test.go:56: kind/paths/requests = complete/1/1, want incomplete/0/1
+    --- FAIL: TestCommitPaginationProof/missing_closing_bracket (0.00s)
+        enrich_pagination_test.go:56: kind/paths/requests = complete/1/1, want incomplete/0/1
+    --- FAIL: TestCommitPaginationProof/unquoted_relation (0.00s)
+        enrich_pagination_test.go:56: kind/paths/requests = complete/1/1, want incomplete/0/1
+    --- FAIL: TestCommitPaginationProof/unclosed_relation (0.00s)
+        enrich_pagination_test.go:56: kind/paths/requests = complete/1/1, want incomplete/0/1
+    --- FAIL: TestCommitPaginationProof/extra_relation_quote (0.00s)
+        enrich_pagination_test.go:56: kind/paths/requests = complete/1/1, want incomplete/0/1
+    --- FAIL: TestCommitPaginationProof/missing_relation_separator (0.00s)
+        enrich_pagination_test.go:56: kind/paths/requests = complete/1/1, want incomplete/0/1
+    --- FAIL: TestCommitPaginationProof/duplicate_next (0.00s)
+        enrich_pagination_test.go:56: kind/paths/requests = complete/2/2, want incomplete/0/1
+    --- FAIL: TestCommitPaginationProof/duplicate_page (0.00s)
+        enrich_test.go:35: unexpected request URI "/repos/Acme/Web/commits/2222222222222222222222222222222222222222?page=3&per_page=100&page=999"
+        enrich_pagination_test.go:56: kind/paths/requests = failed/0/2, want incomplete/0/1
+    --- FAIL: TestCommitPaginationProof/duplicate_per_page (0.00s)
+        enrich_test.go:35: unexpected request URI "/repos/Acme/Web/commits/2222222222222222222222222222222222222222?page=3&per_page=100&per_page=50"
+        enrich_pagination_test.go:56: kind/paths/requests = failed/0/2, want incomplete/0/1
+    --- FAIL: TestCommitPaginationProof/bad_query_escape (0.00s)
+        enrich_test.go:35: unexpected request URI "/repos/Acme/Web/commits/2222222222222222222222222222222222222222?page=3&per_page=100&ignored=%zz"
+        enrich_pagination_test.go:56: kind/paths/requests = failed/0/2, want incomplete/0/1
+    --- FAIL: TestCommitPaginationProof/bad_query_separator (0.00s)
+        enrich_pagination_test.go:56: kind/paths/requests = complete/1/1, want incomplete/0/1
+--- FAIL: TestCommitPaginationRejectsBackwardAndRepeatedPages (0.00s)
+    --- FAIL: TestCommitPaginationRejectsBackwardAndRepeatedPages/2 (0.00s)
+        enrich_pagination_test.go:73: kind/paths/requests = complete/3/3, want incomplete/0/2
+FAIL
+FAIL	github.com/fmueller/orgtop/internal/github	0.030s
+FAIL

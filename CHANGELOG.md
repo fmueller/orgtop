@@ -158,6 +158,9 @@ workflow refuses to publish otherwise.
 
 ### Fixed
 
+- Path activity now stays unknown when GitHub offers malformed, ambiguous, or
+  nonadvancing commit pagination, instead of caching a partial changed-file set.
+  Valid increasing chains and final pages without a next link remain complete.
 - Path activity now stays unknown when GitHub omits or nulls a changed-file
   array, instead of caching false non-membership or a partial file set. Explicit
   empty arrays still confirm no matching path activity.

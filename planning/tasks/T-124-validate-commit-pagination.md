@@ -1,11 +1,11 @@
 ---
 id: T-124-validate-commit-pagination
 title: Reject malformed and nonadvancing commit pagination
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.2.0.md#rg-003-github-enrichment-contract
 dependencies: []
-updated_at: "2026-10-04T22:04:52Z"
+updated_at: "2026-10-04T23:19:53Z"
 ---
 
 # T-124-validate-commit-pagination Reject malformed and nonadvancing commit pagination
@@ -74,3 +74,5 @@ These are synthetic malformed responses, not claims of normal GitHub pagination.
   brackets; `expectedPageQuery` uses only first query values and `page > 1`;
   `commitEvidence` tracks visited URLs, not monotonic page progression.
 - No product fix or lifecycle completion was performed in round 3.
+- 2026-10-04T23:19:42Z: verification pass
+- 2026-10-04T23:19:53Z: Validated full-query monotonic commit pagination; four reviewed findings fixed, 310 binary HTTPS/PTY/cache assertions and final task check pass, differential mutation 10 killed/0 lived. Evidence docs/testing/t124/report.md; T-125 unchanged.

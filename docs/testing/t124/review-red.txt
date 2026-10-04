@@ -1,0 +1,8 @@
+--- FAIL: TestCommitPaginationProof (0.00s)
+    --- FAIL: TestCommitPaginationProof/extra_relation_quote (0.00s)
+        enrich_pagination_test.go:56: kind/paths/requests = complete/2/2, want incomplete/0/1
+    --- FAIL: TestCommitPaginationProof/missing_relation_separator (0.00s)
+        enrich_pagination_test.go:56: kind/paths/requests = complete/1/1, want incomplete/0/1
+FAIL
+FAIL	github.com/fmueller/orgtop/internal/github	0.007s
+FAIL

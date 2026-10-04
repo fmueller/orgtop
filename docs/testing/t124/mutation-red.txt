@@ -1,0 +1,5 @@
+--- FAIL: TestCommitPaginationRejectsSamePageAtDifferentURL (0.00s)
+    enrich_pagination_test.go:90: kind/paths/requests = complete/3/3, want incomplete/0/2
+FAIL
+FAIL	github.com/fmueller/orgtop/internal/github	0.006s
+FAIL

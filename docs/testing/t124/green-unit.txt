@@ -1,0 +1,3 @@
+ok  	github.com/fmueller/orgtop/internal/github	0.248s
+ok  	github.com/fmueller/orgtop/internal/enrichment	(cached)
+ok  	github.com/fmueller/orgtop/internal/cache	(cached)

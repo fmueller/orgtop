@@ -20,6 +20,7 @@ func (e Enricher) commitEvidence(ctx context.Context, descriptor domain.Evidence
 	paths := newPathSet()
 	parent := ""
 	endpoint := e.commitURL(descriptor)
+	page := 1
 	visited := map[string]struct{}{}
 
 	for range domain.MaxEvidencePages {
@@ -42,7 +43,7 @@ func (e Enricher) commitEvidence(ctx context.Context, descriptor domain.Evidence
 		}
 		parent = soleParent
 
-		next, present := e.nextCommitPage(header, descriptor)
+		next, nextPage, present := e.nextCommitPage(header, descriptor, page)
 		if !present {
 			// A final page without a next link proves completeness, the empty
 			// set included. Per-event applicability is then decided from the
@@ -55,6 +56,7 @@ func (e Enricher) commitEvidence(ctx context.Context, descriptor domain.Evidence
 			return domain.IncompleteOutcome(reasonMalformedBody)
 		}
 		endpoint = next
+		page = nextPage
 	}
 	// A next link still present at the page bound proves incompleteness.
 	return domain.IncompleteOutcome(reasonMalformedBody)
@@ -84,49 +86,64 @@ func commitPageIdentity(descriptor domain.EvidenceDescriptor, response commitRes
 // it must be the same scheme and host as the configured API root, name the same
 // canonical repository and exact commit, and carry only the page and per-page
 // query OrgTop itself requested, advancing to an unseen page.
-func (e Enricher) nextCommitPage(header http.Header, descriptor domain.EvidenceDescriptor) (string, bool) {
+func (e Enricher) nextCommitPage(header http.Header, descriptor domain.EvidenceDescriptor, page int) (string, int, bool) {
 	raw, present := linkRelation(header, "next")
 	if !present {
-		return "", false
+		return "", 0, false
 	}
 	parsed, components, ok := parseAPIURL(e.baseURL(), raw)
 	if !ok || !matchesEntityPath(components, descriptor.Repository(), "commits", descriptor.Head()) {
-		return "", true
+		return "", 0, true
 	}
-	if !expectedPageQuery(parsed.Query()) {
-		return "", true
+	query, err := url.ParseQuery(parsed.RawQuery)
+	if err != nil || len(query) != 2 || len(query["page"]) != 1 || len(query["per_page"]) != 1 || query.Get("per_page") != perPage {
+		return "", 0, true
 	}
-	return raw, true
+	nextPage, err := strconv.Atoi(query.Get("page"))
+	if err != nil || nextPage <= page {
+		return "", 0, true
+	}
+	return raw, nextPage, true
 }
 
-// expectedPageQuery reports whether a next link carries only the page and
-// per-page members OrgTop itself requested, with a page that advances.
-func expectedPageQuery(query url.Values) bool {
-	if len(query) != 2 || query.Get("per_page") != perPage {
-		return false
-	}
-	page, err := strconv.Atoi(query.Get("page"))
-	return err == nil && page > 1
-}
-
-// linkRelation returns the target of one Link relation.
+// linkRelation returns the target of one Link relation. An unreadable or
+// ambiguous offered relation returns an empty target with present true, never
+// the absence that would prove a terminal page.
 func linkRelation(header http.Header, relation string) (string, bool) {
+	raw, present := "", false
 	for _, value := range header.Values("Link") {
 		for _, entry := range strings.Split(value, ",") {
 			parts := strings.Split(entry, ";")
-			if len(parts) < 2 {
-				continue
-			}
 			target := strings.TrimSpace(parts[0])
-			if !strings.HasPrefix(target, "<") || !strings.HasSuffix(target, ">") {
-				continue
+			if _, parameter, found := strings.Cut(target, ">"); found && strings.TrimSpace(parameter) != "" {
+				// Read a relation even when its separator is missing. The
+				// malformed target below then rejects it as offered, not absent.
+				parts = append(parts, parameter)
 			}
 			for _, parameter := range parts[1:] {
-				if strings.EqualFold(strings.TrimSpace(parameter), `rel="`+relation+`"`) {
-					return target[1 : len(target)-1], true
+				key, relations, _ := strings.Cut(strings.TrimSpace(parameter), "=")
+				keys := strings.Fields(key)
+				if len(keys) == 0 || !strings.EqualFold(keys[0], "rel") {
+					continue
+				}
+				if len(keys) != 1 {
+					return "", true
+				}
+				relations = strings.TrimSpace(relations)
+				for _, token := range strings.FieldsFunc(relations, func(r rune) bool {
+					return r == '"' || r == '\'' || r == ' ' || r == '\t'
+				}) {
+					if !strings.EqualFold(token, relation) {
+						continue
+					}
+					if present || !strings.HasPrefix(target, "<") || !strings.HasSuffix(target, ">") ||
+						!strings.HasPrefix(relations, `"`) || !strings.HasSuffix(relations, `"`) || strings.Count(relations, `"`) != 2 {
+						return "", true
+					}
+					raw, present = target[1:len(target)-1], true
 				}
 			}
 		}
 	}
-	return "", false
+	return raw, present
 }

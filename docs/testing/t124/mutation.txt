@@ -1,0 +1,11 @@
+task: [test:mutate] go clean -testcache
+task: [test:mutate] go run github.com/go-gremlins/gremlins/cmd/gremlins@v0.6.0 unleash --diff '5f2a46f59fab614eea7e14a0a810652736b912cf' --exclude-files 'cmd/.*' --output-statuses lt --workers 2
+Starting...
+Gathering files diff...
+Gathering coverage... done in 23.540485974s
+
+Mutation testing completed in 13 seconds 155 milliseconds
+Killed: 10, Lived: 0, Not covered: 0
+Timed out: 0, Not viable: 0, Skipped: 1796
+Test efficacy: 100.00%
+Mutator coverage: 100.00%
