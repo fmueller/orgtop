@@ -158,6 +158,9 @@ workflow refuses to publish otherwise.
 
 ### Fixed
 
+- Stream actor and event summaries now show bidi controls as visible uppercase
+  escapes before width measurement, consistently with event detail. Interesting
+  Now applies the same sanitizer to its shared actor text; source data is unchanged.
 - Boolean flag assignments such as `--reset-cache=true` and `--no-cache=false`
   now fail with usage exit 2 before cache removal or launch work. Bare controls,
   value-flag assignments, and help/version precedence remain unchanged.

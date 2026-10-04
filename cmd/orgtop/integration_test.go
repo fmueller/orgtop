@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"regexp"
 	"slices"
 	"strings"
@@ -1149,5 +1150,58 @@ func TestOrganizationFlowFailureIsAnErrorThatPollsNoSubset(t *testing.T) {
 	assertAbsent(t, overview, sentinelToken, "SELECTION STALE")
 	if got := endpoint.requestCount("other/exact"); got != 0 {
 		t.Errorf("a failed initial expansion polled the exact subset %d times, want none", got)
+	}
+}
+
+// Exercise the actual hostile branch through HTTP normalization, membership,
+// and rendering, not a hand-built domain event. All RG-012 bidi controls must
+// be escaped before the layout measures or shortens either summary surface.
+func TestHostileSummaryFlowEscapesBidiBeforeLayout(t *testing.T) {
+	fixture, err := os.ReadFile("../../docs/testing/round1/hostile-event.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	controls := []rune{0x061C, 0x200E, 0x200F, 0x202A, 0x202B, 0x202C, 0x202D, 0x202E, 0x2066, 0x2067, 0x2068, 0x2069}
+	for _, control := range controls {
+		t.Run(fmt.Sprintf("U%04X", control), func(t *testing.T) {
+			body := strings.ReplaceAll(string(fixture), `\u202e`, fmt.Sprintf(`\u%04x`, control))
+			body = strings.ReplaceAll(body, "2026-10-04T19:26:57Z", wiredInstant.Format(time.RFC3339))
+			actor := "é界👩‍💻" + string(control) + "actor"
+			encodedActor, err := json.Marshal(actor)
+			if err != nil {
+				t.Fatal(err)
+			}
+			body = strings.ReplaceAll(body, `"tester"`, string(encodedActor))
+			endpoint := newEndpoint(map[string][]cannedResponse{eventsPath("acme/api"): {ok(body)}})
+			run := newFlow(t, endpoint, "--repo", "acme/api", "--no-cache")
+			run.refresh()
+			escape := fmt.Sprintf(`\u{%X}`, control)
+			wantActor := "é界👩‍💻" + escape + "actor"
+			run.press("2")
+			wide := run.render(240, wideHeight)
+			assertContains(t, wide, wantActor, "release-"+escape+"abc", "in R1")
+			assertAbsent(t, wide, string(control))
+			for _, width := range []int{1, 8, 40, 80, 120} {
+				view := run.render(width, wideHeight)
+				assertAbsent(t, view, string(control))
+				for _, line := range strings.Split(view, "\n") {
+					if got := lipgloss.Width(line); got > width {
+						t.Errorf("Stream line width %d exceeds %d: %q", got, width, line)
+					}
+				}
+			}
+			if restored := run.render(240, wideHeight); restored != wide {
+				t.Error("resize changed the prepared Stream event")
+			}
+			run.apply(tea.KeyPressMsg{Code: tea.KeyEnter})
+			detail := run.render(240, wideHeight)
+			assertContains(t, detail, "Event: 1", "Actor: "+wantActor, "Description: pushed 1 commit to release-"+escape+"abc", "Member: R1 acme/api")
+			assertAbsent(t, detail, string(control))
+			run.apply(tea.KeyPressMsg{Code: tea.KeyEscape})
+			run.press("3")
+			rain := run.render(240, wideHeight)
+			assertContains(t, rain, wantActor)
+			assertAbsent(t, rain, string(control))
+		})
 	}
 }

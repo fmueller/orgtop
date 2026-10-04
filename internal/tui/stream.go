@@ -436,12 +436,13 @@ func scopeColumn(contexts []scopeContext, heading string, budget int) []string {
 }
 
 // rowDetail joins the optional actor and description of one event, so an
-// event without either keeps a row rather than an empty field.
+// event without either keeps a row rather than an empty field. Escape source
+// text before the row measures or shortens it, just as opened detail does.
 func rowDetail(event domain.Event) string {
 	present := make([]string, 0, 2)
 	for _, field := range []string{event.Actor, event.Description} {
 		if field != "" {
-			present = append(present, field)
+			present = append(present, escapeControls(field))
 		}
 	}
 	return strings.Join(present, separator)

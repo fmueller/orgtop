@@ -1,11 +1,11 @@
 ---
 id: T-121-stream-bidi-controls
 title: Escape bidi controls in Stream event summaries
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.2.0.md#rg-012-mixed-scope-presentation-contract
 dependencies: []
-updated_at: "2026-10-04T19:28:59Z"
+updated_at: "2026-10-04T21:05:10Z"
 ---
 
 # T-121-stream-bidi-controls Escape bidi controls in Stream event summaries
@@ -65,3 +65,5 @@ capture, not the image, proves the control remains raw.
 - Inspect `rowDetail` in `internal/tui/stream.go` and the existing detail/label
   sanitization helper. Do not change immutable source identifiers to fix display.
 - No fix was implemented in this round.
+- 2026-10-04T21:05:10Z: verification pass
+- 2026-10-04T21:05:10Z: Verified after workflow-v3 review and final task check; existing TUI sanitizer only, source identity unchanged. Evidence docs/testing/t121-stream-bidi.md.

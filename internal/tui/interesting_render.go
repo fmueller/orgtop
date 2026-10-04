@@ -216,7 +216,7 @@ func (e interestingEntry) form(tokens map[domain.ScopeIdentity]string, set chars
 	segments = append(segments, categoryGlyph(e.category, set)+" "+categoryText(e.category, register))
 	if detail >= stripDetailFull {
 		if e.actor != "" {
-			segments = append(segments, e.actor)
+			segments = append(segments, escapeControls(e.actor))
 		}
 		if entity := e.entityText(); entity != "" {
 			segments = append(segments, entity)
