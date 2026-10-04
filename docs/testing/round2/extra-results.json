@@ -1,0 +1,67 @@
+[
+  {
+    "name": "50 overlapping scopes fully enriched",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "50-scope fair 500 admitted / 4500 omitted",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "Rain advances 18-scope page",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "Rain final page retains fair tail",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "Rain page anchor returns after resize",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "fairness responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "entity reference escapes bidi",
+    "pass_": false,
+    "detail": null
+  },
+  {
+    "name": "entity detail comparison safe",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "entity-repeat responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "admission lock degrades without losing membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "next refresh retries cache and clears degradation",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "admission-busy responsive quit",
+    "pass_": true,
+    "detail": null
+  }
+]

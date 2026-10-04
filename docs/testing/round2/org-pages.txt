@@ -1,0 +1,32 @@
+OrgTop · OVERVIEW · POLLING · 20 repos · 20 scopes · updated 21:22:04 · selection: 20 repos · 20 scopes · 1 exact · 19 expanded · 481 eligible omitted · more eligible may be omitted
+R1 alpha/r000   1 activity · 0 PR events · 1 push
+R2 alpha/r001   1 activity · 0 PR events · 1 push
+R3 alpha/r002   1 activity · 0 PR events · 1 push
+R4 alpha/r003   1 activity · 0 PR events · 1 push
+R5 alpha/r004   1 activity · 0 PR events · 1 push
+R6 alpha/r005   1 activity · 0 PR events · 1 push
+R7 alpha/r006   1 activity · 0 PR events · 1 push
+R8 alpha/r007   1 activity · 0 PR events · 1 push
+R9 alpha/r008   1 activity · 0 PR events · 1 push
+R10 alpha/r009  1 activity · 0 PR events · 1 push
+R11 beta/r000   1 activity · 0 PR events · 1 push
+R12 beta/r001   1 activity · 0 PR events · 1 push
+R13 beta/r002   1 activity · 0 PR events · 1 push
+R14 beta/r003   1 activity · 0 PR events · 1 push
+R15 beta/r004   1 activity · 0 PR events · 1 push
+R16 beta/r005   1 activity · 0 PR events · 1 push
+R17 beta/r006   1 activity · 0 PR events · 1 push
+R18 beta/r007   1 activity · 0 PR events · 1 push
+R19 beta/r008   1 activity · 0 PR events · 1 push
+R20 exact/keep  1 activity · 0 PR events · 1 push
+
+
+
+
+
+
+
+
+
+
+1 overview · 2 stream · 3 rain · tab switch · up/down scroll · pgup/pgdn page · q quit

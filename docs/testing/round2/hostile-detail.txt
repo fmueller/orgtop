@@ -1,0 +1,32 @@
+OrgTop · STREAM · POLLING · acme/api · updated 21:21:33
+Event: 1
+Time: 2026-10-04T21:21:33Z · <1m
+Repository: acme/api
+Category: push
+Actor: tester
+Entity: commit · 2222222222222222222222222222222222222222
+Description: pushed 1 commit to release-\u{202E}abc
+Member: R1 acme/api
+Member: P2 acme/api:src
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+1 overview · 2 stream · 3 rain · tab switch · up/down scroll · pgup/pgdn page · esc back · q quit

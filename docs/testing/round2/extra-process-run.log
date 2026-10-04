@@ -1,0 +1,14 @@
+PASS 50 overlapping scopes fully enriched
+PASS 50-scope fair 500 admitted / 4500 omitted
+PASS Rain advances 18-scope page
+PASS Rain final page retains fair tail
+PASS Rain page anchor returns after resize
+PASS fairness responsive quit
+FAIL entity reference escapes bidi
+PASS entity detail comparison safe
+PASS entity-repeat responsive quit
+PASS seed responsive quit
+PASS admission lock degrades without losing membership
+WAIT actual 61-second cache recovery
+PASS next refresh retries cache and clears degradation
+PASS admission-busy responsive quit

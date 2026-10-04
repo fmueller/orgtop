@@ -1,0 +1,32 @@
+OrgTop · STREAM · POLLING · STALE · refreshing acme/other: unexpected github response: status 503 · acme/api, acme/other · updated 21:22:13
+showing 2 events (retained)
+  age  repository  category  scopes     actor · description
+▸ <1m  acme/api    push      in R1, P2  tester · pushed 1 commit to phase0
+  <1m  acme/other  push      in R3      tester · pushed 1 commit to phase0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+1 overview · 2 stream · 3 rain · tab switch · up/down focus · pgup/pgdn page · enter detail · q quit

@@ -1,0 +1,12 @@
+RAIN · POLLING · 1-3/50 · +47s · +470i
+R1 acme/api   P2 acme/…c/p0 P3 acme…c/p1
+↑ ↑ ↑ ↑       ↑   ↑ ↑       ↑ ↑ ↑ ↑ ↑ ↑
+↑ ↑ ↑     ↑   ↑         ↑     ↑   ↑
+      ↑   ↑   ↑ ↑ ↑   ↑ ↑       ↑   ↑
+PAUSED · window 24h · no legend · +4500o
+I15m: 4 shown 16 hidden 80 omitted
+↑ push · acme/api · R1 acme/api · 2s
+↑ push · acme/api · R1 acme/api · 2s
+↑ push · acme/api · R1 acme/api · 2s
+↑ push · acme/api · R1 acme/api · 2s
+1/2/3/tab switch · q quit

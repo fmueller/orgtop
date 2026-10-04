@@ -1,0 +1,394 @@
+[
+  {
+    "name": "T119 --bad --help",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "T119 --help --reset-cache --bad",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "T119 --help --repo",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "T119 --repo=broken --help",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "T119 --bad -h",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "T119 -h --reset-cache --bad",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "T119 -h --repo",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "T119 --repo=broken -h",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "T119 --bad --version",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "T119 --version --reset-cache --bad",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "T119 --version --repo",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "T119 --repo=broken --version",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "T119 --bad -v",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "T119 -v --reset-cache --bad",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "T119 -v --repo",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "T119 --repo=broken -v",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "T120 --reset-cache --reset-cache=true",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "T120 --reset-cache --reset-cache=false",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "T120 --reset-cache --no-cache=true",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "T120 --reset-cache --no-cache=false",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "T120 --reset-cache --include-forks=true",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "T120 --reset-cache --include-forks=false",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "T120 --reset-cache --include-archived=true",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "T120 --reset-cache --include-archived=false",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "T121 Stream and detail escaped",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "T121 constrained Stream safe",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "hostile responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "cold CURRENT",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "cold responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "warm reuse no extra commit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "warm responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "real SQLite cache exists",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "T120 populated SQLite preserved",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "two simultaneous cache clients current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "active cache reset bounded refusal",
+    "pass_": true,
+    "detail": {
+      "exit": 1,
+      "stderr": "enrichment cache is busy: cache lock region 0"
+    }
+  },
+  {
+    "name": "concurrent-a responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "concurrent-b responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "SQLite contention stays current/degraded",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "sqlite-busy responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "idle reset succeeds",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "reset rebuild current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "rebuilt responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "org-oversize atomic failure",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "org-oversize responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "org-badnext atomic failure",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "org-badnext responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "org-partial atomic failure",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "org-partial responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "org-conflict atomic failure",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "org-conflict responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "org-empty mixed retains exact",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "org-empty responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "org 5-page fairness",
+    "pass_": true,
+    "detail": [
+      "/orgs/alpha/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+      "/orgs/beta/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+      "/orgs/alpha/repos?type=all&sort=full_name&direction=asc&per_page=100&page=2",
+      "/orgs/beta/repos?type=all&sort=full_name&direction=asc&per_page=100&page=2",
+      "/orgs/alpha/repos?type=all&sort=full_name&direction=asc&per_page=100&page=3"
+    ]
+  },
+  {
+    "name": "org 20-repo capacity exact precedence",
+    "pass_": true,
+    "detail": 20
+  },
+  {
+    "name": "org disclosure known and unknown omission",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 20 repos \u00b7 20 scopes \u00b7 updated 21:22:04 \u00b7 selection: 20 repos \u00b7 20 scopes \u00b7 1 exact \u00b7 19 expanded \u00b7 481 eligible omitted \u00b7 more eligible may be omitted",
+      "R1 alpha/r000   1 activity \u00b7 0 PR events \u00b7 1 push",
+      "R2 alpha/r001   1 activity \u00b7 0 PR events \u00b7 1 push",
+      "R3 alpha/r002   1 activity \u00b7 0 PR events \u00b7 1 push",
+      "R4 alpha/r003   1 activity \u00b7 0 PR events \u00b7 1 push"
+    ]
+  },
+  {
+    "name": "org-pages responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "600 events globally truncated to 500",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 TRUNCATED \u00b7 acme/r0, acme/r1, acme/r2, acme/r3, acme/r4, acme/r5 \u00b7 updated 21:22:05 \u00b7 newest 500 of 600",
+      "R1 acme/r0  100 activity \u00b7 0 PR events \u00b7 100 pushes",
+      "R2 acme/r1  100 activity \u00b7 0 PR events \u00b7 100 pushes",
+      "R3 acme/r2  100 activity \u00b7 0 PR events \u00b7 100 pushes",
+      "R4 acme/r3  100 activity \u00b7 0 PR events \u00b7 100 pushes"
+    ]
+  },
+  {
+    "name": "events-capacity responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "50 scope overview accounting",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "multi-scope resize restores responsive overview",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "many-scopes responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "cycle initial complete",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "source failure retains stale snapshot",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 STALE \u00b7 refreshing acme/other: unexpected github response: status 503 \u00b7 acme/api, acme/other \u00b7 updated 21:22:13",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "R3 acme/other    1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "no partial phase1 event publication",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "source recovery current with independent unknown",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 PATH ?1 \u00b7 acme/api, acme/other \u00b7 updated 21:24:13",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "R3 acme/other    1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  No confirmed activity \u00b7 1 unknown",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "enrichment recovery clears unknown",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api, acme/other \u00b7 updated 21:25:13",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "R3 acme/other    1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "cycle responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "malformed entity no bidi leak",
+    "pass_": false,
+    "detail": null
+  },
+  {
+    "name": "hostile-entity responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "all HTTP requests contract headers",
+    "pass_": true,
+    "detail": 66
+  }
+]

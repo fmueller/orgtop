@@ -1,0 +1,40 @@
+OrgTop · RAIN · POLLING · scopes 37-50 of 50 · +36 scopes hidden · +360 items hidden · acme/api · updated 21:23:35
+P37 acme/a…rc/p40 P38 acme/a…rc/p41 P39 acme/a…rc/p42 P40 acme/a…c/p43 P41 acme/a…c/p44 P42 acme/a…c/p45 P43 acme/a…c/p46 P44 acme/a…c/p47 P45 acme/a…c/p48 P46 acme/a…rc/p5 P47 acme/a…rc/p6 P48 acme/a…rc/p7 P49 acme/a…rc/p8 P50 acme/a…rc/p9
+                                                                               ↑ ↑          ↑   ↑                                                  ↑     ↑        ↑                                                          ↑            ↑
+↑ ↑               ↑           ↑                   ↑
+              ↑                             ↑                                                     ↑   ↑        ↑                                                                                                           ↑ ↑
+                    ↑   ↑                                                    ↑                           ↑                                   ↑                                     ↑                             ↑
+                                                                                                                                                                                                ↑                    ↑
+                                ↑
+                                                                                              ↑                                              ↑                        ↑                                   ↑
+                                                                                 ↑   ↑                ↑                                                                      ↑           ↑                     ↑                    ↑
+  ↑   ↑               ↑ ↑                                                                                                         ↑                                                               ↑
+                                                      ↑   ↑         ↑                               ↑        ↑                                                                                                                    ↑
+                                                ↑                                                                ↑              ↑     ↑          ↑                      ↑
+                                    ↑                                                                                                                                     ↑
+                                        ↑                                                                                                                                                             ↑   ↑
+                                                                                                                     ↑                                                         ↑                                       ↑
+                                                                                                             ↑                ↑                                                      ↑          ↑   ↑                    ↑            ↑
+          ↑                                     ↑                 ↑                                                    ↑          ↑                                                    ↑
+    ↑                                     ↑   ↑       ↑                  ↑                                                          ↑
+                                                        ↑                          ↑                       ↑                            ↑            ↑
+                                                            ↑                                                                                  ↑                                 ↑
+                                                                ↑                                                                                                 ↑            ↑           ↑                           ↑
+                                                                                                                            ↑                                                                                                                 ↑
+                                                                                                                   ↑                ↑                       ↑                                               ↑
+                                      ↑                 ↑                                   ↑                          ↑                                                                                           ↑                    ↑
+                            ↑ ↑           ↑                   ↑                                                                                                     ↑
+                          ↑                                                ↑   ↑          ↑                               ↑                                                                                                             ↑
+↑           ↑                                                                           ↑                                                                                                     ↑         ↑                                   ↑
+                                                                                                                                                                ↑                        ↑                                      ↑             ↑
+        ↑                                                                                                                                  ↑           ↑    ↑
+                                                                       ↑                                                                   ↑                  ↑
+PAUSED · window 24h · +4500 omitted
+↑ push · ↗ pull request · ◇ review · ○ comment · · other
+Interesting Now (last 15m): 5 shown · 15 hidden · 80 omitted
+↑ push · tester · commit 2222222222222222222222222222222222222222 · acme/api · R1 acme/api · +49 scopes · 4s
+↑ push · tester · commit 2222222222222222222222222222222222222222 · acme/api · R1 acme/api · +49 scopes · 4s
+↑ push · tester · commit 2222222222222222222222222222222222222222 · acme/api · R1 acme/api · +49 scopes · 4s
+↑ push · tester · commit 2222222222222222222222222222222222222222 · acme/api · R1 acme/api · +49 scopes · 4s
+↑ push · tester · commit 2222222222222222222222222222222222222222 · acme/api · R1 acme/api · +49 scopes · 4s
+1 overview · 2 stream · 3 rain · tab switch · [/] page · -/+ window · p pause · q quit

@@ -1,0 +1,40 @@
+OrgTop · RAIN · POLLING · scopes 19-36 of 50 · +32 scopes hidden · +320 items hidden · acme/api · updated 21:23:35
+P19 acme…/p24 P20 acme…/p25 P21 acme…/p26 P22 acme…/p27 P23 acme…/p28 P24 acme…/p29 P25 acme…c/p3 P26 acme…p30 P27 acme…p31 P28 acme…p32 P29 acme…p33 P30 acme…p34 P31 acme…p35 P32 acme…p36 P33 acme…p37 P34 acme…p38 P35 acme…p39 P36 acme…/p4
+                                                                                                      ↑ ↑                       ↑                  ↑          ↑                       ↑            ↑
+  ↑                         ↑             ↑   ↑ ↑             ↑                                   ↑                                                ↑          ↑ ↑                              ↑                               ↑              ↑
+                            ↑                                                                                                                                                                                     ↑
+    ↑                                                                                         ↑                                                                                                  ↑            ↑
+  ↑                                                               ↑                                                                              ↑                                                                                      ↑ ↑
+                                                          ↑                                 ↑                  ↑                                        ↑                                                         ↑        ↑          ↑
+  ↑                                                     ↑   ↑                                           ↑                                                              ↑                       ↑                  ↑
+                                    ↑                                                             ↑                  ↑ ↑                       ↑              ↑              ↑                                             ↑
+                              ↑   ↑         ↑ ↑                                                   ↑              ↑                       ↑                ↑        ↑         ↑                                      ↑
+↑                                           ↑                                           ↑                                                                                                        ↑                               ↑
+                    ↑                                                                                                                                                                 ↑                                      ↑
+                                              ↑                                     ↑                                                 ↑
+                                                                ↑                                   ↑                                                                                            ↑              ↑                ↑          ↑
+                                                                        ↑   ↑       ↑   ↑     ↑                                                  ↑          ↑                                                     ↑              ↑
+                                                  ↑ ↑                                                       ↑    ↑                  ↑                         ↑              ↑                                  ↑
+    ↑             ↑               ↑                                                               ↑              ↑            ↑                         ↑                ↑      ↑   ↑
+    ↑         ↑ ↑                                                         ↑                                                         ↑                                                 ↑
+                                    ↑                                 ↑                                                                                                    ↑                                                          ↑
+                                  ↑                                                                            ↑
+                                                        ↑                       ↑                                                            ↑                                        ↑
+                                                        ↑                                                                             ↑                                                              ↑                 ↑   ↑     ↑
+↑                                     ↑                                                                                                  ↑         ↑                         ↑                                                          ↑
+      ↑             ↑                                                                         ↑                  ↑ ↑                ↑                                               ↑          ↑ ↑ ↑                                        ↑
+  ↑           ↑     ↑           ↑                             ↑           ↑                                                         ↑              ↑                       ↑    ↑
+                                                    ↑     ↑                             ↑                                                                       ↑
+                                                                                                    ↑
+              ↑                                                         ↑     ↑       ↑                                           ↑
+                                                                      ↑ ↑                                                                                          ↑                      ↑                 ↑   ↑
+              ↑ ↑                                                                                                  ↑          ↑                                                 ↑                                                           ↑ ↑
+PAUSED · window 24h · +4500 omitted
+↑ push · ↗ pull request · ◇ review · ○ comment · · other
+Interesting Now (last 15m): 5 shown · 15 hidden · 80 omitted
+↑ push · tester · commit 2222222222222222222222222222222222222222 · acme/api · R1 acme/api · +49 scopes · 4s
+↑ push · tester · commit 2222222222222222222222222222222222222222 · acme/api · R1 acme/api · +49 scopes · 4s
+↑ push · tester · commit 2222222222222222222222222222222222222222 · acme/api · R1 acme/api · +49 scopes · 4s
+↑ push · tester · commit 2222222222222222222222222222222222222222 · acme/api · R1 acme/api · +49 scopes · 4s
+↑ push · tester · commit 2222222222222222222222222222222222222222 · acme/api · R1 acme/api · +49 scopes · 4s
+1 overview · 2 stream · 3 rain · tab switch · [/] page · -/+ window · p pause · q quit

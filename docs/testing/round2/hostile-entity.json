@@ -1,0 +1,15 @@
+[
+  {
+    "id": "1",
+    "type": "PushEvent",
+    "repo": {"name": "acme/api"},
+    "actor": {"login": "tester"},
+    "created_at": "2026-10-04T21:23:00Z",
+    "payload": {
+      "size": 1,
+      "before": "1111111111111111111111111111111111111111",
+      "head": "bad\u202eHEAD",
+      "ref": "refs/heads/release-\u202eabc"
+    }
+  }
+]
