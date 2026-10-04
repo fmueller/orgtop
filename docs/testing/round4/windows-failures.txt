@@ -1,0 +1,51 @@
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7019544Z --- FAIL: TestInformationalExecutable (3.17s)
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7020358Z     --- FAIL: TestInformationalExecutable/--bad_--help (0.00s)
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7021904Z         informational_test.go:45: exit: exec: "C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\TestInformationalExecutable4217485011\\001\\orgtop": executable file not found in %PATH%; stderr:
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7023424Z     --- FAIL: TestInformationalExecutable/--help_--reset-cache_--bad (0.00s)
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7024482Z         informational_test.go:45: exit: exec: "C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\TestInformationalExecutable4217485011\\001\\orgtop": executable file not found in %PATH%; stderr:
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7025719Z     --- FAIL: TestInformationalExecutable/--help_--repo (0.00s)
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7026578Z         informational_test.go:45: exit: exec: "C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\TestInformationalExecutable4217485011\\001\\orgtop": executable file not found in %PATH%; stderr:
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7027437Z     --- FAIL: TestInformationalExecutable/--repo=broken_--help (0.00s)
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7028312Z         informational_test.go:45: exit: exec: "C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\TestInformationalExecutable4217485011\\001\\orgtop": executable file not found in %PATH%; stderr:
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7029141Z     --- FAIL: TestInformationalExecutable/--bad_-h (0.00s)
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7029990Z         informational_test.go:45: exit: exec: "C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\TestInformationalExecutable4217485011\\001\\orgtop": executable file not found in %PATH%; stderr:
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7030841Z     --- FAIL: TestInformationalExecutable/-h_--reset-cache_--bad (0.00s)
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7031689Z         informational_test.go:45: exit: exec: "C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\TestInformationalExecutable4217485011\\001\\orgtop": executable file not found in %PATH%; stderr:
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7032484Z     --- FAIL: TestInformationalExecutable/-h_--repo (0.00s)
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7033463Z         informational_test.go:45: exit: exec: "C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\TestInformationalExecutable4217485011\\001\\orgtop": executable file not found in %PATH%; stderr:
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7034529Z     --- FAIL: TestInformationalExecutable/--repo=broken_-h (0.00s)
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7035392Z         informational_test.go:45: exit: exec: "C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\TestInformationalExecutable4217485011\\001\\orgtop": executable file not found in %PATH%; stderr:
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7036204Z     --- FAIL: TestInformationalExecutable/--bad_--version (0.00s)
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7036993Z         informational_test.go:45: exit: exec: "C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\TestInformationalExecutable4217485011\\001\\orgtop": executable file not found in %PATH%; stderr:
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7037853Z     --- FAIL: TestInformationalExecutable/--version_--reset-cache_--bad (0.00s)
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7038706Z         informational_test.go:45: exit: exec: "C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\TestInformationalExecutable4217485011\\001\\orgtop": executable file not found in %PATH%; stderr:
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7041739Z     --- FAIL: TestInformationalExecutable/--version_--repo (0.00s)
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7042600Z         informational_test.go:45: exit: exec: "C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\TestInformationalExecutable4217485011\\001\\orgtop": executable file not found in %PATH%; stderr:
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7043699Z     --- FAIL: TestInformationalExecutable/--repo=broken_--version (0.00s)
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7044586Z         informational_test.go:45: exit: exec: "C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\TestInformationalExecutable4217485011\\001\\orgtop": executable file not found in %PATH%; stderr:
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7045995Z     --- FAIL: TestInformationalExecutable/--bad_-v (0.00s)
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7046801Z         informational_test.go:45: exit: exec: "C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\TestInformationalExecutable4217485011\\001\\orgtop": executable file not found in %PATH%; stderr:
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7047644Z     --- FAIL: TestInformationalExecutable/-v_--reset-cache_--bad (0.00s)
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7048481Z         informational_test.go:45: exit: exec: "C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\TestInformationalExecutable4217485011\\001\\orgtop": executable file not found in %PATH%; stderr:
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7049272Z     --- FAIL: TestInformationalExecutable/-v_--repo (0.00s)
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7050045Z         informational_test.go:45: exit: exec: "C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\TestInformationalExecutable4217485011\\001\\orgtop": executable file not found in %PATH%; stderr:
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7050858Z     --- FAIL: TestInformationalExecutable/--repo=broken_-v (0.00s)
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7051650Z         informational_test.go:45: exit: exec: "C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\TestInformationalExecutable4217485011\\001\\orgtop": executable file not found in %PATH%; stderr:
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7052521Z --- FAIL: TestExecutableBooleanAssignmentsPreserveCache (2.48s)
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7053128Z     --- FAIL: TestExecutableBooleanAssignmentsPreserveCache/--reset-cache_--reset-cache=true (0.00s)
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7054194Z         main_test.go:197: exit = exec: "C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\TestExecutableBooleanAssignmentsPreserveCache146256486\\001\\orgtop": executable file not found in %PATH%, want usage 2; output =
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7055237Z     --- FAIL: TestExecutableBooleanAssignmentsPreserveCache/--reset-cache_--reset-cache=false (0.00s)
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7056288Z         main_test.go:197: exit = exec: "C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\TestExecutableBooleanAssignmentsPreserveCache146256486\\001\\orgtop": executable file not found in %PATH%, want usage 2; output =
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7057317Z     --- FAIL: TestExecutableBooleanAssignmentsPreserveCache/--reset-cache_--no-cache=true (0.00s)
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7058353Z         main_test.go:197: exit = exec: "C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\TestExecutableBooleanAssignmentsPreserveCache146256486\\001\\orgtop": executable file not found in %PATH%, want usage 2; output =
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7059381Z     --- FAIL: TestExecutableBooleanAssignmentsPreserveCache/--reset-cache_--no-cache=false (0.00s)
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7060415Z         main_test.go:197: exit = exec: "C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\TestExecutableBooleanAssignmentsPreserveCache146256486\\001\\orgtop": executable file not found in %PATH%, want usage 2; output =
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7061475Z     --- FAIL: TestExecutableBooleanAssignmentsPreserveCache/--reset-cache_--include-archived=true (0.00s)
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7062542Z         main_test.go:197: exit = exec: "C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\TestExecutableBooleanAssignmentsPreserveCache146256486\\001\\orgtop": executable file not found in %PATH%, want usage 2; output =
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7063594Z     --- FAIL: TestExecutableBooleanAssignmentsPreserveCache/--reset-cache_--include-archived=false (0.00s)
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7064645Z         main_test.go:197: exit = exec: "C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\TestExecutableBooleanAssignmentsPreserveCache146256486\\001\\orgtop": executable file not found in %PATH%, want usage 2; output =
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7066722Z     --- FAIL: TestExecutableBooleanAssignmentsPreserveCache/--reset-cache_--include-forks=true (0.00s)
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7067808Z         main_test.go:197: exit = exec: "C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\TestExecutableBooleanAssignmentsPreserveCache146256486\\001\\orgtop": executable file not found in %PATH%, want usage 2; output =
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7068901Z     --- FAIL: TestExecutableBooleanAssignmentsPreserveCache/--reset-cache_--include-forks=false (0.00s)
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7070098Z         main_test.go:197: exit = exec: "C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\TestExecutableBooleanAssignmentsPreserveCache146256486\\001\\orgtop": executable file not found in %PATH%, want usage 2; output =
+build-test (windows-latest)	Test	2026-10-04T23:43:26.7071158Z FAIL	github.com/fmueller/orgtop/cmd/orgtop	8.078s

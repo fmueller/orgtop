@@ -1,0 +1,7 @@
+PASS wide entity escape
+PASS constrained 80x24 safe
+PASS constrained 40x12 safe
+PASS constrained 20x6 safe
+PASS detail entity parity
+PASS bounded actual HTTPS request
+PASS entity responsive quit

@@ -1,0 +1,1813 @@
+[
+  {
+    "name": "link-malformed-no-cache current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-malformed-no-cache explicit unknown",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 PATH ?1 \u00b7 acme/api \u00b7 updated 23:45:43",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  No confirmed activity \u00b7 1 unknown",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "link-malformed-no-cache no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-malformed-no-cache responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-malformed cold current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-malformed cold path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-malformed cold membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-malformed cold dispatched pages",
+    "pass_": true,
+    "detail": [
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100"
+    ]
+  },
+  {
+    "name": "link-malformed-cold responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-malformed cold persistence",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "link-malformed repeat current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-malformed repeat path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-malformed repeat membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-malformed repeat dispatched pages",
+    "pass_": true,
+    "detail": [
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100"
+    ]
+  },
+  {
+    "name": "link-malformed-repeat responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-malformed repeat persistence",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "link-malformed corrected current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-malformed corrected path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-malformed corrected membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-malformed corrected dispatched pages",
+    "pass_": true,
+    "detail": [
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100"
+    ]
+  },
+  {
+    "name": "link-malformed-corrected responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-malformed corrected persistence",
+    "pass_": true,
+    "detail": [
+      [
+        1,
+        1
+      ]
+    ]
+  },
+  {
+    "name": "link-malformed reused current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-malformed reused path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-malformed reused membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-malformed reused dispatched pages",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "link-malformed-reused responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-malformed reused persistence",
+    "pass_": true,
+    "detail": [
+      [
+        1,
+        1
+      ]
+    ]
+  },
+  {
+    "name": "link-reverse-no-cache current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-reverse-no-cache explicit unknown",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 PATH ?1 \u00b7 acme/api \u00b7 updated 23:45:54",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  No confirmed activity \u00b7 1 unknown",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "link-reverse-no-cache no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-reverse-no-cache responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-reverse cold current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-reverse cold path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-reverse cold membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-reverse cold dispatched pages",
+    "pass_": true,
+    "detail": [
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100&page=3"
+    ]
+  },
+  {
+    "name": "link-reverse-cold responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-reverse cold persistence",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "link-reverse repeat current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-reverse repeat path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-reverse repeat membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-reverse repeat dispatched pages",
+    "pass_": true,
+    "detail": [
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100&page=3"
+    ]
+  },
+  {
+    "name": "link-reverse-repeat responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-reverse repeat persistence",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "link-reverse corrected current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-reverse corrected path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-reverse corrected membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-reverse corrected dispatched pages",
+    "pass_": true,
+    "detail": [
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100"
+    ]
+  },
+  {
+    "name": "link-reverse-corrected responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-reverse corrected persistence",
+    "pass_": true,
+    "detail": [
+      [
+        1,
+        1
+      ]
+    ]
+  },
+  {
+    "name": "link-reverse reused current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-reverse reused path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-reverse reused membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-reverse reused dispatched pages",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "link-reverse-reused responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-reverse reused persistence",
+    "pass_": true,
+    "detail": [
+      [
+        1,
+        1
+      ]
+    ]
+  },
+  {
+    "name": "link-duplicate-query-no-cache current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-duplicate-query-no-cache explicit unknown",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 PATH ?1 \u00b7 acme/api \u00b7 updated 23:46:05",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  No confirmed activity \u00b7 1 unknown",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "link-duplicate-query-no-cache no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-duplicate-query-no-cache responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-duplicate-query cold current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-duplicate-query cold path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-duplicate-query cold membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-duplicate-query cold dispatched pages",
+    "pass_": true,
+    "detail": [
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100"
+    ]
+  },
+  {
+    "name": "link-duplicate-query-cold responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-duplicate-query cold persistence",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "link-duplicate-query repeat current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-duplicate-query repeat path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-duplicate-query repeat membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-duplicate-query repeat dispatched pages",
+    "pass_": true,
+    "detail": [
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100"
+    ]
+  },
+  {
+    "name": "link-duplicate-query-repeat responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-duplicate-query repeat persistence",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "link-duplicate-query corrected current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-duplicate-query corrected path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-duplicate-query corrected membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-duplicate-query corrected dispatched pages",
+    "pass_": true,
+    "detail": [
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100"
+    ]
+  },
+  {
+    "name": "link-duplicate-query-corrected responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-duplicate-query corrected persistence",
+    "pass_": true,
+    "detail": [
+      [
+        1,
+        1
+      ]
+    ]
+  },
+  {
+    "name": "link-duplicate-query reused current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-duplicate-query reused path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-duplicate-query reused membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-duplicate-query reused dispatched pages",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "link-duplicate-query-reused responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-duplicate-query reused persistence",
+    "pass_": true,
+    "detail": [
+      [
+        1,
+        1
+      ]
+    ]
+  },
+  {
+    "name": "link-cycle-no-cache current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-cycle-no-cache explicit unknown",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 PATH ?1 \u00b7 acme/api \u00b7 updated 23:46:16",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  No confirmed activity \u00b7 1 unknown",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "link-cycle-no-cache no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-cycle-no-cache responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-cycle cold current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-cycle cold path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-cycle cold membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-cycle cold dispatched pages",
+    "pass_": true,
+    "detail": [
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100&page=2"
+    ]
+  },
+  {
+    "name": "link-cycle-cold responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-cycle cold persistence",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "link-cycle repeat current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-cycle repeat path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-cycle repeat membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-cycle repeat dispatched pages",
+    "pass_": true,
+    "detail": [
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100&page=2"
+    ]
+  },
+  {
+    "name": "link-cycle-repeat responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-cycle repeat persistence",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "link-cycle corrected current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-cycle corrected path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-cycle corrected membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-cycle corrected dispatched pages",
+    "pass_": true,
+    "detail": [
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100"
+    ]
+  },
+  {
+    "name": "link-cycle-corrected responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-cycle corrected persistence",
+    "pass_": true,
+    "detail": [
+      [
+        1,
+        1
+      ]
+    ]
+  },
+  {
+    "name": "link-cycle reused current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-cycle reused path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-cycle reused membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-cycle reused dispatched pages",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "link-cycle-reused responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-cycle reused persistence",
+    "pass_": true,
+    "detail": [
+      [
+        1,
+        1
+      ]
+    ]
+  },
+  {
+    "name": "link-extra-quote-no-cache current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-extra-quote-no-cache explicit unknown",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 PATH ?1 \u00b7 acme/api \u00b7 updated 23:46:26",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  No confirmed activity \u00b7 1 unknown",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "link-extra-quote-no-cache no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-extra-quote-no-cache responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-extra-quote cold current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-extra-quote cold path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-extra-quote cold membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-extra-quote cold dispatched pages",
+    "pass_": true,
+    "detail": [
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100"
+    ]
+  },
+  {
+    "name": "link-extra-quote-cold responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-extra-quote cold persistence",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "link-extra-quote repeat current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-extra-quote repeat path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-extra-quote repeat membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-extra-quote repeat dispatched pages",
+    "pass_": true,
+    "detail": [
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100"
+    ]
+  },
+  {
+    "name": "link-extra-quote-repeat responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-extra-quote repeat persistence",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "link-extra-quote corrected current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-extra-quote corrected path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-extra-quote corrected membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-extra-quote corrected dispatched pages",
+    "pass_": true,
+    "detail": [
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100"
+    ]
+  },
+  {
+    "name": "link-extra-quote-corrected responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-extra-quote corrected persistence",
+    "pass_": true,
+    "detail": [
+      [
+        1,
+        1
+      ]
+    ]
+  },
+  {
+    "name": "link-extra-quote reused current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-extra-quote reused path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-extra-quote reused membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-extra-quote reused dispatched pages",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "link-extra-quote-reused responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-extra-quote reused persistence",
+    "pass_": true,
+    "detail": [
+      [
+        1,
+        1
+      ]
+    ]
+  },
+  {
+    "name": "link-no-separator-no-cache current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-separator-no-cache explicit unknown",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 PATH ?1 \u00b7 acme/api \u00b7 updated 23:46:37",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  No confirmed activity \u00b7 1 unknown",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "link-no-separator-no-cache no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-separator-no-cache responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-separator cold current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-separator cold path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-separator cold membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-separator cold dispatched pages",
+    "pass_": true,
+    "detail": [
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100"
+    ]
+  },
+  {
+    "name": "link-no-separator-cold responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-separator cold persistence",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "link-no-separator repeat current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-separator repeat path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-separator repeat membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-separator repeat dispatched pages",
+    "pass_": true,
+    "detail": [
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100"
+    ]
+  },
+  {
+    "name": "link-no-separator-repeat responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-separator repeat persistence",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "link-no-separator corrected current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-separator corrected path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-separator corrected membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-separator corrected dispatched pages",
+    "pass_": true,
+    "detail": [
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100"
+    ]
+  },
+  {
+    "name": "link-no-separator-corrected responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-separator corrected persistence",
+    "pass_": true,
+    "detail": [
+      [
+        1,
+        1
+      ]
+    ]
+  },
+  {
+    "name": "link-no-separator reused current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-separator reused path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-separator reused membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-separator reused dispatched pages",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "link-no-separator-reused responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-separator reused persistence",
+    "pass_": true,
+    "detail": [
+      [
+        1,
+        1
+      ]
+    ]
+  },
+  {
+    "name": "link-list-no-separator-no-cache current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-list-no-separator-no-cache explicit unknown",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 PATH ?1 \u00b7 acme/api \u00b7 updated 23:46:48",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  No confirmed activity \u00b7 1 unknown",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "link-list-no-separator-no-cache no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-list-no-separator-no-cache responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-list-no-separator cold current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-list-no-separator cold path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-list-no-separator cold membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-list-no-separator cold dispatched pages",
+    "pass_": true,
+    "detail": [
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100"
+    ]
+  },
+  {
+    "name": "link-list-no-separator-cold responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-list-no-separator cold persistence",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "link-list-no-separator repeat current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-list-no-separator repeat path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-list-no-separator repeat membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-list-no-separator repeat dispatched pages",
+    "pass_": true,
+    "detail": [
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100"
+    ]
+  },
+  {
+    "name": "link-list-no-separator-repeat responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-list-no-separator repeat persistence",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "link-list-no-separator corrected current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-list-no-separator corrected path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-list-no-separator corrected membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-list-no-separator corrected dispatched pages",
+    "pass_": true,
+    "detail": [
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100"
+    ]
+  },
+  {
+    "name": "link-list-no-separator-corrected responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-list-no-separator corrected persistence",
+    "pass_": true,
+    "detail": [
+      [
+        1,
+        1
+      ]
+    ]
+  },
+  {
+    "name": "link-list-no-separator reused current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-list-no-separator reused path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-list-no-separator reused membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-list-no-separator reused dispatched pages",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "link-list-no-separator-reused responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-list-no-separator reused persistence",
+    "pass_": true,
+    "detail": [
+      [
+        1,
+        1
+      ]
+    ]
+  },
+  {
+    "name": "link-no-equals-no-cache current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-equals-no-cache explicit unknown",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 PATH ?1 \u00b7 acme/api \u00b7 updated 23:46:59",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  No confirmed activity \u00b7 1 unknown",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "link-no-equals-no-cache no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-equals-no-cache responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-equals cold current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-equals cold path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-equals cold membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-equals cold dispatched pages",
+    "pass_": true,
+    "detail": [
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100"
+    ]
+  },
+  {
+    "name": "link-no-equals-cold responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-equals cold persistence",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "link-no-equals repeat current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-equals repeat path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-equals repeat membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-equals repeat dispatched pages",
+    "pass_": true,
+    "detail": [
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100"
+    ]
+  },
+  {
+    "name": "link-no-equals-repeat responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-equals repeat persistence",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "link-no-equals corrected current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-equals corrected path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-equals corrected membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-equals corrected dispatched pages",
+    "pass_": true,
+    "detail": [
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100"
+    ]
+  },
+  {
+    "name": "link-no-equals-corrected responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-equals corrected persistence",
+    "pass_": true,
+    "detail": [
+      [
+        1,
+        1
+      ]
+    ]
+  },
+  {
+    "name": "link-no-equals reused current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-equals reused path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-equals reused membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-equals reused dispatched pages",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "link-no-equals-reused responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-no-equals reused persistence",
+    "pass_": true,
+    "detail": [
+      [
+        1,
+        1
+      ]
+    ]
+  },
+  {
+    "name": "paged-good-no-cache current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-good-no-cache complete",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 23:47:10",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "paged-good-no-cache membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-good-no-cache no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-good-no-cache responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-good cold current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-good cold path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-good cold membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-good cold dispatched pages",
+    "pass_": true,
+    "detail": [
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100&page=2"
+    ]
+  },
+  {
+    "name": "paged-good-cold responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-good cold persistence",
+    "pass_": true,
+    "detail": [
+      [
+        2,
+        1
+      ]
+    ]
+  },
+  {
+    "name": "paged-good repeat current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-good repeat path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-good repeat membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-good repeat dispatched pages",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "paged-good-repeat responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-good repeat persistence",
+    "pass_": true,
+    "detail": [
+      [
+        2,
+        1
+      ]
+    ]
+  },
+  {
+    "name": "paged-good corrected current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-good corrected path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-good corrected membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-good corrected dispatched pages",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "paged-good-corrected responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-good corrected persistence",
+    "pass_": true,
+    "detail": [
+      [
+        2,
+        1
+      ]
+    ]
+  },
+  {
+    "name": "paged-good reused current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-good reused path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-good reused membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-good reused dispatched pages",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "paged-good-reused responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-good reused persistence",
+    "pass_": true,
+    "detail": [
+      [
+        2,
+        1
+      ]
+    ]
+  },
+  {
+    "name": "empty-no-cache current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "empty-no-cache complete",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 23:47:21",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  No activity in retained snapshot",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "empty-no-cache membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "empty-no-cache no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "empty-no-cache responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "empty cold current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "empty cold path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "empty cold membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "empty cold dispatched pages",
+    "pass_": true,
+    "detail": [
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100"
+    ]
+  },
+  {
+    "name": "empty-cold responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "empty cold persistence",
+    "pass_": true,
+    "detail": [
+      [
+        0,
+        1
+      ]
+    ]
+  },
+  {
+    "name": "empty repeat current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "empty repeat path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "empty repeat membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "empty repeat dispatched pages",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "empty-repeat responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "empty repeat persistence",
+    "pass_": true,
+    "detail": [
+      [
+        0,
+        1
+      ]
+    ]
+  },
+  {
+    "name": "empty corrected current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "empty corrected path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "empty corrected membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "empty corrected dispatched pages",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "empty-corrected responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "empty corrected persistence",
+    "pass_": true,
+    "detail": [
+      [
+        0,
+        1
+      ]
+    ]
+  },
+  {
+    "name": "empty reused current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "empty reused path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "empty reused membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "empty reused dispatched pages",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "empty-reused responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "empty reused persistence",
+    "pass_": true,
+    "detail": [
+      [
+        0,
+        1
+      ]
+    ]
+  },
+  {
+    "name": "paged-missing-no-cache current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-missing-no-cache explicit unknown",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 PATH ?1 \u00b7 acme/api \u00b7 updated 23:47:32",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  No confirmed activity \u00b7 1 unknown",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "paged-missing-no-cache no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-missing-no-cache responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-missing cold current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-missing cold path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-missing cold membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-missing cold dispatched pages",
+    "pass_": true,
+    "detail": [
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100&page=2"
+    ]
+  },
+  {
+    "name": "paged-missing-cold responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-missing cold persistence",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "paged-missing repeat current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-missing repeat path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-missing repeat membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-missing repeat dispatched pages",
+    "pass_": true,
+    "detail": [
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100&page=2"
+    ]
+  },
+  {
+    "name": "paged-missing-repeat responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-missing repeat persistence",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "paged-missing corrected current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-missing corrected path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-missing corrected membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-missing corrected dispatched pages",
+    "pass_": true,
+    "detail": [
+      "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100"
+    ]
+  },
+  {
+    "name": "paged-missing-corrected responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-missing corrected persistence",
+    "pass_": true,
+    "detail": [
+      [
+        1,
+        1
+      ]
+    ]
+  },
+  {
+    "name": "paged-missing reused current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-missing reused path evidence",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-missing reused membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-missing reused dispatched pages",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "paged-missing-reused responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-missing reused persistence",
+    "pass_": true,
+    "detail": [
+      [
+        1,
+        1
+      ]
+    ]
+  }
+]

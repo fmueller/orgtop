@@ -1,0 +1,95 @@
+[
+  {
+    "name": "current repository and quantitative path unknowns",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "enrichment dispatch stopped",
+    "pass_": true,
+    "detail": 2
+  },
+  {
+    "name": "no source or enrichment at 61s",
+    "pass_": true,
+    "detail": {
+      "elapsed": 61.00008128799999,
+      "requests": 3
+    }
+  },
+  {
+    "name": "waiting snapshot preserved",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "no source or enrichment at 119s",
+    "pass_": true,
+    "detail": {
+      "elapsed": 119.00011764799996,
+      "requests": 3
+    }
+  },
+  {
+    "name": "automatic retry no earlier than 120s",
+    "pass_": true,
+    "detail": [
+      {
+        "path": "/repos/acme/api/events?per_page=100",
+        "elapsed": 120.00095783700004
+      },
+      {
+        "path": "/repos/acme/api/commits/0000000000000000000000000000000000000003?per_page=100",
+        "elapsed": 120.04501496300003
+      },
+      {
+        "path": "/repos/acme/api/commits/0000000000000000000000000000000000000002?per_page=100",
+        "elapsed": 120.04840397000004
+      },
+      {
+        "path": "/repos/acme/api/commits/0000000000000000000000000000000000000005?per_page=100",
+        "elapsed": 120.08883141099994
+      },
+      {
+        "path": "/repos/acme/api/commits/0000000000000000000000000000000000000004?per_page=100",
+        "elapsed": 120.08911811499996
+      },
+      {
+        "path": "/repos/acme/api/commits/0000000000000000000000000000000000000007?per_page=100",
+        "elapsed": 120.13279855499997
+      },
+      {
+        "path": "/repos/acme/api/commits/0000000000000000000000000000000000000006?per_page=100",
+        "elapsed": 120.13310972899995
+      },
+      {
+        "path": "/repos/acme/api/commits/0000000000000000000000000000000000000008?per_page=100",
+        "elapsed": 120.17681042700002
+      },
+      {
+        "path": "/repos/acme/api/commits/0000000000000000000000000000000000000009?per_page=100",
+        "elapsed": 120.17716639899999
+      }
+    ]
+  },
+  {
+    "name": "source and all eight enrichment requests recover",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "membership recovers and rate limit clears",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "private response absent",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "retry responsive quit",
+    "pass_": true,
+    "detail": null
+  }
+]
