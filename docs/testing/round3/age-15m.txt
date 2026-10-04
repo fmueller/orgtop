@@ -1,0 +1,40 @@
+OrgTop · RAIN · POLLING · scope 1 of 1 · acme/api · updated 22:05:42
+R1 acme/api
+
+
+
+
+                                                                                                                                                                                                                                  ↑
+
+
+
+
+
+
+                                                                                                            ↑
+
+
+
+
+
+
+
+
+                                                                                                                ↑
+                                                                                                                                                          ↑
+
+
+
+
+
+
+                                                                                                              ↑
+PAUSED · window 15m
+↑ push · ↗ pull request · ◇ review · ○ comment · · other
+Interesting Now (last 15m): 5 shown · 0 hidden · 0 omitted
+↑ push · actor0 · commit 2222222222222222222222222222222222222222 · acme/api · R1 acme/api · 0s
+↑ push · actor1 · commit 2222222222222222222222222222222222222222 · acme/api · R1 acme/api · 4s
+↑ push · actor2 · commit 2222222222222222222222222222222222222222 · acme/api · R1 acme/api · 4m
+↑ push · actor3 · commit 2222222222222222222222222222222222222222 · acme/api · R1 acme/api · 5m
+↑ push · actor4 · commit 2222222222222222222222222222222222222222 · acme/api · R1 acme/api · 14m
+1 overview · 2 stream · 3 rain · tab switch · [/] page · -/+ window · p pause · q quit

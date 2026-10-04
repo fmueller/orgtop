@@ -1,0 +1,37 @@
+[
+  {
+    "name": "wide entity escape",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "constrained 80x24 safe",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "constrained 40x12 safe",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "constrained 20x6 safe",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "detail entity parity",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "bounded actual HTTPS request",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "entity responsive quit",
+    "pass_": true,
+    "detail": null
+  }
+]

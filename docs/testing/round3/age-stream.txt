@@ -1,0 +1,40 @@
+OrgTop · STREAM · POLLING · acme/api · updated 22:05:42
+showing 10 events (retained)
+  age  repository  category  scopes  actor · description
+▸ <1m  acme/api    push      in R1   actor0 · pushed 1 commit to age0
+  <1m  acme/api    push      in R1   actor1 · pushed 1 commit to age1
+   4m  acme/api    push      in R1   actor2 · pushed 1 commit to age2
+   5m  acme/api    push      in R1   actor3 · pushed 1 commit to age3
+  14m  acme/api    push      in R1   actor4 · pushed 1 commit to age4
+  15m  acme/api    push      in R1   actor5 · pushed 1 commit to age5
+  59m  acme/api    push      in R1   actor6 · pushed 1 commit to age6
+   1h  acme/api    push      in R1   actor7 · pushed 1 commit to age7
+   1d  acme/api    push      in R1   actor8 · pushed 1 commit to age8
+   1w  acme/api    push      in R1   actor9 · pushed 1 commit to age9
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+1 overview · 2 stream · 3 rain · tab switch · up/down focus · pgup/pgdn page · enter detail · q quit

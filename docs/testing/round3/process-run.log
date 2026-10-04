@@ -1,0 +1,218 @@
+PASS empty current
+PASS empty complete ['OrgTop · OVERVIEW · POLLING · acme/api · updated 22:02:01', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  No activity in retained snapshot', '', '']
+PASS empty membership
+PASS empty no raw body
+PASS empty responsive quit
+PASS empty bounded requests 2
+PASS missing current
+FAIL missing explicit unknown ['OrgTop · OVERVIEW · POLLING · acme/api · updated 22:02:03', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  No activity in retained snapshot', '', '']
+PASS missing no raw body
+PASS missing responsive quit
+PASS missing bounded requests 2
+PASS null current
+FAIL null explicit unknown ['OrgTop · OVERVIEW · POLLING · acme/api · updated 22:02:05', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  No activity in retained snapshot', '', '']
+PASS null no raw body
+PASS null responsive quit
+PASS null bounded requests 2
+PASS compare-empty current
+PASS compare-empty complete ['OrgTop · OVERVIEW · POLLING · acme/api · updated 22:02:07', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  No activity in retained snapshot', '', '']
+PASS compare-empty membership
+PASS compare-empty no raw body
+PASS compare-empty responsive quit
+PASS compare-empty bounded requests 2
+PASS compare-missing current
+FAIL compare-missing explicit unknown ['OrgTop · OVERVIEW · POLLING · acme/api · updated 22:02:10', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  No activity in retained snapshot', '', '']
+PASS compare-missing no raw body
+PASS compare-missing responsive quit
+PASS compare-missing bounded requests 2
+PASS compare-null current
+FAIL compare-null explicit unknown ['OrgTop · OVERVIEW · POLLING · acme/api · updated 22:02:12', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  No activity in retained snapshot', '', '']
+PASS compare-null no raw body
+PASS compare-null responsive quit
+PASS compare-null bounded requests 2
+PASS compare-299 current
+PASS compare-299 complete ['OrgTop · OVERVIEW · POLLING · acme/api · updated 22:02:14', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  1 activity · 0 PR events · 1 push', '', '']
+PASS compare-299 membership
+PASS compare-299 no raw body
+PASS compare-299 responsive quit
+PASS compare-299 bounded requests 2
+PASS compare-300 current
+PASS compare-300 explicit unknown ['OrgTop · OVERVIEW · POLLING · PATH ?1 · acme/api · updated 22:02:16', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  No confirmed activity · 1 unknown', '', '']
+PASS compare-300 no raw body
+PASS compare-300 responsive quit
+PASS compare-300 bounded requests 2
+PASS unknown-status current
+PASS unknown-status explicit unknown ['OrgTop · OVERVIEW · POLLING · PATH ?1 · acme/api · updated 22:02:18', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  No confirmed activity · 1 unknown', '', '']
+PASS unknown-status no raw body
+PASS unknown-status responsive quit
+PASS unknown-status bounded requests 2
+PASS rename-missing current
+PASS rename-missing explicit unknown ['OrgTop · OVERVIEW · POLLING · PATH ?1 · acme/api · updated 22:02:21', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  No confirmed activity · 1 unknown', '', '']
+PASS rename-missing no raw body
+PASS rename-missing responsive quit
+PASS rename-missing bounded requests 2
+PASS duplicate current
+PASS duplicate explicit unknown ['OrgTop · OVERVIEW · POLLING · PATH ?1 · acme/api · updated 22:02:23', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  No confirmed activity · 1 unknown', '', '']
+PASS duplicate no raw body
+PASS duplicate responsive quit
+PASS duplicate bounded requests 2
+PASS paged-good current
+PASS paged-good complete ['OrgTop · OVERVIEW · POLLING · acme/api · updated 22:02:25', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  1 activity · 0 PR events · 1 push', '', '']
+PASS paged-good membership
+PASS paged-good no raw body
+PASS paged-good responsive quit
+PASS paged-good bounded requests 3
+PASS paged-missing current
+FAIL paged-missing explicit unknown ['OrgTop · OVERVIEW · POLLING · acme/api · updated 22:02:27', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  1 activity · 0 PR events · 1 push', '', '']
+PASS paged-missing no raw body
+PASS paged-missing responsive quit
+PASS paged-missing bounded requests 3
+PASS paged-denied current
+PASS paged-denied explicit unknown ['OrgTop · OVERVIEW · POLLING · PATH ?1 · acme/api · updated 22:02:29', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  No confirmed activity · 1 unknown', '', '']
+PASS paged-denied no raw body
+PASS paged-denied responsive quit
+PASS paged-denied bounded requests 3
+PASS paged-rate current
+PASS paged-rate explicit unknown ['OrgTop · OVERVIEW · POLLING · RATE LIMITED 22:04:31 · PATH ?1 · acme/api · updated 22:02:31', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  No confirmed activity · 1 unknown', '', '']
+PASS paged-rate no raw body
+PASS paged-rate responsive quit
+PASS paged-rate bounded requests 3
+PASS link-malformed current
+FAIL link-malformed explicit unknown ['OrgTop · OVERVIEW · POLLING · acme/api · updated 22:02:34', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  1 activity · 0 PR events · 1 push', '', '']
+PASS link-malformed no raw body
+PASS link-malformed responsive quit
+PASS link-malformed bounded requests 2
+PASS link-cycle current
+PASS link-cycle explicit unknown ['OrgTop · OVERVIEW · POLLING · PATH ?1 · acme/api · updated 22:02:36', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  No confirmed activity · 1 unknown', '', '']
+PASS link-cycle no raw body
+PASS link-cycle responsive quit
+PASS link-cycle bounded requests 3
+PASS link-reverse current
+FAIL link-reverse explicit unknown ['OrgTop · OVERVIEW · POLLING · acme/api · updated 22:02:38', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  1 activity · 0 PR events · 1 push', '', '']
+PASS link-reverse no raw body
+PASS link-reverse responsive quit
+PASS link-reverse bounded requests 4
+PASS link-duplicate-query current
+FAIL link-duplicate-query explicit unknown ['OrgTop · OVERVIEW · POLLING · acme/api · updated 22:02:40', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  1 activity · 0 PR events · 1 push', '', '']
+PASS link-duplicate-query no raw body
+PASS link-duplicate-query responsive quit
+PASS link-duplicate-query bounded requests 3
+PASS shared head per-event before validated
+PASS shared head one lookup
+PASS parent-coalesce responsive quit
+PASS seed-version current
+PASS seed-version complete ['OrgTop · OVERVIEW · POLLING · acme/api · updated 22:02:44', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  1 activity · 0 PR events · 1 push', '', '']
+PASS seed-version membership
+PASS seed-version no raw body
+PASS seed-version responsive quit
+PASS version current complete fallback
+PASS version degraded preserved
+PASS version lookup or crash reuse
+PASS recover-version responsive quit
+PASS version reset ownership
+PASS seed-foreign current
+PASS seed-foreign complete ['OrgTop · OVERVIEW · POLLING · acme/api · updated 22:02:49', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  1 activity · 0 PR events · 1 push', '', '']
+PASS seed-foreign membership
+PASS seed-foreign no raw body
+PASS seed-foreign responsive quit
+PASS foreign current complete fallback
+PASS foreign degraded preserved
+PASS foreign lookup or crash reuse
+PASS recover-foreign responsive quit
+PASS foreign reset ownership
+PASS seed-zero-id current
+PASS seed-zero-id complete ['OrgTop · OVERVIEW · POLLING · acme/api · updated 22:02:53', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  1 activity · 0 PR events · 1 push', '', '']
+PASS seed-zero-id membership
+PASS seed-zero-id no raw body
+PASS seed-zero-id responsive quit
+PASS zero-id current complete fallback
+PASS zero-id degraded preserved
+PASS zero-id lookup or crash reuse
+PASS recover-zero-id responsive quit
+PASS zero-id reset ownership
+PASS seed-schema current
+PASS seed-schema complete ['OrgTop · OVERVIEW · POLLING · acme/api · updated 22:02:58', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  1 activity · 0 PR events · 1 push', '', '']
+PASS seed-schema membership
+PASS seed-schema no raw body
+PASS seed-schema responsive quit
+PASS schema current complete fallback
+PASS schema recovered without degradation
+PASS schema lookup or crash reuse
+PASS recover-schema responsive quit
+PASS seed-count current
+PASS seed-count complete ['OrgTop · OVERVIEW · POLLING · acme/api · updated 22:03:02', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  1 activity · 0 PR events · 1 push', '', '']
+PASS seed-count membership
+PASS seed-count no raw body
+PASS seed-count responsive quit
+PASS count current complete fallback
+PASS count recovered without degradation
+PASS count lookup or crash reuse
+PASS recover-count responsive quit
+PASS seed-ordinal current
+PASS seed-ordinal complete ['OrgTop · OVERVIEW · POLLING · acme/api · updated 22:03:06', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  1 activity · 0 PR events · 1 push', '', '']
+PASS seed-ordinal membership
+PASS seed-ordinal no raw body
+PASS seed-ordinal responsive quit
+PASS ordinal current complete fallback
+PASS ordinal recovered without degradation
+PASS ordinal lookup or crash reuse
+PASS recover-ordinal responsive quit
+PASS seed-future current
+PASS seed-future complete ['OrgTop · OVERVIEW · POLLING · acme/api · updated 22:03:11', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  1 activity · 0 PR events · 1 push', '', '']
+PASS seed-future membership
+PASS seed-future no raw body
+PASS seed-future responsive quit
+PASS future current complete fallback
+PASS future recovered without degradation
+PASS future lookup or crash reuse
+PASS recover-future responsive quit
+PASS seed-expired current
+PASS seed-expired complete ['OrgTop · OVERVIEW · POLLING · acme/api · updated 22:03:15', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  1 activity · 0 PR events · 1 push', '', '']
+PASS seed-expired membership
+PASS seed-expired no raw body
+PASS seed-expired responsive quit
+PASS expired current complete fallback
+PASS expired recovered without degradation
+PASS expired lookup or crash reuse
+PASS recover-expired responsive quit
+PASS seed-tombstone current
+PASS seed-tombstone complete ['OrgTop · OVERVIEW · POLLING · acme/api · updated 22:03:19', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  1 activity · 0 PR events · 1 push', '', '']
+PASS seed-tombstone membership
+PASS seed-tombstone no raw body
+PASS seed-tombstone responsive quit
+PASS tombstone current complete fallback
+PASS tombstone recovered without degradation
+PASS tombstone lookup or crash reuse
+PASS recover-tombstone responsive quit
+PASS seed-bootstrap current
+PASS seed-bootstrap complete ['OrgTop · OVERVIEW · POLLING · acme/api · updated 22:03:24', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  1 activity · 0 PR events · 1 push', '', '']
+PASS seed-bootstrap membership
+PASS seed-bootstrap no raw body
+PASS seed-bootstrap responsive quit
+PASS bootstrap current complete fallback
+PASS bootstrap recovered without degradation
+PASS bootstrap lookup or crash reuse
+PASS recover-bootstrap responsive quit
+PASS seed-crash current
+PASS seed-crash complete ['OrgTop · OVERVIEW · POLLING · acme/api · updated 22:03:28', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  1 activity · 0 PR events · 1 push', '', '']
+PASS seed-crash membership
+PASS seed-crash no raw body
+PASS seed-crash responsive quit
+PASS crash current complete fallback
+PASS crash recovered without degradation
+PASS crash lookup or crash reuse
+PASS recover-crash responsive quit
+PASS grammar 0 {'args': ['--repo', 'acme/api', '--path', '../bad'], 'exit': 2, 'stderr': ['Usage: orgtop-round2 --repo OWNER/REPOSITORY [--repo OWNER/REPOSITORY ...] [--path (PATTERN | OWNER/REPOSITORY:PATTERN) ...] [--no-cache]', '       orgtop-round2 --path OWNER/REPOSITORY:PATTERN [--path OWNER/REPOSITORY:PATTERN ...] [--repo OWNER/REPOSITORY ...] [--no-cache]']}
+PASS grammar 1 {'args': ['--path', 'acme/api:src:bad'], 'exit': 2, 'stderr': ['Usage: orgtop-round2 --repo OWNER/REPOSITORY [--repo OWNER/REPOSITORY ...] [--path (PATTERN | OWNER/REPOSITORY:PATTERN) ...] [--no-cache]', '       orgtop-round2 --path OWNER/REPOSITORY:PATTERN [--path OWNER/REPOSITORY:PATTERN ...] [--repo OWNER/REPOSITORY ...] [--no-cache]']}
+PASS grammar 2 {'args': ['--org', 'acme', '--path', 'src'], 'exit': 2, 'stderr': ['Usage: orgtop-round2 --repo OWNER/REPOSITORY [--repo OWNER/REPOSITORY ...] [--path (PATTERN | OWNER/REPOSITORY:PATTERN) ...] [--no-cache]', '       orgtop-round2 --path OWNER/REPOSITORY:PATTERN [--path OWNER/REPOSITORY:PATTERN ...] [--repo OWNER/REPOSITORY ...] [--no-cache]']}
+PASS grammar 3 {'args': ['--reset-cache', 'positional'], 'exit': 2, 'stderr': ['Usage: orgtop-round2 --repo OWNER/REPOSITORY [--repo OWNER/REPOSITORY ...] [--path (PATTERN | OWNER/REPOSITORY:PATTERN) ...] [--no-cache]', '       orgtop-round2 --path OWNER/REPOSITORY:PATTERN [--path OWNER/REPOSITORY:PATTERN ...] [--repo OWNER/REPOSITORY ...] [--no-cache]']}
+PASS grammar 4 {'args': ['--reset-cache', '--org=acme'], 'exit': 2, 'stderr': ['Usage: orgtop-round2 --repo OWNER/REPOSITORY [--repo OWNER/REPOSITORY ...] [--path (PATTERN | OWNER/REPOSITORY:PATTERN) ...] [--no-cache]', '       orgtop-round2 --path OWNER/REPOSITORY:PATTERN [--path OWNER/REPOSITORY:PATTERN ...] [--repo OWNER/REPOSITORY ...] [--no-cache]']}
+PASS grammar 5 {'args': ['--include-forks'], 'exit': 2, 'stderr': ['Usage: orgtop-round2 --repo OWNER/REPOSITORY [--repo OWNER/REPOSITORY ...] [--path (PATTERN | OWNER/REPOSITORY:PATTERN) ...] [--no-cache]', '       orgtop-round2 --path OWNER/REPOSITORY:PATTERN [--path OWNER/REPOSITORY:PATTERN ...] [--repo OWNER/REPOSITORY ...] [--no-cache]']}
+PASS grammar 6 {'args': ['--repo', 'acme/api', '--path', 'src/**x'], 'exit': 2, 'stderr': ['Usage: orgtop-round2 --repo OWNER/REPOSITORY [--repo OWNER/REPOSITORY ...] [--path (PATTERN | OWNER/REPOSITORY:PATTERN) ...] [--no-cache]', '       orgtop-round2 --path OWNER/REPOSITORY:PATTERN [--path OWNER/REPOSITORY:PATTERN ...] [--repo OWNER/REPOSITORY ...] [--no-cache]']}
+PASS grammar 7 {'args': ['--repo', 'acme/api', '--path', 'src\\q'], 'exit': 2, 'stderr': ['Usage: orgtop-round2 --repo OWNER/REPOSITORY [--repo OWNER/REPOSITORY ...] [--path (PATTERN | OWNER/REPOSITORY:PATTERN) ...] [--no-cache]', '       orgtop-round2 --path OWNER/REPOSITORY:PATTERN [--path OWNER/REPOSITORY:PATTERN ...] [--repo OWNER/REPOSITORY ...] [--no-cache]']}
+PASS grammar 8 {'args': ['--no-cache=true'], 'exit': 2, 'stderr': ['Usage: orgtop-round2 --repo OWNER/REPOSITORY [--repo OWNER/REPOSITORY ...] [--path (PATTERN | OWNER/REPOSITORY:PATTERN) ...] [--no-cache]', '       orgtop-round2 --path OWNER/REPOSITORY:PATTERN [--path OWNER/REPOSITORY:PATTERN ...] [--repo OWNER/REPOSITORY ...] [--no-cache]']}
+PASS grammar 9 {'args': ['--repo=acme/api', '--', 'positional'], 'exit': 2, 'stderr': ['Usage: orgtop-round2 --repo OWNER/REPOSITORY [--repo OWNER/REPOSITORY ...] [--path (PATTERN | OWNER/REPOSITORY:PATTERN) ...] [--no-cache]', '       orgtop-round2 --path OWNER/REPOSITORY:PATTERN [--path OWNER/REPOSITORY:PATTERN ...] [--repo OWNER/REPOSITORY ...] [--no-cache]']}
+PASS grammar 10 {'args': ['--org=acme/other'], 'exit': 2, 'stderr': ['Usage: orgtop-round2 --repo OWNER/REPOSITORY [--repo OWNER/REPOSITORY ...] [--path (PATTERN | OWNER/REPOSITORY:PATTERN) ...] [--no-cache]', '       orgtop-round2 --path OWNER/REPOSITORY:PATTERN [--path OWNER/REPOSITORY:PATTERN ...] [--repo OWNER/REPOSITORY ...] [--no-cache]']}
+PASS grammar 11 {'args': ['--repo', 'acme/api', '--path', '/root'], 'exit': 2, 'stderr': ['Usage: orgtop-round2 --repo OWNER/REPOSITORY [--repo OWNER/REPOSITORY ...] [--path (PATTERN | OWNER/REPOSITORY:PATTERN) ...] [--no-cache]', '       orgtop-round2 --path OWNER/REPOSITORY:PATTERN [--path OWNER/REPOSITORY:PATTERN ...] [--repo OWNER/REPOSITORY ...] [--no-cache]']}
+PASS grammar no network
+PASS all HTTP headers

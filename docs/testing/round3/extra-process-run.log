@@ -1,0 +1,36 @@
+PASS missing-cold responsive quit
+FAIL missing malformed not persisted [('commit', 0, 1)]
+FAIL missing corrected upstream reacquired 0
+FAIL missing warm membership ['OrgTop · OVERVIEW · POLLING · acme/api · updated 22:05:31', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  No activity in retained snapshot', '']
+PASS missing-warm responsive quit
+PASS null-cold responsive quit
+FAIL null malformed not persisted [('commit', 0, 1)]
+FAIL null corrected upstream reacquired 0
+FAIL null warm membership ['OrgTop · OVERVIEW · POLLING · acme/api · updated 22:05:35', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  No activity in retained snapshot', '']
+PASS null-warm responsive quit
+PASS link-malformed-cold responsive quit
+FAIL link-malformed malformed not persisted [('commit', 1, 1)]
+FAIL link-malformed corrected upstream reacquired 0
+PASS link-malformed warm membership ['OrgTop · OVERVIEW · POLLING · acme/api · updated 22:05:39', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  1 activity · 0 PR events · 1 push', '']
+PASS link-malformed-warm responsive quit
+PASS ten age events retained
+PASS all age rows retained including future and old
+PASS Stream future youngest display
+PASS strip five inside 15m including future  (last 15m): 5 shown · 0 hidden · 0 omitted
+↑ push · actor0 · commit 2222222222222222222222222222222222222222 · acme/api · R1 acme/api · 0s
+↑ push · actor1 · commit 2222222222222222222222222222222222222222 · acme/api · R1 acme/api · 2s
+↑ push · actor2 · commit 2222222222222222222222222222222222222222 · acme/api · R1 acme/api · 4m
+↑ push · actor3 · commit 2222222222222222222222222222222222222222 · acme/api · R1 acme/api · 5m
+↑ push · actor4 · commit 2222222222222222222222222222222222222222 · acme/api · R1 acme/api · 14m
+1 overview · 2 stream · 3 rain · tab switch · [/] page · -/+ window · p pause · q quit
+
+PASS finite lower bound
+PASS available endpoint
+PASS strip independent of rain window
+PASS window does not filter Stream
+PASS ages responsive quit
+PASS rate publishes eight unknown with repository activity ['OrgTop · OVERVIEW · POLLING · RATE LIMITED 22:07:49 · PATH ?8 · acme/api · updated 22:05:49', 'R1 acme/api      8 activity · 0 PR events · 8 pushes', 'P2 acme/api:src  No confirmed activity · 8 unknown', '', '']
+PASS rate stops dispatch [{'mode': 'rate', 'phase': 0, 'path': '/repos/acme/api/events?per_page=100', 'api': '2026-03-10', 'accept': 'application/vnd.github+json', 'credential_match': True, 'time': 604.635379482}, {'mode': 'rate', 'phase': 0, 'path': '/repos/acme/api/commits/0000000000000000000000000000000000000003?per_page=100', 'api': '2026-03-10', 'accept': 'application/vnd.github+json', 'credential_match': True, 'time': 604.676671052}, {'mode': 'rate', 'phase': 0, 'path': '/repos/acme/api/commits/0000000000000000000000000000000000000002?per_page=100', 'api': '2026-03-10', 'accept': 'application/vnd.github+json', 'credential_match': True, 'time': 604.678784778}]
+FAIL 120-second retry holds across 61s floor
+PASS rate response sanitized
+PASS rate-stop responsive quit

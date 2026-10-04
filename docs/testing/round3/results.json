@@ -1,0 +1,1400 @@
+[
+  {
+    "name": "empty current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "empty complete",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 22:02:01",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  No activity in retained snapshot",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "empty membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "empty no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "empty responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "empty bounded requests",
+    "pass_": true,
+    "detail": 2
+  },
+  {
+    "name": "missing current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "missing explicit unknown",
+    "pass_": false,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 22:02:03",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  No activity in retained snapshot",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "missing no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "missing responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "missing bounded requests",
+    "pass_": true,
+    "detail": 2
+  },
+  {
+    "name": "null current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "null explicit unknown",
+    "pass_": false,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 22:02:05",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  No activity in retained snapshot",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "null no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "null responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "null bounded requests",
+    "pass_": true,
+    "detail": 2
+  },
+  {
+    "name": "compare-empty current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "compare-empty complete",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 22:02:07",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  No activity in retained snapshot",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "compare-empty membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "compare-empty no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "compare-empty responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "compare-empty bounded requests",
+    "pass_": true,
+    "detail": 2
+  },
+  {
+    "name": "compare-missing current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "compare-missing explicit unknown",
+    "pass_": false,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 22:02:10",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  No activity in retained snapshot",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "compare-missing no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "compare-missing responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "compare-missing bounded requests",
+    "pass_": true,
+    "detail": 2
+  },
+  {
+    "name": "compare-null current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "compare-null explicit unknown",
+    "pass_": false,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 22:02:12",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  No activity in retained snapshot",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "compare-null no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "compare-null responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "compare-null bounded requests",
+    "pass_": true,
+    "detail": 2
+  },
+  {
+    "name": "compare-299 current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "compare-299 complete",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 22:02:14",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "compare-299 membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "compare-299 no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "compare-299 responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "compare-299 bounded requests",
+    "pass_": true,
+    "detail": 2
+  },
+  {
+    "name": "compare-300 current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "compare-300 explicit unknown",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 PATH ?1 \u00b7 acme/api \u00b7 updated 22:02:16",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  No confirmed activity \u00b7 1 unknown",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "compare-300 no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "compare-300 responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "compare-300 bounded requests",
+    "pass_": true,
+    "detail": 2
+  },
+  {
+    "name": "unknown-status current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "unknown-status explicit unknown",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 PATH ?1 \u00b7 acme/api \u00b7 updated 22:02:18",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  No confirmed activity \u00b7 1 unknown",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "unknown-status no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "unknown-status responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "unknown-status bounded requests",
+    "pass_": true,
+    "detail": 2
+  },
+  {
+    "name": "rename-missing current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "rename-missing explicit unknown",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 PATH ?1 \u00b7 acme/api \u00b7 updated 22:02:21",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  No confirmed activity \u00b7 1 unknown",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "rename-missing no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "rename-missing responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "rename-missing bounded requests",
+    "pass_": true,
+    "detail": 2
+  },
+  {
+    "name": "duplicate current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "duplicate explicit unknown",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 PATH ?1 \u00b7 acme/api \u00b7 updated 22:02:23",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  No confirmed activity \u00b7 1 unknown",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "duplicate no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "duplicate responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "duplicate bounded requests",
+    "pass_": true,
+    "detail": 2
+  },
+  {
+    "name": "paged-good current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-good complete",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 22:02:25",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "paged-good membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-good no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-good responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-good bounded requests",
+    "pass_": true,
+    "detail": 3
+  },
+  {
+    "name": "paged-missing current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-missing explicit unknown",
+    "pass_": false,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 22:02:27",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "paged-missing no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-missing responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-missing bounded requests",
+    "pass_": true,
+    "detail": 3
+  },
+  {
+    "name": "paged-denied current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-denied explicit unknown",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 PATH ?1 \u00b7 acme/api \u00b7 updated 22:02:29",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  No confirmed activity \u00b7 1 unknown",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "paged-denied no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-denied responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-denied bounded requests",
+    "pass_": true,
+    "detail": 3
+  },
+  {
+    "name": "paged-rate current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-rate explicit unknown",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 RATE LIMITED 22:04:31 \u00b7 PATH ?1 \u00b7 acme/api \u00b7 updated 22:02:31",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  No confirmed activity \u00b7 1 unknown",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "paged-rate no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-rate responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-rate bounded requests",
+    "pass_": true,
+    "detail": 3
+  },
+  {
+    "name": "link-malformed current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-malformed explicit unknown",
+    "pass_": false,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 22:02:34",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "link-malformed no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-malformed responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-malformed bounded requests",
+    "pass_": true,
+    "detail": 2
+  },
+  {
+    "name": "link-cycle current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-cycle explicit unknown",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 PATH ?1 \u00b7 acme/api \u00b7 updated 22:02:36",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  No confirmed activity \u00b7 1 unknown",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "link-cycle no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-cycle responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-cycle bounded requests",
+    "pass_": true,
+    "detail": 3
+  },
+  {
+    "name": "link-reverse current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-reverse explicit unknown",
+    "pass_": false,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 22:02:38",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "link-reverse no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-reverse responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-reverse bounded requests",
+    "pass_": true,
+    "detail": 4
+  },
+  {
+    "name": "link-duplicate-query current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-duplicate-query explicit unknown",
+    "pass_": false,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 22:02:40",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "link-duplicate-query no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-duplicate-query responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-duplicate-query bounded requests",
+    "pass_": true,
+    "detail": 3
+  },
+  {
+    "name": "shared head per-event before validated",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "shared head one lookup",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "parent-coalesce responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-version current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-version complete",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 22:02:44",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "seed-version membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-version no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-version responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "version current complete fallback",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "version degraded preserved",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "version lookup or crash reuse",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "recover-version responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "version reset ownership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-foreign current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-foreign complete",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 22:02:49",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "seed-foreign membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-foreign no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-foreign responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "foreign current complete fallback",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "foreign degraded preserved",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "foreign lookup or crash reuse",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "recover-foreign responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "foreign reset ownership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-zero-id current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-zero-id complete",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 22:02:53",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "seed-zero-id membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-zero-id no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-zero-id responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "zero-id current complete fallback",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "zero-id degraded preserved",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "zero-id lookup or crash reuse",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "recover-zero-id responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "zero-id reset ownership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-schema current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-schema complete",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 22:02:58",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "seed-schema membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-schema no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-schema responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "schema current complete fallback",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "schema recovered without degradation",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "schema lookup or crash reuse",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "recover-schema responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-count current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-count complete",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 22:03:02",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "seed-count membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-count no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-count responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "count current complete fallback",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "count recovered without degradation",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "count lookup or crash reuse",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "recover-count responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-ordinal current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-ordinal complete",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 22:03:06",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "seed-ordinal membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-ordinal no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-ordinal responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "ordinal current complete fallback",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "ordinal recovered without degradation",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "ordinal lookup or crash reuse",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "recover-ordinal responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-future current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-future complete",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 22:03:11",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "seed-future membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-future no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-future responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "future current complete fallback",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "future recovered without degradation",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "future lookup or crash reuse",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "recover-future responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-expired current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-expired complete",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 22:03:15",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "seed-expired membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-expired no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-expired responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "expired current complete fallback",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "expired recovered without degradation",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "expired lookup or crash reuse",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "recover-expired responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-tombstone current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-tombstone complete",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 22:03:19",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "seed-tombstone membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-tombstone no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-tombstone responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "tombstone current complete fallback",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "tombstone recovered without degradation",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "tombstone lookup or crash reuse",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "recover-tombstone responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-bootstrap current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-bootstrap complete",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 22:03:24",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "seed-bootstrap membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-bootstrap no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-bootstrap responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "bootstrap current complete fallback",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "bootstrap recovered without degradation",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "bootstrap lookup or crash reuse",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "recover-bootstrap responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-crash current",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-crash complete",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 22:03:28",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "seed-crash membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-crash no raw body",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed-crash responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "crash current complete fallback",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "crash recovered without degradation",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "crash lookup or crash reuse",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "recover-crash responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "grammar 0",
+    "pass_": true,
+    "detail": {
+      "args": [
+        "--repo",
+        "acme/api",
+        "--path",
+        "../bad"
+      ],
+      "exit": 2,
+      "stderr": [
+        "Usage: orgtop-round2 --repo OWNER/REPOSITORY [--repo OWNER/REPOSITORY ...] [--path (PATTERN | OWNER/REPOSITORY:PATTERN) ...] [--no-cache]",
+        "       orgtop-round2 --path OWNER/REPOSITORY:PATTERN [--path OWNER/REPOSITORY:PATTERN ...] [--repo OWNER/REPOSITORY ...] [--no-cache]"
+      ]
+    }
+  },
+  {
+    "name": "grammar 1",
+    "pass_": true,
+    "detail": {
+      "args": [
+        "--path",
+        "acme/api:src:bad"
+      ],
+      "exit": 2,
+      "stderr": [
+        "Usage: orgtop-round2 --repo OWNER/REPOSITORY [--repo OWNER/REPOSITORY ...] [--path (PATTERN | OWNER/REPOSITORY:PATTERN) ...] [--no-cache]",
+        "       orgtop-round2 --path OWNER/REPOSITORY:PATTERN [--path OWNER/REPOSITORY:PATTERN ...] [--repo OWNER/REPOSITORY ...] [--no-cache]"
+      ]
+    }
+  },
+  {
+    "name": "grammar 2",
+    "pass_": true,
+    "detail": {
+      "args": [
+        "--org",
+        "acme",
+        "--path",
+        "src"
+      ],
+      "exit": 2,
+      "stderr": [
+        "Usage: orgtop-round2 --repo OWNER/REPOSITORY [--repo OWNER/REPOSITORY ...] [--path (PATTERN | OWNER/REPOSITORY:PATTERN) ...] [--no-cache]",
+        "       orgtop-round2 --path OWNER/REPOSITORY:PATTERN [--path OWNER/REPOSITORY:PATTERN ...] [--repo OWNER/REPOSITORY ...] [--no-cache]"
+      ]
+    }
+  },
+  {
+    "name": "grammar 3",
+    "pass_": true,
+    "detail": {
+      "args": [
+        "--reset-cache",
+        "positional"
+      ],
+      "exit": 2,
+      "stderr": [
+        "Usage: orgtop-round2 --repo OWNER/REPOSITORY [--repo OWNER/REPOSITORY ...] [--path (PATTERN | OWNER/REPOSITORY:PATTERN) ...] [--no-cache]",
+        "       orgtop-round2 --path OWNER/REPOSITORY:PATTERN [--path OWNER/REPOSITORY:PATTERN ...] [--repo OWNER/REPOSITORY ...] [--no-cache]"
+      ]
+    }
+  },
+  {
+    "name": "grammar 4",
+    "pass_": true,
+    "detail": {
+      "args": [
+        "--reset-cache",
+        "--org=acme"
+      ],
+      "exit": 2,
+      "stderr": [
+        "Usage: orgtop-round2 --repo OWNER/REPOSITORY [--repo OWNER/REPOSITORY ...] [--path (PATTERN | OWNER/REPOSITORY:PATTERN) ...] [--no-cache]",
+        "       orgtop-round2 --path OWNER/REPOSITORY:PATTERN [--path OWNER/REPOSITORY:PATTERN ...] [--repo OWNER/REPOSITORY ...] [--no-cache]"
+      ]
+    }
+  },
+  {
+    "name": "grammar 5",
+    "pass_": true,
+    "detail": {
+      "args": [
+        "--include-forks"
+      ],
+      "exit": 2,
+      "stderr": [
+        "Usage: orgtop-round2 --repo OWNER/REPOSITORY [--repo OWNER/REPOSITORY ...] [--path (PATTERN | OWNER/REPOSITORY:PATTERN) ...] [--no-cache]",
+        "       orgtop-round2 --path OWNER/REPOSITORY:PATTERN [--path OWNER/REPOSITORY:PATTERN ...] [--repo OWNER/REPOSITORY ...] [--no-cache]"
+      ]
+    }
+  },
+  {
+    "name": "grammar 6",
+    "pass_": true,
+    "detail": {
+      "args": [
+        "--repo",
+        "acme/api",
+        "--path",
+        "src/**x"
+      ],
+      "exit": 2,
+      "stderr": [
+        "Usage: orgtop-round2 --repo OWNER/REPOSITORY [--repo OWNER/REPOSITORY ...] [--path (PATTERN | OWNER/REPOSITORY:PATTERN) ...] [--no-cache]",
+        "       orgtop-round2 --path OWNER/REPOSITORY:PATTERN [--path OWNER/REPOSITORY:PATTERN ...] [--repo OWNER/REPOSITORY ...] [--no-cache]"
+      ]
+    }
+  },
+  {
+    "name": "grammar 7",
+    "pass_": true,
+    "detail": {
+      "args": [
+        "--repo",
+        "acme/api",
+        "--path",
+        "src\\q"
+      ],
+      "exit": 2,
+      "stderr": [
+        "Usage: orgtop-round2 --repo OWNER/REPOSITORY [--repo OWNER/REPOSITORY ...] [--path (PATTERN | OWNER/REPOSITORY:PATTERN) ...] [--no-cache]",
+        "       orgtop-round2 --path OWNER/REPOSITORY:PATTERN [--path OWNER/REPOSITORY:PATTERN ...] [--repo OWNER/REPOSITORY ...] [--no-cache]"
+      ]
+    }
+  },
+  {
+    "name": "grammar 8",
+    "pass_": true,
+    "detail": {
+      "args": [
+        "--no-cache=true"
+      ],
+      "exit": 2,
+      "stderr": [
+        "Usage: orgtop-round2 --repo OWNER/REPOSITORY [--repo OWNER/REPOSITORY ...] [--path (PATTERN | OWNER/REPOSITORY:PATTERN) ...] [--no-cache]",
+        "       orgtop-round2 --path OWNER/REPOSITORY:PATTERN [--path OWNER/REPOSITORY:PATTERN ...] [--repo OWNER/REPOSITORY ...] [--no-cache]"
+      ]
+    }
+  },
+  {
+    "name": "grammar 9",
+    "pass_": true,
+    "detail": {
+      "args": [
+        "--repo=acme/api",
+        "--",
+        "positional"
+      ],
+      "exit": 2,
+      "stderr": [
+        "Usage: orgtop-round2 --repo OWNER/REPOSITORY [--repo OWNER/REPOSITORY ...] [--path (PATTERN | OWNER/REPOSITORY:PATTERN) ...] [--no-cache]",
+        "       orgtop-round2 --path OWNER/REPOSITORY:PATTERN [--path OWNER/REPOSITORY:PATTERN ...] [--repo OWNER/REPOSITORY ...] [--no-cache]"
+      ]
+    }
+  },
+  {
+    "name": "grammar 10",
+    "pass_": true,
+    "detail": {
+      "args": [
+        "--org=acme/other"
+      ],
+      "exit": 2,
+      "stderr": [
+        "Usage: orgtop-round2 --repo OWNER/REPOSITORY [--repo OWNER/REPOSITORY ...] [--path (PATTERN | OWNER/REPOSITORY:PATTERN) ...] [--no-cache]",
+        "       orgtop-round2 --path OWNER/REPOSITORY:PATTERN [--path OWNER/REPOSITORY:PATTERN ...] [--repo OWNER/REPOSITORY ...] [--no-cache]"
+      ]
+    }
+  },
+  {
+    "name": "grammar 11",
+    "pass_": true,
+    "detail": {
+      "args": [
+        "--repo",
+        "acme/api",
+        "--path",
+        "/root"
+      ],
+      "exit": 2,
+      "stderr": [
+        "Usage: orgtop-round2 --repo OWNER/REPOSITORY [--repo OWNER/REPOSITORY ...] [--path (PATTERN | OWNER/REPOSITORY:PATTERN) ...] [--no-cache]",
+        "       orgtop-round2 --path OWNER/REPOSITORY:PATTERN [--path OWNER/REPOSITORY:PATTERN ...] [--repo OWNER/REPOSITORY ...] [--no-cache]"
+      ]
+    }
+  },
+  {
+    "name": "grammar no network",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "all HTTP headers",
+    "pass_": true,
+    "detail": null
+  }
+]

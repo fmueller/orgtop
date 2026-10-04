@@ -1,0 +1,74 @@
+PASS T119 --bad --help
+PASS T119 --help --reset-cache --bad
+PASS T119 --help --repo
+PASS T119 --repo=broken --help
+PASS T119 --bad -h
+PASS T119 -h --reset-cache --bad
+PASS T119 -h --repo
+PASS T119 --repo=broken -h
+PASS T119 --bad --version
+PASS T119 --version --reset-cache --bad
+PASS T119 --version --repo
+PASS T119 --repo=broken --version
+PASS T119 --bad -v
+PASS T119 -v --reset-cache --bad
+PASS T119 -v --repo
+PASS T119 --repo=broken -v
+PASS T120 --reset-cache --reset-cache=true
+PASS T120 --reset-cache --reset-cache=false
+PASS T120 --reset-cache --no-cache=true
+PASS T120 --reset-cache --no-cache=false
+PASS T120 --reset-cache --include-forks=true
+PASS T120 --reset-cache --include-forks=false
+PASS T120 --reset-cache --include-archived=true
+PASS T120 --reset-cache --include-archived=false
+PASS T121 Stream and detail escaped
+PASS T121 constrained Stream safe
+PASS hostile responsive quit
+PASS cold CURRENT
+PASS cold responsive quit
+PASS warm reuse no extra commit
+PASS warm responsive quit
+PASS real SQLite cache exists
+PASS T120 populated SQLite preserved
+PASS two simultaneous cache clients current
+PASS active cache reset bounded refusal {'exit': 1, 'stderr': 'enrichment cache is busy: cache lock region 0'}
+PASS concurrent-a responsive quit
+PASS concurrent-b responsive quit
+PASS SQLite contention stays current/degraded
+PASS sqlite-busy responsive quit
+PASS idle reset succeeds
+PASS reset rebuild current
+PASS rebuilt responsive quit
+PASS org-oversize atomic failure
+PASS org-oversize responsive quit
+PASS org-badnext atomic failure
+PASS org-badnext responsive quit
+PASS org-partial atomic failure
+PASS org-partial responsive quit
+PASS org-conflict atomic failure
+PASS org-conflict responsive quit
+PASS org-empty mixed retains exact
+PASS org-empty responsive quit
+PASS org 5-page fairness ['/orgs/alpha/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1', '/orgs/beta/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1', '/orgs/alpha/repos?type=all&sort=full_name&direction=asc&per_page=100&page=2', '/orgs/beta/repos?type=all&sort=full_name&direction=asc&per_page=100&page=2', '/orgs/alpha/repos?type=all&sort=full_name&direction=asc&per_page=100&page=3']
+PASS org 20-repo capacity exact precedence 20
+PASS org disclosure known and unknown omission ['OrgTop · OVERVIEW · POLLING · 20 repos · 20 scopes · updated 22:01:12 · selection: 20 repos · 20 scopes · 1 exact · 19 expanded · 481 eligible omitted · more eligible may be omitted', 'R1 alpha/r000   1 activity · 0 PR events · 1 push', 'R2 alpha/r001   1 activity · 0 PR events · 1 push', 'R3 alpha/r002   1 activity · 0 PR events · 1 push', 'R4 alpha/r003   1 activity · 0 PR events · 1 push']
+PASS org-pages responsive quit
+PASS 600 events globally truncated to 500 ['OrgTop · OVERVIEW · POLLING · TRUNCATED · acme/r0, acme/r1, acme/r2, acme/r3, acme/r4, acme/r5 · updated 22:01:13 · newest 500 of 600', 'R1 acme/r0  100 activity · 0 PR events · 100 pushes', 'R2 acme/r1  100 activity · 0 PR events · 100 pushes', 'R3 acme/r2  100 activity · 0 PR events · 100 pushes', 'R4 acme/r3  100 activity · 0 PR events · 100 pushes']
+PASS events-capacity responsive quit
+PASS 50 scope overview accounting
+PASS multi-scope resize restores responsive overview
+PASS many-scopes responsive quit
+PASS cycle initial complete
+WAIT real refresh floor phase 1
+PASS source failure retains stale snapshot ['OrgTop · OVERVIEW · POLLING · STALE · refreshing acme/other: unexpected github response: status 503 · acme/api, acme/other · updated 22:01:21', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  1 activity · 0 PR events · 1 push', 'R3 acme/other    1 activity · 0 PR events · 1 push', '', '']
+PASS no partial phase1 event publication
+WAIT real refresh floor phase 2
+PASS source recovery current with independent unknown ['OrgTop · OVERVIEW · POLLING · PATH ?1 · acme/api, acme/other · updated 22:03:21', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'R3 acme/other    1 activity · 0 PR events · 1 push', 'P2 acme/api:src  No confirmed activity · 1 unknown', '', '']
+WAIT real refresh floor phase 3
+PASS enrichment recovery clears unknown ['OrgTop · OVERVIEW · POLLING · acme/api, acme/other · updated 22:04:21', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  1 activity · 0 PR events · 1 push', 'R3 acme/other    1 activity · 0 PR events · 1 push', '', '']
+PASS cycle responsive quit
+PASS malformed entity no bidi leak
+PASS hostile-entity responsive quit
+PASS all HTTP requests contract headers 66
+Evidence: /tmp/orgtop-round2-evidence

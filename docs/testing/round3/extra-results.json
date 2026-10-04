@@ -1,0 +1,214 @@
+[
+  {
+    "name": "missing-cold responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "missing malformed not persisted",
+    "pass_": false,
+    "detail": [
+      [
+        "commit",
+        0,
+        1
+      ]
+    ]
+  },
+  {
+    "name": "missing corrected upstream reacquired",
+    "pass_": false,
+    "detail": 0
+  },
+  {
+    "name": "missing warm membership",
+    "pass_": false,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 22:05:31",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  No activity in retained snapshot",
+      ""
+    ]
+  },
+  {
+    "name": "missing-warm responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "null-cold responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "null malformed not persisted",
+    "pass_": false,
+    "detail": [
+      [
+        "commit",
+        0,
+        1
+      ]
+    ]
+  },
+  {
+    "name": "null corrected upstream reacquired",
+    "pass_": false,
+    "detail": 0
+  },
+  {
+    "name": "null warm membership",
+    "pass_": false,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 22:05:35",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  No activity in retained snapshot",
+      ""
+    ]
+  },
+  {
+    "name": "null-warm responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-malformed-cold responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-malformed malformed not persisted",
+    "pass_": false,
+    "detail": [
+      [
+        "commit",
+        1,
+        1
+      ]
+    ]
+  },
+  {
+    "name": "link-malformed corrected upstream reacquired",
+    "pass_": false,
+    "detail": 0
+  },
+  {
+    "name": "link-malformed warm membership",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 22:05:39",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  1 activity \u00b7 0 PR events \u00b7 1 push",
+      ""
+    ]
+  },
+  {
+    "name": "link-malformed-warm responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "ten age events retained",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "all age rows retained including future and old",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "Stream future youngest display",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "strip five inside 15m including future",
+    "pass_": true,
+    "detail": " (last 15m): 5 shown \u00b7 0 hidden \u00b7 0 omitted\n\u2191 push \u00b7 actor0 \u00b7 commit 2222222222222222222222222222222222222222 \u00b7 acme/api \u00b7 R1 acme/api \u00b7 0s\n\u2191 push \u00b7 actor1 \u00b7 commit 2222222222222222222222222222222222222222 \u00b7 acme/api \u00b7 R1 acme/api \u00b7 2s\n\u2191 push \u00b7 actor2 \u00b7 commit 2222222222222222222222222222222222222222 \u00b7 acme/api \u00b7 R1 acme/api \u00b7 4m\n\u2191 push \u00b7 actor3 \u00b7 commit 2222222222222222222222222222222222222222 \u00b7 acme/api \u00b7 R1 acme/api \u00b7 5m\n\u2191 push \u00b7 actor4 \u00b7 commit 2222222222222222222222222222222222222222 \u00b7 acme/api \u00b7 R1 acme/api \u00b7 14m\n1 overview \u00b7 2 stream \u00b7 3 rain \u00b7 tab switch \u00b7 [/] page \u00b7 -/+ window \u00b7 p pause \u00b7 q quit\n"
+  },
+  {
+    "name": "finite lower bound",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "available endpoint",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "strip independent of rain window",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "window does not filter Stream",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "ages responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "rate publishes eight unknown with repository activity",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 RATE LIMITED 22:07:49 \u00b7 PATH ?8 \u00b7 acme/api \u00b7 updated 22:05:49",
+      "R1 acme/api      8 activity \u00b7 0 PR events \u00b7 8 pushes",
+      "P2 acme/api:src  No confirmed activity \u00b7 8 unknown",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "rate stops dispatch",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "rate",
+        "phase": 0,
+        "path": "/repos/acme/api/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 604.635379482
+      },
+      {
+        "mode": "rate",
+        "phase": 0,
+        "path": "/repos/acme/api/commits/0000000000000000000000000000000000000003?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 604.676671052
+      },
+      {
+        "mode": "rate",
+        "phase": 0,
+        "path": "/repos/acme/api/commits/0000000000000000000000000000000000000002?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 604.678784778
+      }
+    ]
+  },
+  {
+    "name": "120-second retry holds across 61s floor",
+    "pass_": false,
+    "detail": null
+  },
+  {
+    "name": "rate response sanitized",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "rate-stop responsive quit",
+    "pass_": true,
+    "detail": null
+  }
+]
