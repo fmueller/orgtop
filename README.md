@@ -120,6 +120,11 @@ with a malformed identifier, or with unsupported glob syntax in an exact
 repository name exits before the terminal UI with usage and a concise cause, and
 makes no network request.
 
+Value flags accept both `--flag VALUE` and `--flag=VALUE`. Boolean controls accept
+only their bare form: assignments such as `--no-cache=false` or
+`--reset-cache=true` exit with usage status 2 before cache or launch work.
+Bare help and version requests still take precedence over invalid input.
+
 <!-- docs:organization-selection -->
 ### Organization selection
 

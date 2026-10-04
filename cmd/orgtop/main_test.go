@@ -5,11 +5,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/fmueller/orgtop/internal/auth"
+	"github.com/fmueller/orgtop/internal/cache"
 	"github.com/fmueller/orgtop/internal/cli"
+	"github.com/fmueller/orgtop/internal/domain"
 )
 
 // sentinelToken is the credential value no captured output may ever contain
@@ -118,6 +124,8 @@ func TestRejectedConfigurationReportsUsageBeforeAnyAuthenticationWork(t *testing
 		{name: "invalid repository", args: []string{"--repo", "acme/back end"}, want: `--repo: invalid repository identifier "acme/back end": repository contains an unsupported character " "`},
 		{name: "positional argument", args: []string{"--repo", "acme/backend", "stray"}, want: `unexpected argument "stray"`},
 		{name: "malformed flag", args: []string{"--bogus"}, want: "flag provided but not defined: -bogus"},
+		{name: "true launch assignment", args: []string{"--no-cache=true", "--repo=acme/api"}, want: "--no-cache accepts only its bare form"},
+		{name: "false launch assignment", args: []string{"--no-cache=false", "--repo=acme/api"}, want: "--no-cache accepts only its bare form"},
 	}
 
 	for _, test := range tests {
@@ -142,6 +150,58 @@ func TestRejectedConfigurationReportsUsageBeforeAnyAuthenticationWork(t *testing
 				t.Errorf("output reports %q %d times, want once:\n%s", test.want, got, output)
 			}
 		})
+	}
+}
+
+func TestExecutableBooleanAssignmentsPreserveCache(t *testing.T) {
+	binary := filepath.Join(t.TempDir(), "orgtop")
+	build := exec.Command("go", "build", "-o", binary, ".")
+	if output, err := build.CombinedOutput(); err != nil {
+		t.Fatalf("build: %v\n%s", err, output)
+	}
+	root := t.TempDir()
+	location := cache.LocationIn(root)
+	store, err := cache.Open(location)
+	if err != nil {
+		t.Fatal(err)
+	}
+	repository, err := domain.ParseRepository("acme/api")
+	if err != nil {
+		t.Fatal(err)
+	}
+	key, err := cache.CompareKey(repository, strings.Repeat("a", 40), strings.Repeat("b", 40))
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Date(2026, 10, 4, 12, 0, 0, 0, time.UTC)
+	store.WithClock(func() time.Time { return now })
+	if err := store.Save(context.Background(), cache.Entry{Key: key, AcquiredAt: now, LastUsedAt: now}); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Close(); err != nil {
+		t.Fatal(err)
+	}
+	before, err := os.ReadFile(location.Database())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"reset-cache", "no-cache", "include-archived", "include-forks"} {
+		for _, value := range []string{"true", "false"} {
+			args := []string{"--reset-cache", "--" + name + "=" + value}
+			t.Run(strings.Join(args, " "), func(t *testing.T) {
+				command := exec.Command(binary, args...)
+				command.Env = []string{"HOME=" + root, "XDG_CACHE_HOME=" + root}
+				output, err := command.CombinedOutput()
+				var exit *exec.ExitError
+				if !errors.As(err, &exit) || exit.ExitCode() != exitUsage || !strings.Contains(string(output), "bare form") {
+					t.Errorf("exit = %v, want usage 2; output = %s", err, output)
+				}
+				after, err := os.ReadFile(location.Database())
+				if err != nil || !bytes.Equal(before, after) {
+					t.Fatalf("cache bytes changed or removed: %v", err)
+				}
+			})
+		}
 	}
 }
 

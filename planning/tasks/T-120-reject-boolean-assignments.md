@@ -1,11 +1,11 @@
 ---
 id: T-120-reject-boolean-assignments
 title: Reject boolean flag assignments before cache or launch work
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.2.0.md#rg-001-unified-cli-contract
 dependencies: []
-updated_at: "2026-10-04T19:28:40Z"
+updated_at: "2026-10-04T20:42:01Z"
 ---
 
 # T-120-reject-boolean-assignments Reject boolean flag assignments before cache or launch work
@@ -57,3 +57,5 @@ This is separate from T-119: no informational action is present here.
 - `internal/cli/config.go` registers plain `flags.Bool` controls and checks
   parsed boolean values rather than rejecting assignment syntax.
 - No production code was changed during testing.
+- 2026-10-04T20:41:50Z: verification pass
+- 2026-10-04T20:42:01Z: RG-001 bare-only boolean grammar enforced before side effects with strict TDD, executable cache-byte preservation and resolver nonexecution tests; simplifier, General/Go/Security reviews, candidate/disposition verification and final task check passed. Audit in docs/testing/t120-boolean-assignments.md.

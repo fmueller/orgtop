@@ -230,6 +230,7 @@ func TestInformationalPrecedence(t *testing.T) {
 		}
 		for _, args := range [][]string{
 			{"--bad", info}, {info, "--bad"},
+			{"--reset-cache=true", info}, {info, "--no-cache=false"},
 			{"--repo=broken", info}, {info, "--path=../x"},
 			{info, "--repo"}, {"--reset-cache", "--bad", info},
 			{info, "--reset-cache", "--bad"}, {"stray", info},
@@ -247,6 +248,61 @@ func TestInformationalPrecedence(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+func TestBooleanAssignments(t *testing.T) {
+	for _, name := range []string{"help", "h", "version", "v", "reset-cache", "no-cache", "include-archived", "include-forks"} {
+		for _, value := range []string{"true", "false"} {
+			for _, prefix := range []string{"-", "--"} {
+				assignment := prefix + name + "=" + value
+				for _, args := range [][]string{
+					{assignment, "--org=acme"},
+					{"--reset-cache", assignment},
+					{prefix + name, assignment},
+				} {
+					// A valid bare informational request deliberately outranks assignments.
+					if args[0] == prefix+name && (name == "help" || name == "h" || name == "version" || name == "v") {
+						continue
+					}
+					t.Run(strings.Join(args, " "), func(t *testing.T) {
+						var output bytes.Buffer
+						_, err := cli.ParseArgs("orgtop", args, &output)
+						if err == nil || !strings.Contains(err.Error(), "bare form") {
+							t.Fatalf("error = %v, want bare-form rejection", err)
+						}
+						assertUsage(t, output.String())
+						if strings.Count(output.String(), err.Error()) != 1 {
+							t.Fatalf("diagnostic must appear once: %q", output.String())
+						}
+					})
+				}
+			}
+		}
+	}
+}
+
+func TestBooleanGrammarPreservesScanAndValues(t *testing.T) {
+	for _, test := range []struct {
+		args []string
+		want string
+	}{
+		{[]string{"--bad", "--no-cache=true"}, "flag provided but not defined"},
+		{[]string{"stray", "--reset-cache=true"}, "unexpected argument"},
+		{[]string{"--", "--no-cache=false"}, "unexpected argument"},
+		{[]string{"--repo", "--no-cache=true"}, "invalid repository"},
+		{[]string{"--repo=broken", "--no-cache=true"}, "invalid repository"},
+		{[]string{"--path=../x", "--help=false"}, "invalid path"},
+		{[]string{"--no-cache=false", "--bad"}, "bare form"},
+	} {
+		_, err := cli.ParseArgs("orgtop", test.args, &bytes.Buffer{})
+		if err == nil || !strings.Contains(err.Error(), test.want) {
+			t.Errorf("ParseArgs(%q) = %v, want %q", test.args, err, test.want)
+		}
+	}
+	config, err := cli.ParseArgs("orgtop", []string{"--org=acme", "--repo=acme/api", "--path=acme/api:src/**", "--include-archived", "--include-archived", "--include-forks", "--no-cache"}, &bytes.Buffer{})
+	if err != nil || !config.NoCache || !config.IncludeArchived || !config.IncludeForks || config.Scopes.Len() != 2 {
+		t.Fatalf("valid bare/value flags: config = %+v, error = %v", config, err)
 	}
 }
 

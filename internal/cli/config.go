@@ -161,6 +161,37 @@ func ParseArgs(name string, args []string, output io.Writer) (Config, error) {
 		}
 		return Config{}, err
 	}
+	// Reject boolean assignments without outranking earlier scan failures or
+	// mistaking a consumed selection value for a flag. Informational precedence
+	// has already been resolved above; flag.Parse owns all other scan errors.
+	var assignmentErr error
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		if arg == "--" || arg == "-" || !strings.HasPrefix(arg, "-") {
+			break
+		}
+		name, _, inline := strings.Cut(strings.TrimPrefix(strings.TrimPrefix(arg, "-"), "-"), "=")
+		f := flags.Lookup(name)
+		if name == "help" || name == "h" {
+			if inline {
+				assignmentErr = fmt.Errorf("--%s accepts only its bare form", name)
+				args = args[:i]
+			}
+			break
+		}
+		if f == nil {
+			break
+		}
+		if value, ok := f.Value.(interface{ IsBoolFlag() bool }); ok && value.IsBoolFlag() {
+			if inline {
+				assignmentErr = fmt.Errorf("--%s accepts only its bare form", name)
+				args = args[:i]
+				break
+			}
+		} else if !inline {
+			i++
+		}
+	}
 	if err := flags.Parse(args); err != nil {
 		return Config{}, err
 	}
@@ -177,6 +208,9 @@ func ParseArgs(name string, args []string, output io.Writer) (Config, error) {
 	requested, err := validateSelections(values)
 	if err != nil {
 		return Config{}, reject(output, flags, err)
+	}
+	if assignmentErr != nil {
+		return Config{}, reject(output, flags, assignmentErr)
 	}
 	// Incompatible administrative and cache controls are the first post-parse
 	// class, so a reset request is answered before any selection is expanded.

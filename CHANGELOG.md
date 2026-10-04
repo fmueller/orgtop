@@ -158,6 +158,9 @@ workflow refuses to publish otherwise.
 
 ### Fixed
 
+- Boolean flag assignments such as `--reset-cache=true` and `--no-cache=false`
+  now fail with usage exit 2 before cache removal or launch work. Bare controls,
+  value-flag assignments, and help/version precedence remain unchanged.
 - Help and version requests now succeed even when unknown flags, missing values,
   or administrative flags appear elsewhere in the command, without touching
   credentials or the cache. Informational-looking selection values remain values.

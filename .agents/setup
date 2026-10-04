@@ -15,7 +15,7 @@ mise_bin="$HOME/.local/bin/mise"
 mise_version="2026.9.0"
 
 missing_packages=()
-for package in ca-certificates curl git; do
+for package in ca-certificates curl git zip; do
 	if ! dpkg-query -W -f='${Status}' "$package" 2>/dev/null | grep -Fqx 'install ok installed'; then
 		missing_packages+=("$package")
 	fi
