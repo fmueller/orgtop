@@ -1,0 +1,30 @@
+OrgTop · STREAM · POLLING · PATH ?1 · acme/api · updated 19:32:21
+showing 3 events (retained)
+  age  repository  category  scopes                  actor · description
+▸ <1m  acme/api    push      in R1, P2               tester · pushed 1 commit to release-‮abc
+  <1m  acme/api    other     in R1 · unresolved ?P2  tester · issues activity
+  <1m  acme/api    comment   in R1, P2               tester · commented on #8
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+1 overview · 2 stream · 3 rain · tab switch · up/down focus · pgup/pgdn page · enter detail · q quit

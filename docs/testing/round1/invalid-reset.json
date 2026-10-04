@@ -1,0 +1,15 @@
+{
+  "argv": [
+    "--reset-cache",
+    "--no-cache=false"
+  ],
+  "database_existed_before": true,
+  "evidence_rows_before": 1,
+  "sha256_before": "e3234b05c07c68a9dd31da8f1b87debb425ea70bb6692a7c30f5baf38d0a4aee",
+  "actual_exit": 0,
+  "expected_exit": 2,
+  "stdout": "orgtop: removed the cached enrichment state\n",
+  "stderr": "",
+  "database_exists_after": false,
+  "expected_database_exists_after": true
+}

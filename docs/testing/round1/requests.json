@@ -1,0 +1,219 @@
+[
+  {
+    "mode": "normal",
+    "path": "/repos/acme/api/events?per_page=100",
+    "api_version": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_ok": true
+  },
+  {
+    "mode": "normal",
+    "path": "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+    "api_version": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_ok": true
+  },
+  {
+    "mode": "normal",
+    "path": "/repos/acme/api/events?per_page=100",
+    "api_version": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_ok": true
+  },
+  {
+    "mode": "normal",
+    "path": "/repos/acme/api/events?per_page=100",
+    "api_version": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_ok": true
+  },
+  {
+    "mode": "normal",
+    "path": "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+    "api_version": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_ok": true
+  },
+  {
+    "mode": "enrichment-denied",
+    "path": "/repos/acme/api/events?per_page=100",
+    "api_version": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_ok": true
+  },
+  {
+    "mode": "enrichment-denied",
+    "path": "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+    "api_version": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_ok": true
+  },
+  {
+    "mode": "bad-parent",
+    "path": "/repos/acme/api/events?per_page=100",
+    "api_version": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_ok": true
+  },
+  {
+    "mode": "bad-parent",
+    "path": "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+    "api_version": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_ok": true
+  },
+  {
+    "mode": "source-denied",
+    "path": "/repos/acme/api/events?per_page=100",
+    "api_version": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_ok": true
+  },
+  {
+    "mode": "rate",
+    "path": "/repos/acme/api/events?per_page=100",
+    "api_version": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_ok": true
+  },
+  {
+    "mode": "malformed",
+    "path": "/repos/acme/api/events?per_page=100",
+    "api_version": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_ok": true
+  },
+  {
+    "mode": "empty",
+    "path": "/repos/acme/api/events?per_page=100",
+    "api_version": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_ok": true
+  },
+  {
+    "mode": "hostile",
+    "path": "/repos/acme/api/events?per_page=100",
+    "api_version": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_ok": true
+  },
+  {
+    "mode": "hostile",
+    "path": "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+    "api_version": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_ok": true
+  },
+  {
+    "mode": "many",
+    "path": "/repos/acme/api/events?per_page=100",
+    "api_version": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_ok": true
+  },
+  {
+    "mode": "many",
+    "path": "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+    "api_version": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_ok": true
+  },
+  {
+    "mode": "normal",
+    "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+    "api_version": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_ok": true
+  },
+  {
+    "mode": "normal",
+    "path": "/repos/acme/api/events?per_page=100",
+    "api_version": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_ok": true
+  },
+  {
+    "mode": "normal",
+    "path": "/repos/acme/api/events?per_page=100",
+    "api_version": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_ok": true
+  },
+  {
+    "mode": "normal",
+    "path": "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+    "api_version": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_ok": true
+  },
+  {
+    "mode": "normal",
+    "path": "/repos/acme/api/events?per_page=100",
+    "api_version": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_ok": true
+  },
+  {
+    "mode": "normal",
+    "path": "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+    "api_version": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_ok": true
+  },
+  {
+    "mode": "normal",
+    "path": "/repos/acme/api/events?per_page=100",
+    "api_version": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_ok": true
+  },
+  {
+    "mode": "normal",
+    "path": "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+    "api_version": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_ok": true
+  },
+  {
+    "mode": "normal",
+    "path": "/repos/acme/api/events?per_page=100",
+    "api_version": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_ok": true
+  },
+  {
+    "mode": "normal",
+    "path": "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+    "api_version": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_ok": true
+  },
+  {
+    "mode": "source-denied",
+    "path": "/repos/acme/api/events?per_page=100",
+    "api_version": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_ok": true
+  },
+  {
+    "mode": "normal",
+    "path": "/repos/acme/api/events?per_page=100",
+    "api_version": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_ok": true
+  },
+  {
+    "mode": "normal",
+    "path": "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+    "api_version": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_ok": true
+  },
+  {
+    "mode": "slow",
+    "path": "/repos/acme/api/events?per_page=100",
+    "api_version": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_ok": true
+  }
+]

@@ -1,0 +1,30 @@
+OrgTop · RAIN · POLLING · PATH ?1 · scopes 1-2 of 2 · acme/api · updated 19:32:33
+R1 acme/api                                                  P2 acme/api:src
+
+                                                  ?
+
+                                                P                                              P
+
+
+
+
+                                                    C
+
+
+
+
+
+
+
+                                                                                   C
+
+
+
+
+window 15m · recency: 5 new · 0 recent · 0 aging · 0 old
+P push · R pull request · V review · C comment · ? other
+Interesting Now (last 15m): 3 shown · 0 hidden · 0 omitted
+P push · tester · commit 2222222222222222222222222222222222222222 · acme/api · R1 acme/api · +1 scopes · 40s
+? other · tester · acme/api · R1 acme/api · 45s
+C comment · tester · pull_request #8 · acme/api · P2 acme/api:src · +1 scopes · 50s
+1 overview · 2 stream · 3 rain · tab switch · [/] page · -/+ window · p pause · q quit

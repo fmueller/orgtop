@@ -1,0 +1,12 @@
+RAIN · POLLING · PATH ?1 · 1-2/2 · 2S
+R1 acme/api          P2 acme/api:src
+        ↑                      ↑
+            ○                        ○
+          ·
+
+PAUSED · window 24h · legend hidden
+I15m: 3 shown 0 hidden 0 omitted
+↑ push · acme/api · R1 acme/api · 8s
+· other · acme/api · R1 acme/api · 13s
+○ acme/api P2 18s
+1/2/3/tab switch · q quit

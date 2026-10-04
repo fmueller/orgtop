@@ -1,0 +1,167 @@
+[
+  {
+    "case": "cli ",
+    "pass": true,
+    "detail": "exit=2; expected=2"
+  },
+  {
+    "case": "cli --help --bad",
+    "pass": true,
+    "detail": "exit=0; expected=0"
+  },
+  {
+    "case": "cli --bad --help",
+    "pass": false,
+    "detail": "exit=2; expected=0"
+  },
+  {
+    "case": "cli --version --reset-cache --bad",
+    "pass": false,
+    "detail": "exit=2; expected=0"
+  },
+  {
+    "case": "cli --version --repo",
+    "pass": false,
+    "detail": "exit=2; expected=0"
+  },
+  {
+    "case": "cli --no-cache=true --repo acme/api",
+    "pass": false,
+    "detail": "exit=1; expected=2"
+  },
+  {
+    "case": "cli --reset-cache=true",
+    "pass": false,
+    "detail": "exit=0; expected=2"
+  },
+  {
+    "case": "cli --reset-cache --no-cache=false",
+    "pass": false,
+    "detail": "exit=0; expected=2"
+  },
+  {
+    "case": "cli --org acme --path src",
+    "pass": true,
+    "detail": "exit=2; expected=2"
+  },
+  {
+    "case": "cli --repo acme/api --path ../x",
+    "pass": true,
+    "detail": "exit=2; expected=2"
+  },
+  {
+    "case": "cli --reset-cache --repo acme/api",
+    "pass": true,
+    "detail": "exit=2; expected=2"
+  },
+  {
+    "case": "cold membership",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "case": "rain pause",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "case": "quit after resize",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "case": "warm cache avoids commit request",
+    "pass": true,
+    "detail": "cold=1 cumulative warm=1"
+  },
+  {
+    "case": "no-cache does not create directory",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "case": "enrichment-denied quit",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "case": "bad-parent quit",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "case": "source-denied quit",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "case": "rate quit",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "case": "malformed quit",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "case": "empty quit",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "case": "hostile quit",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "case": "many quit",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "case": "org expansion",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "case": "cache failure degrades",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "case": "future cache version degrades",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "case": "future version preserved",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "case": "reset future cache",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "case": "cache rebuilt after reset",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "case": "rain shorter window",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "case": "scheduled source recovery",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "case": "cancel in-flight",
+    "pass": true,
+    "detail": ""
+  }
+]
