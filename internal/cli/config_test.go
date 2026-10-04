@@ -222,6 +222,51 @@ func TestParseArgsReportsAVersionRequest(t *testing.T) {
 	}
 }
 
+func TestInformationalPrecedence(t *testing.T) {
+	for _, info := range []string{"--help", "-h", "--version", "-v"} {
+		want := cli.ErrVersionRequested
+		if info == "--help" || info == "-h" {
+			want = flag.ErrHelp
+		}
+		for _, args := range [][]string{
+			{"--bad", info}, {info, "--bad"},
+			{"--repo=broken", info}, {info, "--path=../x"},
+			{info, "--repo"}, {"--reset-cache", "--bad", info},
+			{info, "--reset-cache", "--bad"}, {"stray", info},
+		} {
+			t.Run(strings.Join(args, " "), func(t *testing.T) {
+				var output bytes.Buffer
+				_, err := cli.ParseArgs("orgtop", args, &output)
+				if !errors.Is(err, want) {
+					t.Fatalf("error = %v, want %v", err, want)
+				}
+				if want == flag.ErrHelp {
+					assertUsage(t, output.String())
+				} else if output.Len() != 0 {
+					t.Fatalf("version diagnostic = %q", output.String())
+				}
+			})
+		}
+	}
+}
+
+func TestInformationalValuesAndTerminator(t *testing.T) {
+	for _, info := range []string{"--help", "-h", "--version", "-v"} {
+		for _, args := range [][]string{
+			{"--repo", info}, {"--org", info}, {"--path", info},
+			{"--repo=" + info}, {"--", info},
+			{"--bad", "--path", info},
+		} {
+			t.Run(strings.Join(args, " "), func(t *testing.T) {
+				_, err := cli.ParseArgs("orgtop", args, &bytes.Buffer{})
+				if errors.Is(err, flag.ErrHelp) || errors.Is(err, cli.ErrVersionRequested) {
+					t.Fatalf("consumed value or positional argument triggered information: %v", err)
+				}
+			})
+		}
+	}
+}
+
 // TestVersionDefaultsToDev keeps an unstamped build honest: it reports dev
 // rather than an empty value the release linker flag was meant to fill.
 func TestVersionDefaultsToDev(t *testing.T) {

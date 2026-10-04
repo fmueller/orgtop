@@ -1,14 +1,14 @@
 ---
 schema_version: 1
-updated_at: "2026-10-04T19:31:02Z"
+updated_at: "2026-10-04T20:13:53Z"
 active_spec_version: v0.2.0
 active_spec_path: specs/v0.2.0.md
 current_task: ""
 current_task_title: ""
 status_summary: idle
 blockers: []
-next_action: 'Start task T-106-test-the-v0-2-0-release-candidate-before-tagging: Test the v0.2.0 release candidate before tagging'
-last_verification_result: pass for T-070-document-the-closed-v0-2-0-behavior at 2026-09-20T10:37:29Z
+next_action: Select the next eligible task
+last_verification_result: pass for T-119-cli-informational-precedence at 2026-10-04T20:13:53Z
 relevant_artifacts: []
 continuation_notes:
     - This repository is using manual Taskrail-style workflow scaffolding until the product replaces more of the bootstrap steps.
@@ -34,11 +34,11 @@ continuation_notes:
 
 ## Last Verification
 
-- pass for T-070-document-the-closed-v0-2-0-behavior at 2026-09-20T10:37:29Z
+- pass for T-119-cli-informational-precedence at 2026-10-04T20:13:53Z
 
 ## Next Action
 
-- Start task T-106-test-the-v0-2-0-release-candidate-before-tagging: Test the v0.2.0 release candidate before tagging
+- Select the next eligible task
 
 ## Relevant Artifacts
 
@@ -50,8 +50,8 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 6
+- todo: 5
 - in_progress: 0
-- completed: 115
+- completed: 116
 - blocked: 0
 - cancelled: 0

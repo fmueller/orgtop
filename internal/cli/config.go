@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/fmueller/orgtop/internal/domain"
 )
@@ -154,6 +155,12 @@ func ParseArgs(name string, args []string, output io.Writer) (Config, error) {
 	version := flags.Bool(versionFlag, false, versionUsage)
 	short := flags.Bool(versionShort, false, versionUsage)
 
+	if err := informationalRequest(args, flags); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			flags.Usage()
+		}
+		return Config{}, err
+	}
 	if err := flags.Parse(args); err != nil {
 		return Config{}, err
 	}
@@ -199,6 +206,35 @@ func ParseArgs(name string, args []string, output io.Writer) (Config, error) {
 		IncludeArchived: *includeArchived,
 		IncludeForks:    *includeForks,
 	}, nil
+}
+
+// informationalRequest scans past invalid input without validating or applying
+// it. Known value flags still consume their next token, and -- ends flag input.
+// Help retains precedence over version when both are requested.
+func informationalRequest(args []string, flags *flag.FlagSet) error {
+	var request error
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		if arg == "--" {
+			break
+		}
+		switch arg {
+		case "--help", "-help", "-h", "--h":
+			return flag.ErrHelp
+		case "--version", "-version", "-v", "--v":
+			request = ErrVersionRequested
+		}
+		name, _, inline := strings.Cut(strings.TrimPrefix(strings.TrimPrefix(arg, "-"), "-"), "=")
+		if !strings.HasPrefix(arg, "-") || inline {
+			continue
+		}
+		if f := flags.Lookup(name); f != nil {
+			if value, ok := f.Value.(interface{ IsBoolFlag() bool }); !ok || !value.IsBoolFlag() {
+				i++
+			}
+		}
+	}
+	return request
 }
 
 // reject writes usage and the actionable cause, then returns that cause. The

@@ -1,11 +1,11 @@
 ---
 id: T-119-cli-informational-precedence
 title: Honor help and version precedence before CLI parse failures
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.2.0.md#rg-001-unified-cli-contract
 dependencies: []
-updated_at: "2026-10-04T19:28:05Z"
+updated_at: "2026-10-04T20:13:53Z"
 ---
 
 # T-119-cli-informational-precedence Honor help and version precedence before CLI parse failures
@@ -54,3 +54,5 @@ Reproduce with a normal build (`mise exec -- go build -o /tmp/orgtop ./cmd/orgto
 - `internal/cli/config.go` returns `flags.Parse` failures before its version
   check. Standard `flag` help handling also stops only when it reaches help.
 - No fix was implemented during the testing round.
+- 2026-10-04T20:13:53Z: verification pass
+- 2026-10-04T20:13:53Z: Implemented and independently reviewed RG-001 precedence; focused, executable, mutation and full task check pass.

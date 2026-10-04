@@ -221,7 +221,10 @@ another version asks you to update OrgTop or run `--reset-cache`.
 `--version` (or `-v`) prints the release version on stdout and exits, and
 `--help` (or `-h`) prints usage and exits. Neither needs a `--repo` selection or
 a credential, and neither makes a network request, so a downloaded binary can be
-identified before it is configured.
+identified before it is configured. These requests also win over invalid arguments
+and `--reset-cache`, without opening or resetting the cache. A string consumed as
+a `--repo`, `--path`, or `--org` value is not an informational request, and `--`
+ends flag input.
 
 ```console
 $ orgtop --version

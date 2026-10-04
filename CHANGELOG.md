@@ -158,6 +158,9 @@ workflow refuses to publish otherwise.
 
 ### Fixed
 
+- Help and version requests now succeed even when unknown flags, missing values,
+  or administrative flags appear elsewhere in the command, without touching
+  credentials or the cache. Informational-looking selection values remain values.
 - A retried release no longer leaves its tap staging branch behind. A retry of
   an already completed publication restages `release/orgtop-v<version>`, and the
   merge that follows finds its pull request already merged and deletes nothing,
