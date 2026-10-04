@@ -1,11 +1,11 @@
 ---
 id: T-123-require-enrichment-files-array
 title: Reject absent changed-file arrays before proving enrichment complete
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.2.0.md#rg-003-github-enrichment-contract
 dependencies: []
-updated_at: "2026-10-04T22:04:47Z"
+updated_at: "2026-10-04T22:32:09Z"
 ---
 
 # T-123-require-enrichment-files-array Reject absent changed-file arrays before proving enrichment complete
@@ -72,3 +72,5 @@ and must remain valid complete-empty evidence.
   empty arrays. `commitEvidence`, `compareEvidence`, and `pathSet.addRecords`
   admit nil files. Do not fix this in cache or presentation code.
 - No product fix or lifecycle completion was performed in round 3.
+- 2026-10-04T22:32:09Z: verification pass
+- 2026-10-04T22:32:09Z: Reject absent/null changed-file arrays in GitHub adapter; strict TDD, binary HTTPS PTY/cache reproduction, reviewed and final gates passed. Evidence docs/testing/t123.

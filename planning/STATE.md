@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-updated_at: "2026-10-04T22:07:09Z"
+updated_at: "2026-10-04T22:32:09Z"
 active_spec_version: v0.2.0
 active_spec_path: specs/v0.2.0.md
 current_task: ""
@@ -8,7 +8,7 @@ current_task_title: ""
 status_summary: idle
 blockers: []
 next_action: Select the next eligible task
-last_verification_result: pass for T-122-interesting-entity-controls at 2026-10-04T21:53:37Z
+last_verification_result: pass for T-123-require-enrichment-files-array at 2026-10-04T22:32:09Z
 relevant_artifacts: []
 continuation_notes:
     - This repository is using manual Taskrail-style workflow scaffolding until the product replaces more of the bootstrap steps.
@@ -34,7 +34,7 @@ continuation_notes:
 
 ## Last Verification
 
-- pass for T-122-interesting-entity-controls at 2026-10-04T21:53:37Z
+- pass for T-123-require-enrichment-files-array at 2026-10-04T22:32:09Z
 
 ## Next Action
 
@@ -50,8 +50,8 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 6
+- todo: 5
 - in_progress: 0
-- completed: 119
+- completed: 120
 - blocked: 0
 - cancelled: 0

@@ -1,0 +1,64 @@
+PASS missing current repository
+FAIL missing quantitative unknown
+PASS missing no false membership
+PASS missing-cold responsive quit
+FAIL missing persisted evidence [('commit', 0, 1)]
+FAIL missing warm lookup count 0
+FAIL missing warm correct membership
+PASS missing-warm responsive quit
+PASS null current repository
+FAIL null quantitative unknown
+PASS null no false membership
+PASS null-cold responsive quit
+FAIL null persisted evidence [('commit', 0, 1)]
+FAIL null warm lookup count 0
+FAIL null warm correct membership
+PASS null-warm responsive quit
+PASS compare-missing current repository
+FAIL compare-missing quantitative unknown
+PASS compare-missing no false membership
+PASS compare-missing-cold responsive quit
+FAIL compare-missing persisted evidence [('compare', 0, 1)]
+FAIL compare-missing warm lookup count 0
+FAIL compare-missing warm correct membership
+PASS compare-missing-warm responsive quit
+PASS compare-null current repository
+FAIL compare-null quantitative unknown
+PASS compare-null no false membership
+PASS compare-null-cold responsive quit
+FAIL compare-null persisted evidence [('compare', 0, 1)]
+FAIL compare-null warm lookup count 0
+FAIL compare-null warm correct membership
+PASS compare-null-warm responsive quit
+PASS paged-missing current repository
+FAIL paged-missing quantitative unknown
+FAIL paged-missing no false membership
+PASS paged-missing-cold responsive quit
+FAIL paged-missing persisted evidence [('commit', 1, 1)]
+FAIL paged-missing warm lookup count 0
+PASS paged-missing warm correct membership
+PASS paged-missing-warm responsive quit
+PASS empty current repository
+PASS empty quantitative unknown
+PASS empty no false membership
+PASS empty-cold responsive quit
+PASS empty persisted evidence [('commit', 0, 1)]
+PASS empty warm lookup count 0
+PASS empty warm correct membership
+PASS empty-warm responsive quit
+PASS compare-empty current repository
+PASS compare-empty quantitative unknown
+PASS compare-empty no false membership
+PASS compare-empty-cold responsive quit
+PASS compare-empty persisted evidence [('compare', 0, 1)]
+PASS compare-empty warm lookup count 0
+PASS compare-empty warm correct membership
+PASS compare-empty-warm responsive quit
+PASS paged-good current repository
+PASS paged-good quantitative unknown
+PASS paged-good no false membership
+PASS paged-good-cold responsive quit
+PASS paged-good persisted evidence [('commit', 2, 1)]
+PASS paged-good warm lookup count 0
+PASS paged-good warm correct membership
+PASS paged-good-warm responsive quit

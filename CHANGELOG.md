@@ -158,6 +158,9 @@ workflow refuses to publish otherwise.
 
 ### Fixed
 
+- Path activity now stays unknown when GitHub omits or nulls a changed-file
+  array, instead of caching false non-membership or a partial file set. Explicit
+  empty arrays still confirm no matching path activity.
 - Interesting Now entity references now show control and bidi characters as
   visible uppercase escapes before choosing a width, consistently with event
   detail. Source identifiers and ordinary Unicode remain unchanged.

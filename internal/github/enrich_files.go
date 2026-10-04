@@ -31,8 +31,12 @@ func newPathSet() *pathSet {
 }
 
 // addRecords normalizes one response's file records into the set. It reports
-// false as soon as any record is invalid, duplicated, or over a capacity.
+// false for absent/null files or any invalid, duplicated, or over-capacity
+// record. JSON decoding preserves an explicit empty array as a non-nil slice.
 func (s *pathSet) addRecords(records []filePayload) bool {
+	if records == nil {
+		return false
+	}
 	for _, record := range records {
 		if !s.addRecord(record) {
 			return false

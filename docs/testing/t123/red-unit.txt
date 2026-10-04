@@ -1,0 +1,16 @@
+--- FAIL: TestEnrichmentRequiresFilesArray (0.01s)
+    --- FAIL: TestEnrichmentRequiresFilesArray/commit/absent (0.00s)
+        enrich_shape_test.go:55: status/paths = complete/[], want incomplete/0
+    --- FAIL: TestEnrichmentRequiresFilesArray/later_commit_page/absent (0.00s)
+        enrich_shape_test.go:55: status/paths = complete/[src/pkg0/file.go], want incomplete/0
+    --- FAIL: TestEnrichmentRequiresFilesArray/compare/absent (0.00s)
+        enrich_shape_test.go:55: status/paths = complete/[], want incomplete/0
+    --- FAIL: TestEnrichmentRequiresFilesArray/commit/null (0.00s)
+        enrich_shape_test.go:55: status/paths = complete/[], want incomplete/0
+    --- FAIL: TestEnrichmentRequiresFilesArray/later_commit_page/null (0.00s)
+        enrich_shape_test.go:55: status/paths = complete/[src/pkg0/file.go], want incomplete/0
+    --- FAIL: TestEnrichmentRequiresFilesArray/compare/null (0.00s)
+        enrich_shape_test.go:55: status/paths = complete/[], want incomplete/0
+FAIL
+FAIL	github.com/fmueller/orgtop/internal/github	0.021s
+FAIL
