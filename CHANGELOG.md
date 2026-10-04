@@ -158,6 +158,9 @@ workflow refuses to publish otherwise.
 
 ### Fixed
 
+- Interesting Now entity references now show control and bidi characters as
+  visible uppercase escapes before choosing a width, consistently with event
+  detail. Source identifiers and ordinary Unicode remain unchanged.
 - Stream actor and event summaries now show bidi controls as visible uppercase
   escapes before width measurement, consistently with event detail. Interesting
   Now applies the same sanitizer to its shared actor text; source data is unchanged.

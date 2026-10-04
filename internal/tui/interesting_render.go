@@ -219,7 +219,7 @@ func (e interestingEntry) form(tokens map[domain.ScopeIdentity]string, set chars
 			segments = append(segments, escapeControls(e.actor))
 		}
 		if entity := e.entityText(); entity != "" {
-			segments = append(segments, entity)
+			segments = append(segments, escapeControls(entity))
 		}
 	}
 	segments = append(segments, e.repository.String(), e.sponsorText(tokens, detail >= stripDetailQualified))

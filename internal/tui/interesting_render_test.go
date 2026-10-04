@@ -2,7 +2,10 @@ package tui
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -12,7 +15,80 @@ import (
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/fmueller/orgtop/internal/domain"
+	"github.com/fmueller/orgtop/internal/github"
 )
+
+// TestInterestingEntityControlsFromSource follows payload.head through source
+// normalization and selection. Escaping must precede the width ladder, without
+// changing the retained event or the strip's immutable prepared selection.
+func TestInterestingEntityControlsFromSource(t *testing.T) {
+	vectors := []struct{ raw, visible string }{
+		{"\x00", `\u{0}`}, {"\x1b[31m", `\u{1B}[31m`}, {"\n", `\u{A}`},
+		{"\t", `\u{9}`}, {"\x7f", `\u{7F}`}, {"\u0085", `\u{85}`},
+		{"\u009b", `\u{9B}`}, {"\u061c", `\u{61C}`},
+		{"\u200e", `\u{200E}`}, {"\u200f", `\u{200F}`},
+		{"\u202a", `\u{202A}`}, {"\u202b", `\u{202B}`},
+		{"\u202c", `\u{202C}`}, {"\u202d", `\u{202D}`}, {"\u202e", `\u{202E}`},
+		{"\u2066", `\u{2066}`}, {"\u2067", `\u{2067}`},
+		{"\u2068", `\u{2068}`}, {"\u2069", `\u{2069}`},
+		{"界e\u0301👩‍💻✈️", "界e\u0301👩‍💻✈️"},
+		{"0123456789abcdef", "0123456789abcdef"},
+	}
+	for _, vector := range vectors {
+		t.Run(strconv.QuoteToASCII(vector.raw), func(t *testing.T) {
+			head, visible := "bad"+vector.raw+"HEAD", "bad"+vector.visible+"HEAD"
+			if vector.raw == vector.visible {
+				head, visible = vector.raw, vector.visible
+			}
+			quotedHead, err := json.Marshal(head)
+			if err != nil {
+				t.Fatal(err)
+			}
+			page := fmt.Sprintf(`[{"id":"head-event","type":"PushEvent","repo":{"name":"acme/api"},"actor":{"login":"tester"},"created_at":%q,"payload":{"size":1,"head":%s,"ref":"refs/heads/ordinary-branch"}}]`, stripBase.Format(time.RFC3339), quotedHead)
+			events, err := github.NormalizeEvents(testRepository(t, "acme/api"), []byte(page))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(events) != 1 || events[0].EntityRef != head || events[0].ID != "head-event" {
+				t.Fatalf("head or immutable identity changed during normalization: %+v", events)
+			}
+			scopes := stripRenderScopes(t, "acme/api")
+			snapshot := stripSnapshot(scopes, domain.EventEvidence{Event: events[0]}, stripEvidence(t, "older", "acme/api", time.Minute))
+			strip := startedStrip(scopes, snapshot)
+			before := startedStrip(scopes, snapshot)
+			if got := strings.Join(stripIDs(strip), ","); got != "head-event,older" {
+				t.Fatalf("unexpected selection/order: %s", got)
+			}
+			entry := strip.entries[0]
+			tokens := scopes.Tokens()
+			// Independently state the complete expected rich row, then exercise
+			// both sides of its fit boundary and narrower fallback forms.
+			full := "↑ push · tester · commit " + visible + " · acme/api · " + scopeLabel(entry.sponsor, tokens) + " · 0s"
+			for _, width := range []int{240, lipgloss.Width(full), lipgloss.Width(full) - 1, 40, 20, 8} {
+				got := plain(entry.render(tokens, charsetUTF8, capabilityNoColor, width))
+				if lipgloss.Width(got) > width {
+					t.Errorf("width %d overflowed: %q", width, got)
+				}
+				if width >= lipgloss.Width(full) && got != full {
+					t.Errorf("width %d: got %q, want %q", width, got, full)
+				}
+				if width < lipgloss.Width(full) && strings.Contains(got, "commit ") {
+					t.Errorf("width %d retained an entity whose escaped full form does not fit: %q", width, got)
+				}
+				if vector.raw != vector.visible && strings.Contains(got, vector.raw) {
+					t.Errorf("width %d emitted raw control: %q", width, got)
+				}
+			}
+			detail := strings.Join(detailLines(snapshot.StreamEvents()[0], tokens, stripBase), "\n")
+			if !strings.Contains(detail, "Entity: commit · "+visible) {
+				t.Errorf("detail does not agree on escaped entity: %q", detail)
+			}
+			if !reflect.DeepEqual(strip, before) || snapshot.StreamEvents()[0].Event.EntityRef != head || events[0].EntityRef != head {
+				t.Fatal("rendering changed source identity, membership or prepared selection")
+			}
+		})
+	}
+}
 
 // plain drops the styling of a rendered line, so an assertion measures the text
 // a reader sees rather than the escape sequences carrying its emphasis.

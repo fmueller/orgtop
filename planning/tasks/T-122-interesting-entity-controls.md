@@ -1,11 +1,11 @@
 ---
 id: T-122-interesting-entity-controls
 title: Escape controls in Interesting Now entity references
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.2.0.md#rg-012-mixed-scope-presentation-contract
 dependencies: []
-updated_at: "2026-10-04T21:21:46Z"
+updated_at: "2026-10-04T21:53:37Z"
 ---
 
 # T-122-interesting-entity-controls Escape controls in Interesting Now entity references
@@ -73,3 +73,5 @@ or that a valid branch controls a commit SHA.
   `internal/tui/interesting.go` retains it. In `interesting_render.go`, `form`
   escapes the actor but appends `entityText()` unescaped before `lipgloss.Width`.
 - No fix was implemented in adversarial testing round 2. This task remains todo.
+- 2026-10-04T21:53:37Z: verification pass
+- 2026-10-04T21:53:37Z: Reuse existing presentation escaping before entity width selection; strict TDD, HTTPS/PTY and full workflow-v3 gates passed. Evidence: docs/testing/t122-entity-controls.md.
