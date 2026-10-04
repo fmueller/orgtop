@@ -158,6 +158,9 @@ workflow refuses to publish otherwise.
 
 ### Fixed
 
+- Automatic refreshes now honor the settled enrichment retry time as well as
+  source scheduling and the polling floor, keeping current activity and path
+  unknowns visible until a permitted retry can recover membership.
 - Path activity now stays unknown when GitHub offers malformed, ambiguous, or
   nonadvancing commit pagination, instead of caching a partial changed-file set.
   Valid increasing chains and final pages without a next link remain complete.

@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	tea "charm.land/bubbletea/v2"
+
 	"github.com/fmueller/orgtop/internal/domain"
 )
 
@@ -231,6 +233,61 @@ func TestEnrichmentDegradationAndRateLimitReachPreparedState(t *testing.T) {
 	}
 	if state.Freshness != FreshnessCurrent {
 		t.Fatalf("degraded enrichment published freshness %v, want current", state.Freshness)
+	}
+}
+
+func TestEnrichmentRetrySchedulesApplicationTimerAndRecovers(t *testing.T) {
+	for _, tc := range []struct {
+		name                              string
+		sourceDelay, retryRemaining, want time.Duration
+	}{
+		{"enrichment later", 75 * time.Second, 120 * time.Second, 120 * time.Second},
+		{"source later", 180 * time.Second, 95 * time.Second, 180 * time.Second},
+		{"elapsed retry", 70 * time.Second, -30 * time.Second, 70 * time.Second},
+		{"floor later", 5 * time.Second, 45 * time.Second, 60 * time.Second},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			scopes, path := mixedScope(t, "acme/backend", "services")
+			result := activity(t, "acme/backend")
+			result.Delay = tc.sourceDelay
+			id := result.Repositories[0].Events[0].ID
+			retryAt := fixedInstant.Add(tc.retryRemaining)
+			enricher := &fakeEnricher{
+				evidence: Evidence{RetryAt: retryAt},
+				outcomes: map[string]domain.EvidenceOutcome{id: domain.RateLimitedOutcome(retryAt)},
+			}
+			source := &fakeSource{outcomes: []outcome{{result: result}, {result: activity(t, "acme/backend")}}}
+			timer := &recorder{}
+			model := enrichedLifecycle(t, scopes, source, enricher, timer)
+			updated, cmd := run(t, model, initRefresh(t, model))
+			if len(timer.delays) != 1 || timer.delays[0] != tc.want {
+				t.Fatalf("application timer delays %v, want [%v]", timer.delays, tc.want)
+			}
+			if updated.state.Freshness != FreshnessCurrent || !updated.state.EnrichmentRetryAt.Equal(retryAt) {
+				t.Fatalf("rate limit lost currentness or retry: %+v", updated.state)
+			}
+			if row := aggregateOf(t, updated.state, path); row.Unknown != 1 || row.Activity != 0 {
+				t.Fatalf("limited path row %+v, want one unknown and no member", row)
+			}
+			if row := aggregateOf(t, updated.state, scopes.Scopes()[0]); row.Activity != 1 {
+				t.Fatalf("limited repository row %+v, want one activity", row)
+			}
+			updated, _ = apply(t, updated, tea.WindowSizeMsg{Width: 100, Height: 30}, press("2"))
+			if updated.mode != ModeStream || source.calls != 1 || enricher.calls != 1 {
+				t.Fatal("waiting input changed dispatch or failed to switch view")
+			}
+			updated.now = func() time.Time { return fixedInstant.Add(tc.want) }
+			enricher.evidence = Evidence{}
+			enricher.outcomes[id] = completeEvidence(t, "services/api/main.go")
+			pending, next := run(t, updated, cmd)
+			recovered, _ := run(t, pending, next)
+			if row := aggregateOf(t, recovered.state, path); row.Activity != 1 || row.Unknown != 0 {
+				t.Fatalf("recovered path row %+v, want one member and no unknown", row)
+			}
+			if !recovered.state.EnrichmentRetryAt.IsZero() || timer.delays[1] != defaultDelay || source.calls != 2 || enricher.calls != 2 {
+				t.Fatalf("recovery kept retry or changed ordinary scheduling: retry %v, delays %v, calls %d/%d", recovered.state.EnrichmentRetryAt, timer.delays, source.calls, enricher.calls)
+			}
+		})
 	}
 }
 

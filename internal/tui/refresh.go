@@ -163,11 +163,12 @@ func (m Model) applyRefresh(message refreshedMsg) (tea.Model, tea.Cmd) {
 	}
 
 	at := m.now()
+	delay := m.delay(message, at)
 	m = m.applyExpansion(message.expansion)
 	if failure := message.failure(); failure != nil {
 		// A failed refresh retains the previous Rain snapshot under RG-004
 		// stale semantics, exactly as it retains the other two views.
-		limited, retryAt := message.rateLimit(at, m.delay(message))
+		limited, retryAt := message.rateLimit(at, delay)
 		m.state = degraded(m.state, failure, limited, retryAt)
 	} else if message.polled {
 		m.state = published(m.state, m.selection, message, at, message.expanded())
@@ -179,18 +180,18 @@ func (m Model) applyRefresh(message refreshedMsg) (tea.Model, tea.Cmd) {
 		m = m.resizedRain()
 		m = m.clampedViews()
 	}
-	return m, m.tick(m.delay(message))
+	return m, m.tick(delay)
 }
 
 // delay returns the wait before the next attempt is eligible. An attempt that
-// polled schedules from the source metadata against the FR-004 polling floor;
+// polled respects source metadata, settled enrichment retry, and the FR-004 floor;
 // one that a failed expansion stopped schedules against RG-010's own retry
 // bound instead, so neither floor moves the other if it ever changes.
-func (m Model) delay(message refreshedMsg) time.Duration {
+func (m Model) delay(message refreshedMsg, at time.Time) time.Duration {
 	if !message.polled {
 		return max(message.expansion.outcome.RetryDelay, expansionRetry)
 	}
-	return max(message.result.Delay, defaultDelay)
+	return max(message.result.Delay, defaultDelay, message.evidence.retryAt.Sub(at))
 }
 
 // published replaces the selection, the snapshot, the prepared membership, and

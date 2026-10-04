@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-updated_at: "2026-10-04T23:19:53Z"
+updated_at: "2026-10-04T23:39:09Z"
 active_spec_version: v0.2.0
 active_spec_path: specs/v0.2.0.md
 current_task: ""
@@ -8,7 +8,7 @@ current_task_title: ""
 status_summary: idle
 blockers: []
 next_action: Select the next eligible task
-last_verification_result: pass for T-124-validate-commit-pagination at 2026-10-04T23:19:42Z
+last_verification_result: pass for T-125-honor-enrichment-retry-time at 2026-10-04T23:38:59Z
 relevant_artifacts: []
 continuation_notes:
     - This repository is using manual Taskrail-style workflow scaffolding until the product replaces more of the bootstrap steps.
@@ -34,7 +34,7 @@ continuation_notes:
 
 ## Last Verification
 
-- pass for T-124-validate-commit-pagination at 2026-10-04T23:19:42Z
+- pass for T-125-honor-enrichment-retry-time at 2026-10-04T23:38:59Z
 
 ## Next Action
 
@@ -50,8 +50,8 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 4
+- todo: 3
 - in_progress: 0
-- completed: 121
+- completed: 122
 - blocked: 0
 - cancelled: 0

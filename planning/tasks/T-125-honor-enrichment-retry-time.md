@@ -1,11 +1,11 @@
 ---
 id: T-125-honor-enrichment-retry-time
 title: Honor enrichment retry time when scheduling the next refresh
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.2.0.md#rg-003-github-enrichment-contract
 dependencies: []
-updated_at: "2026-10-04T22:07:09Z"
+updated_at: "2026-10-04T23:39:09Z"
 ---
 
 # T-125-honor-enrichment-retry-time Honor enrichment retry time when scheduling the next refresh
@@ -75,3 +75,5 @@ no input during the timed interval and reproduces the same automatic violation.
   Trace scheduling ownership rather than changing the GitHub header parser, which
   already produces the observed correct badge time.
 - No product fix or lifecycle completion was performed in round 3.
+- 2026-10-04T23:38:59Z: verification pass
+- 2026-10-04T23:39:09Z: Settled enrichment retry gates application polling; reviewed TDD and 125s no-input binary recovery evidence pass.
