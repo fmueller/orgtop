@@ -34,7 +34,8 @@ func (s Source) nextListingPage(header http.Header, entry *listing) (string, err
 		!strings.EqualFold(components[1], entry.organization) {
 		return "", fmt.Errorf("%w: the next page link does not name the requested organization listing", ErrInvalidPagination)
 	}
-	if !advancesListingPage(parsed.Query(), entry.page+1) {
+	query, err := url.ParseQuery(parsed.RawQuery)
+	if err != nil || !advancesListingPage(query, entry.page+1) {
 		return "", fmt.Errorf("%w: the next page link does not advance the requested listing query", ErrInvalidPagination)
 	}
 	return raw, nil
@@ -65,7 +66,7 @@ func advancesListingPage(query url.Values, page int) bool {
 		return false
 	}
 	for key := range expected {
-		if query.Get(key) != expected.Get(key) {
+		if len(query[key]) != 1 || query[key][0] != expected.Get(key) {
 			return false
 		}
 	}

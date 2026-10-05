@@ -158,6 +158,8 @@ workflow refuses to publish otherwise.
 
 ### Fixed
 
+- Organization expansion now rejects malformed or duplicate pagination query
+  keys before polling any repository, instead of publishing a partial selection.
 - Automatic refreshes now honor the settled enrichment retry time as well as
   source scheduling and the polling floor, keeping current activity and path
   unknowns visible until a permitted retry can recover membership.

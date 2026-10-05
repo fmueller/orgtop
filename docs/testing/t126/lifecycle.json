@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "task_id": "T-126-reject-ambiguous-organization-pagination",
+  "task_title": "Reject ambiguous organization pagination queries",
+  "result": "pass",
+  "summary": "Strict organization query parsing and single-value validation; HTTPS/PTY 28/28, selection/recovery 70/70, commit pagination 310/310; task check pass; differential mutation 4 killed/0 lived; simplifier and General/Go/Security/candidate/disposition reviews complete, no findings.",
+  "generated_at": "2026-10-05T00:20:57Z",
+  "spec_ref": "specs/v0.2.0.md#rg-010-organization-selection-contract",
+  "artifacts": [
+    "planning/artifacts/verify/T-126-reject-ambiguous-organization-pagination/20261005T002057Z/plan.md",
+    "planning/artifacts/verify/T-126-reject-ambiguous-organization-pagination/20261005T002057Z/report.md"
+  ]
+}

@@ -1,0 +1,22 @@
+--- FAIL: TestExpansionRejectsInvalidPagination (0.01s)
+    --- FAIL: TestExpansionRejectsInvalidPagination/duplicate_type (0.00s)
+        expand_test.go:43: unexpected listing request "/orgs/acme/repos?page=2"
+        expand_test.go:480: failure expanding acme: unexpected github response: status 501 is not an invalid pagination failure
+    --- FAIL: TestExpansionRejectsInvalidPagination/duplicate_sort (0.00s)
+        expand_test.go:43: unexpected listing request "/orgs/acme/repos?page=2"
+        expand_test.go:480: failure expanding acme: unexpected github response: status 501 is not an invalid pagination failure
+    --- FAIL: TestExpansionRejectsInvalidPagination/duplicate_order (0.00s)
+        expand_test.go:43: unexpected listing request "/orgs/acme/repos?page=2"
+        expand_test.go:480: failure expanding acme: unexpected github response: status 501 is not an invalid pagination failure
+    --- FAIL: TestExpansionRejectsInvalidPagination/duplicate_page (0.00s)
+        expand_test.go:43: unexpected listing request "/orgs/acme/repos?page=2"
+        expand_test.go:480: failure expanding acme: unexpected github response: status 501 is not an invalid pagination failure
+    --- FAIL: TestExpansionRejectsInvalidPagination/duplicate_size (0.00s)
+        expand_test.go:43: unexpected listing request "/orgs/acme/repos?page=2"
+        expand_test.go:480: failure expanding acme: unexpected github response: status 501 is not an invalid pagination failure
+    --- FAIL: TestExpansionRejectsInvalidPagination/bad_escape (0.00s)
+        expand_test.go:43: unexpected listing request "/orgs/acme/repos?page=2"
+        expand_test.go:480: failure expanding acme: unexpected github response: status 501 is not an invalid pagination failure
+FAIL
+FAIL	github.com/fmueller/orgtop/internal/github	0.011s
+FAIL

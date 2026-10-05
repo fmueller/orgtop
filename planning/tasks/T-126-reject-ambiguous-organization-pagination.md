@@ -1,11 +1,11 @@
 ---
 id: T-126-reject-ambiguous-organization-pagination
 title: Reject ambiguous organization pagination queries
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#rg-010-organization-selection-contract
 dependencies: []
-updated_at: "2026-10-04T23:48:37Z"
+updated_at: "2026-10-05T00:20:57Z"
 ---
 
 # T-126-reject-ambiguous-organization-pagination Reject ambiguous organization pagination queries
@@ -59,3 +59,5 @@ The actual sent URL, not fixture interpretation, proves the validation defect.
 `internal/github/expand_pagination.go` passes `parsed.Query()` (which discards
 parse errors) into `advancesListingPage`, then checks only `query.Get(key)`.
 Commit pagination already uses stricter query parsing/cardinality checks.
+- 2026-10-05T00:20:57Z: verification pass
+- 2026-10-05T00:20:57Z: Reject malformed or repeated listing query keys atomically; pinned RG-010 verified after independent review and final gates; evidence docs/testing/t126/report.md.
