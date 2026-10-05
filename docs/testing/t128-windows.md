@@ -118,7 +118,7 @@ successfully. The Taskrail binary emits an installed-skill version warning, but
    ran `task run:smoke` → `go run ./cmd/orgtop --help` and printed
    `Usage: orgtop.exe ...`. This is native runtime evidence, not a cross-build.
 7. Run final `mise exec -- task check` after native CI: exit 0, including the Go
-   suite, formatting/vet/lint, license, policy/distribution guards, cross-build,
+   suite, formatting/vet/lint, license, policy/distribution guards, build,
    startup smoke, Taskrail validation and release configuration validation.
 8. At 2026-10-05T01:35:12Z, run `mise exec -- taskrail verify
    T-128-run-cli-regressions-on-windows --result pass` with the native CI links,
@@ -131,6 +131,14 @@ successfully. The Taskrail binary emits an installed-skill version warning, but
    it stays gitignored under the repository's artifact policy. This audit and the
    tool-generated task/state transitions form the final evidence-only commit;
    no Go code changes after the successful native run.
+9. Push the lifecycle/evidence commit
+   [4a08a0d](https://github.com/fmueller/orgtop/commit/4a08a0dad2012d002cfab88ed1fa29d812d8160c).
+   Its automatic
+   [Planning checks](https://github.com/fmueller/orgtop/actions/runs/37252091564)
+   passed Taskrail validation and spec coverage (watch exit 0). The full native
+   CI correctly did not repeat for a docs/planning-only push. Local `task check`
+   builds the host executable; cross-compilation passed in the native-evidence
+   CI's separate cross-compile job, not inside that local command.
 
 ## Limits
 
