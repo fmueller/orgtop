@@ -1,0 +1,11 @@
+[
+  {
+    "mode": "normal",
+    "phase": 0,
+    "path": "/repos/acme/api/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 679.15880791
+  }
+]

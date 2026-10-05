@@ -1,0 +1,331 @@
+[
+  {
+    "name": "valid atomic state",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 exact/keep, acme/r001, acme/r002 \u00b7 updated 01:49:58 \u00b7 selection: 3 repos \u00b7 3 scopes \u00b7 1 exact \u00b7 2 expanded",
+      "R1 acme/r001   1 activity \u00b7 0 PR events \u00b7 1 push",
+      "R2 acme/r002   1 activity \u00b7 0 PR events \u00b7 1 push",
+      "R3 exact/keep  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "valid exact request sequence",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "valid",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 887.262075981
+      },
+      {
+        "mode": "valid",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=2",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 887.305012795
+      },
+      {
+        "mode": "valid",
+        "phase": 0,
+        "path": "/repos/exact/keep/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 887.348816667
+      },
+      {
+        "mode": "valid",
+        "phase": 0,
+        "path": "/repos/acme/r001/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 887.392760577
+      },
+      {
+        "mode": "valid",
+        "phase": 0,
+        "path": "/repos/acme/r002/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 887.436629493
+      }
+    ]
+  },
+  {
+    "name": "valid responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "duplicate-page atomic state",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 ERROR \u00b7 expanding acme: invalid github organization listing pagination: the next page link does not advance the requested listing query \u00b7 exact/keep",
+      "Repository activity is unavailable",
+      "",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "duplicate-page exact request sequence",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "duplicate-page",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 889.434023954
+      }
+    ]
+  },
+  {
+    "name": "duplicate-page responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "duplicate-size atomic state",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 ERROR \u00b7 expanding acme: invalid github organization listing pagination: the next page link does not advance the requested listing query \u00b7 exact/keep",
+      "Repository activity is unavailable",
+      "",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "duplicate-size exact request sequence",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "duplicate-size",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 891.606343364
+      }
+    ]
+  },
+  {
+    "name": "duplicate-size responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "duplicate-type atomic state",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 ERROR \u00b7 expanding acme: invalid github organization listing pagination: the next page link does not advance the requested listing query \u00b7 exact/keep",
+      "Repository activity is unavailable",
+      "",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "duplicate-type exact request sequence",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "duplicate-type",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 893.784889727
+      }
+    ]
+  },
+  {
+    "name": "duplicate-type responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "duplicate-sort atomic state",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 ERROR \u00b7 expanding acme: invalid github organization listing pagination: the next page link does not advance the requested listing query \u00b7 exact/keep",
+      "Repository activity is unavailable",
+      "",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "duplicate-sort exact request sequence",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "duplicate-sort",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 895.975185182
+      }
+    ]
+  },
+  {
+    "name": "duplicate-sort responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "duplicate-direction atomic state",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 ERROR \u00b7 expanding acme: invalid github organization listing pagination: the next page link does not advance the requested listing query \u00b7 exact/keep",
+      "Repository activity is unavailable",
+      "",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "duplicate-direction exact request sequence",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "duplicate-direction",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 898.14831347
+      }
+    ]
+  },
+  {
+    "name": "duplicate-direction responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "bad-escape atomic state",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 ERROR \u00b7 expanding acme: invalid github organization listing pagination: the next page link does not advance the requested listing query \u00b7 exact/keep",
+      "Repository activity is unavailable",
+      "",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "bad-escape exact request sequence",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "bad-escape",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 900.327240882
+      }
+    ]
+  },
+  {
+    "name": "bad-escape responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "semicolon atomic state",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 ERROR \u00b7 expanding acme: invalid github organization listing pagination: the next page link does not advance the requested listing query \u00b7 exact/keep",
+      "Repository activity is unavailable",
+      "",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "semicolon exact request sequence",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "semicolon",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 902.509639019
+      }
+    ]
+  },
+  {
+    "name": "semicolon responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "extra-query atomic state",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 ERROR \u00b7 expanding acme: invalid github organization listing pagination: the next page link does not advance the requested listing query \u00b7 exact/keep",
+      "Repository activity is unavailable",
+      "",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "extra-query exact request sequence",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "extra-query",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 904.688910384
+      }
+    ]
+  },
+  {
+    "name": "extra-query responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "HTTP contract",
+    "pass_": true,
+    "detail": null
+  }
+]

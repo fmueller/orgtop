@@ -1,0 +1,340 @@
+[
+  {
+    "name": "missing current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "missing quantitative unknown",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "missing no false membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "missing-cold responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "missing persisted evidence",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "missing warm lookup count",
+    "pass_": true,
+    "detail": 1
+  },
+  {
+    "name": "missing warm correct membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "missing-warm responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "null current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "null quantitative unknown",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "null no false membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "null-cold responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "null persisted evidence",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "null warm lookup count",
+    "pass_": true,
+    "detail": 1
+  },
+  {
+    "name": "null warm correct membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "null-warm responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "compare-missing current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "compare-missing quantitative unknown",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "compare-missing no false membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "compare-missing-cold responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "compare-missing persisted evidence",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "compare-missing warm lookup count",
+    "pass_": true,
+    "detail": 1
+  },
+  {
+    "name": "compare-missing warm correct membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "compare-missing-warm responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "compare-null current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "compare-null quantitative unknown",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "compare-null no false membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "compare-null-cold responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "compare-null persisted evidence",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "compare-null warm lookup count",
+    "pass_": true,
+    "detail": 1
+  },
+  {
+    "name": "compare-null warm correct membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "compare-null-warm responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-missing current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-missing quantitative unknown",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-missing no false membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-missing-cold responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-missing persisted evidence",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "paged-missing warm lookup count",
+    "pass_": true,
+    "detail": 1
+  },
+  {
+    "name": "paged-missing warm correct membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-missing-warm responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "empty current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "empty quantitative unknown",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "empty no false membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "empty-cold responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "empty persisted evidence",
+    "pass_": true,
+    "detail": [
+      [
+        "commit",
+        0,
+        1
+      ]
+    ]
+  },
+  {
+    "name": "empty warm lookup count",
+    "pass_": true,
+    "detail": 0
+  },
+  {
+    "name": "empty warm correct membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "empty-warm responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "compare-empty current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "compare-empty quantitative unknown",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "compare-empty no false membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "compare-empty-cold responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "compare-empty persisted evidence",
+    "pass_": true,
+    "detail": [
+      [
+        "compare",
+        0,
+        1
+      ]
+    ]
+  },
+  {
+    "name": "compare-empty warm lookup count",
+    "pass_": true,
+    "detail": 0
+  },
+  {
+    "name": "compare-empty warm correct membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "compare-empty-warm responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-good current repository",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-good quantitative unknown",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-good no false membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-good-cold responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-good persisted evidence",
+    "pass_": true,
+    "detail": [
+      [
+        "commit",
+        2,
+        1
+      ]
+    ]
+  },
+  {
+    "name": "paged-good warm lookup count",
+    "pass_": true,
+    "detail": 0
+  },
+  {
+    "name": "paged-good warm correct membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "paged-good-warm responsive quit",
+    "pass_": true,
+    "detail": null
+  }
+]

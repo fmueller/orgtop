@@ -1,0 +1,381 @@
+task: [fmt:check] out="$(gofmt -l .)"
+if [ -n "$out" ]; then
+  echo "The following files need gofmt:" >&2
+  echo "$out" >&2
+  exit 1
+fi
+
+task: [vet] go vet ./...
+task: [lint] golangci-lint run ./...
+0 issues.
+task: [test] go test ./...
+ok  	github.com/fmueller/orgtop/cmd/orgtop	(cached)
+ok  	github.com/fmueller/orgtop/internal/auth	(cached)
+ok  	github.com/fmueller/orgtop/internal/cache	(cached)
+ok  	github.com/fmueller/orgtop/internal/cli	(cached)
+ok  	github.com/fmueller/orgtop/internal/domain	(cached)
+ok  	github.com/fmueller/orgtop/internal/enrichment	(cached)
+ok  	github.com/fmueller/orgtop/internal/github	(cached)
+ok  	github.com/fmueller/orgtop/internal/toolchain	0.085s
+ok  	github.com/fmueller/orgtop/internal/tui	(cached)
+task: [test-commit-msg] scripts/check-commit-msg-test.sh
+commit message checks passed
+task: [test:push-messages] scripts/check-push-messages-test.sh
+push message checks passed
+task: [test:author] scripts/check-author-test.sh
+author checks passed
+task: [test:changelog] scripts/check-changelog-test.sh
+changelog guard checks passed
+task: [test:distribution] scripts/distribution-test.sh
+guard: fmueller/orgtop carries exactly one release for v0.2.0
+guard: added fmueller/orgtop asset gh-orgtop-darwin-amd64
+guard: added fmueller/orgtop asset gh-orgtop-darwin-arm64
+guard: added fmueller/orgtop asset gh-orgtop-linux-amd64
+guard: added fmueller/orgtop asset gh-orgtop-linux-arm64
+guard: added fmueller/orgtop asset gh-orgtop-windows-amd64.exe
+guard: added fmueller/orgtop asset gh-orgtop-windows-arm64.exe
+guard: added fmueller/orgtop asset orgtop_0.2.0_darwin_amd64.tar.gz
+guard: added fmueller/orgtop asset orgtop_0.2.0_darwin_arm64.tar.gz
+guard: added fmueller/orgtop asset orgtop_0.2.0_linux_amd64.tar.gz
+guard: added fmueller/orgtop asset orgtop_0.2.0_linux_arm64.tar.gz
+guard: added fmueller/orgtop asset orgtop_0.2.0_windows_amd64.zip
+guard: added fmueller/orgtop asset orgtop_0.2.0_windows_arm64.zip
+guard: added fmueller/orgtop asset checksums.txt
+guard: added fmueller/orgtop asset provenance.intoto.jsonl
+guard: reconciled the source release draft for 0.2.0
+guard: reusing the exact fmueller/orgtop asset gh-orgtop-darwin-amd64
+guard: reusing the exact fmueller/orgtop asset gh-orgtop-linux-amd64
+guard: reusing the exact fmueller/orgtop asset checksums.txt
+guard: added fmueller/orgtop asset gh-orgtop-darwin-arm64
+guard: added fmueller/orgtop asset gh-orgtop-linux-arm64
+guard: added fmueller/orgtop asset gh-orgtop-windows-amd64.exe
+guard: added fmueller/orgtop asset gh-orgtop-windows-arm64.exe
+guard: added fmueller/orgtop asset orgtop_0.2.0_darwin_amd64.tar.gz
+guard: added fmueller/orgtop asset orgtop_0.2.0_darwin_arm64.tar.gz
+guard: added fmueller/orgtop asset orgtop_0.2.0_linux_amd64.tar.gz
+guard: added fmueller/orgtop asset orgtop_0.2.0_linux_arm64.tar.gz
+guard: added fmueller/orgtop asset orgtop_0.2.0_windows_amd64.zip
+guard: added fmueller/orgtop asset orgtop_0.2.0_windows_arm64.zip
+guard: added fmueller/orgtop asset provenance.intoto.jsonl
+guard: reconciled the source release draft for 0.2.0
+guard: reusing the exact fmueller/orgtop asset gh-orgtop-darwin-amd64
+guard: reusing the exact fmueller/orgtop asset gh-orgtop-darwin-arm64
+guard: reusing the exact fmueller/orgtop asset gh-orgtop-linux-amd64
+guard: reusing the exact fmueller/orgtop asset gh-orgtop-linux-arm64
+guard: reusing the exact fmueller/orgtop asset gh-orgtop-windows-amd64.exe
+guard: reusing the exact fmueller/orgtop asset gh-orgtop-windows-arm64.exe
+guard: reusing the exact fmueller/orgtop asset orgtop_0.2.0_darwin_amd64.tar.gz
+guard: reusing the exact fmueller/orgtop asset orgtop_0.2.0_darwin_arm64.tar.gz
+guard: reusing the exact fmueller/orgtop asset orgtop_0.2.0_linux_amd64.tar.gz
+guard: reusing the exact fmueller/orgtop asset orgtop_0.2.0_linux_arm64.tar.gz
+guard: reusing the exact fmueller/orgtop asset orgtop_0.2.0_windows_amd64.zip
+guard: reusing the exact fmueller/orgtop asset orgtop_0.2.0_windows_arm64.zip
+guard: reusing the exact fmueller/orgtop asset checksums.txt
+guard: reusing the exact fmueller/orgtop asset provenance.intoto.jsonl
+guard: reconciled the source release draft for 0.2.0
+guard: reusing the exact fmueller/orgtop asset gh-orgtop-darwin-amd64
+guard: reusing the exact fmueller/orgtop asset gh-orgtop-darwin-arm64
+guard: reusing the exact fmueller/orgtop asset gh-orgtop-linux-amd64
+guard: reusing the exact fmueller/orgtop asset gh-orgtop-linux-arm64
+guard: reusing the exact fmueller/orgtop asset gh-orgtop-windows-amd64.exe
+guard: reusing the exact fmueller/orgtop asset gh-orgtop-windows-arm64.exe
+guard: reusing the exact fmueller/orgtop asset orgtop_0.2.0_darwin_amd64.tar.gz
+guard: reusing the exact fmueller/orgtop asset orgtop_0.2.0_darwin_arm64.tar.gz
+guard: reusing the exact fmueller/orgtop asset orgtop_0.2.0_linux_amd64.tar.gz
+guard: reusing the exact fmueller/orgtop asset orgtop_0.2.0_linux_arm64.tar.gz
+guard: reusing the exact fmueller/orgtop asset orgtop_0.2.0_windows_amd64.zip
+guard: reusing the exact fmueller/orgtop asset orgtop_0.2.0_windows_arm64.zip
+guard: reusing the exact fmueller/orgtop asset checksums.txt
+guard: reusing the exact fmueller/orgtop asset provenance.intoto.jsonl
+guard: reconciled the source release draft for 0.2.0
+guard: added fmueller/orgtop asset gh-orgtop-darwin-amd64
+guard: added fmueller/orgtop asset gh-orgtop-darwin-arm64
+guard: added fmueller/orgtop asset gh-orgtop-linux-amd64
+guard: added fmueller/orgtop asset gh-orgtop-linux-arm64
+guard: added fmueller/orgtop asset gh-orgtop-windows-amd64.exe
+guard: added fmueller/orgtop asset gh-orgtop-windows-arm64.exe
+guard: added fmueller/orgtop asset checksums.txt
+guard: added fmueller/orgtop asset provenance.intoto.jsonl
+guard: reconciled the extension release draft for 0.2.0
+guard: reusing the exact fmueller/orgtop asset gh-orgtop-darwin-amd64
+guard: reusing the exact fmueller/orgtop asset gh-orgtop-linux-amd64
+guard: reusing the exact fmueller/orgtop asset checksums.txt
+guard: added fmueller/orgtop asset gh-orgtop-darwin-arm64
+guard: added fmueller/orgtop asset gh-orgtop-linux-arm64
+guard: added fmueller/orgtop asset gh-orgtop-windows-amd64.exe
+guard: added fmueller/orgtop asset gh-orgtop-windows-arm64.exe
+guard: added fmueller/orgtop asset provenance.intoto.jsonl
+guard: reconciled the extension release draft for 0.2.0
+guard: reusing the exact fmueller/orgtop asset gh-orgtop-darwin-amd64
+guard: reusing the exact fmueller/orgtop asset gh-orgtop-darwin-arm64
+guard: reusing the exact fmueller/orgtop asset gh-orgtop-linux-amd64
+guard: reusing the exact fmueller/orgtop asset gh-orgtop-linux-arm64
+guard: reusing the exact fmueller/orgtop asset gh-orgtop-windows-amd64.exe
+guard: reusing the exact fmueller/orgtop asset gh-orgtop-windows-arm64.exe
+guard: reusing the exact fmueller/orgtop asset checksums.txt
+guard: reusing the exact fmueller/orgtop asset provenance.intoto.jsonl
+guard: reconciled the extension release draft for 0.2.0
+guard: reusing the exact fmueller/orgtop asset gh-orgtop-darwin-amd64
+guard: reusing the exact fmueller/orgtop asset gh-orgtop-darwin-arm64
+guard: reusing the exact fmueller/orgtop asset gh-orgtop-linux-amd64
+guard: reusing the exact fmueller/orgtop asset gh-orgtop-linux-arm64
+guard: reusing the exact fmueller/orgtop asset gh-orgtop-windows-amd64.exe
+guard: reusing the exact fmueller/orgtop asset gh-orgtop-windows-arm64.exe
+guard: reusing the exact fmueller/orgtop asset orgtop_0.2.0_darwin_amd64.tar.gz
+guard: reusing the exact fmueller/orgtop asset orgtop_0.2.0_darwin_arm64.tar.gz
+guard: added fmueller/orgtop asset orgtop_0.2.0_linux_amd64.tar.gz
+guard: added fmueller/orgtop asset orgtop_0.2.0_linux_arm64.tar.gz
+guard: added fmueller/orgtop asset orgtop_0.2.0_windows_amd64.zip
+guard: added fmueller/orgtop asset orgtop_0.2.0_windows_arm64.zip
+guard: added fmueller/orgtop asset checksums.txt
+guard: added fmueller/orgtop asset provenance.intoto.jsonl
+guard: reconciled the source release draft for 0.2.0
+guard: staged the source release assets in /tmp/tmp.0TY29IlrRZ/goreleaser-output
+guard: the source draft for 0.2.0 reconciles against the RG-011 matrix
+guard: the source draft for 0.2.0 reconciles against the RG-011 matrix
+From /tmp/tmp.0TY29IlrRZ/protected-already
+ * branch            main       -> FETCH_HEAD
+From /tmp/tmp.0TY29IlrRZ/protected-pending_then_ready
+ * branch            main       -> FETCH_HEAD
+Switched to a new branch 'ledger/test-pending_then_ready'
+To /tmp/tmp.0TY29IlrRZ/protected-pending_then_ready.git
+ * [new branch]      ledger/test-pending_then_ready -> ledger/test-pending_then_ready
+From /tmp/tmp.0TY29IlrRZ/protected-pending_then_ready
+ * branch            main       -> FETCH_HEAD
+From /tmp/tmp.0TY29IlrRZ/protected-pending_then_ready
+ * branch            main       -> FETCH_HEAD
+From /tmp/tmp.0TY29IlrRZ/protected-pending_then_ready
+ * branch            main       -> FETCH_HEAD
+From /tmp/tmp.0TY29IlrRZ/protected-pending_then_ready
+ * branch            main       -> FETCH_HEAD
+   f158d0a..e257709  main       -> origin/main
+From /tmp/tmp.0TY29IlrRZ/protected-repo_binding
+ * branch            main       -> FETCH_HEAD
+Switched to a new branch 'ledger/test-repo_binding'
+To /tmp/tmp.0TY29IlrRZ/protected-repo_binding.git
+ * [new branch]      ledger/test-repo_binding -> ledger/test-repo_binding
+From /tmp/tmp.0TY29IlrRZ/protected-repo_binding
+ * branch            main       -> FETCH_HEAD
+From /tmp/tmp.0TY29IlrRZ/protected-repo_binding
+ * branch            main       -> FETCH_HEAD
+From /tmp/tmp.0TY29IlrRZ/protected-repo_binding
+ * branch            main       -> FETCH_HEAD
+From /tmp/tmp.0TY29IlrRZ/protected-repo_binding
+ * branch            main       -> FETCH_HEAD
+   4b9f6ff..234cd9d  main       -> origin/main
+From /tmp/tmp.0TY29IlrRZ/protected-closed
+ * branch            main       -> FETCH_HEAD
+Switched to a new branch 'ledger/test-closed'
+To /tmp/tmp.0TY29IlrRZ/protected-closed.git
+ * [new branch]      ledger/test-closed -> ledger/test-closed
+From /tmp/tmp.0TY29IlrRZ/protected-closed
+ * branch            main       -> FETCH_HEAD
+From /tmp/tmp.0TY29IlrRZ/protected-closed
+ * branch            main       -> FETCH_HEAD
+From /tmp/tmp.0TY29IlrRZ/protected-closed
+ * branch            main       -> FETCH_HEAD
+From /tmp/tmp.0TY29IlrRZ/protected-closed
+ * branch            main       -> FETCH_HEAD
+   4efec32..481b489  main       -> origin/main
+From /tmp/tmp.0TY29IlrRZ/protected-reopen_stale
+ * branch            main       -> FETCH_HEAD
+Switched to a new branch 'ledger/test-reopen_stale'
+To /tmp/tmp.0TY29IlrRZ/protected-reopen_stale.git
+ * [new branch]      ledger/test-reopen_stale -> ledger/test-reopen_stale
+To /tmp/tmp.0TY29IlrRZ/protected-reopen_stale.git
+ * [new branch]      ledger/test-reopen_stale-retry-local -> ledger/test-reopen_stale-retry-local
+To /tmp/tmp.0TY29IlrRZ/protected-reopen_stale.git
+ - [deleted]         ledger/test-reopen_stale
+From /tmp/tmp.0TY29IlrRZ/protected-reopen_stale
+ * branch            main       -> FETCH_HEAD
+From /tmp/tmp.0TY29IlrRZ/protected-reopen_stale
+ * branch            main       -> FETCH_HEAD
+From /tmp/tmp.0TY29IlrRZ/protected-reopen_stale
+ * branch            main       -> FETCH_HEAD
+   58bbd65..e8966f8  main       -> origin/main
+From /tmp/tmp.0TY29IlrRZ/protected-reopen_adjacent_marker
+ * branch            main       -> FETCH_HEAD
+Switched to a new branch 'ledger/test-reopen_adjacent_marker'
+To /tmp/tmp.0TY29IlrRZ/protected-reopen_adjacent_marker.git
+ * [new branch]      ledger/test-reopen_adjacent_marker -> ledger/test-reopen_adjacent_marker
+To /tmp/tmp.0TY29IlrRZ/protected-reopen_adjacent_marker.git
+ * [new branch]      ledger/test-reopen_adjacent_marker-retry-local -> ledger/test-reopen_adjacent_marker-retry-local
+To /tmp/tmp.0TY29IlrRZ/protected-reopen_adjacent_marker.git
+ - [deleted]         ledger/test-reopen_adjacent_marker
+From /tmp/tmp.0TY29IlrRZ/protected-reopen_adjacent_marker
+ * branch            main       -> FETCH_HEAD
+From /tmp/tmp.0TY29IlrRZ/protected-reopen_adjacent_marker
+ * branch            main       -> FETCH_HEAD
+From /tmp/tmp.0TY29IlrRZ/protected-reopen_adjacent_marker
+ * branch            main       -> FETCH_HEAD
+   5dd5893..c57d3f8  main       -> origin/main
+From /tmp/tmp.0TY29IlrRZ/protected-reopen_stale_open_retry
+ * branch            main       -> FETCH_HEAD
+Switched to a new branch 'ledger/test-reopen_stale_open_retry'
+To /tmp/tmp.0TY29IlrRZ/protected-reopen_stale_open_retry.git
+ * [new branch]      ledger/test-reopen_stale_open_retry -> ledger/test-reopen_stale_open_retry
+From /tmp/tmp.0TY29IlrRZ/protected-reopen_stale_open_retry
+ * branch            ledger/test-reopen_stale_open_retry-retry-local -> FETCH_HEAD
+To /tmp/tmp.0TY29IlrRZ/protected-reopen_stale_open_retry.git
+   2c39da3..9d6b432  ledger/test-reopen_stale_open_retry-retry-local -> ledger/test-reopen_stale_open_retry-retry-local
+To /tmp/tmp.0TY29IlrRZ/protected-reopen_stale_open_retry.git
+ - [deleted]         ledger/test-reopen_stale_open_retry
+From /tmp/tmp.0TY29IlrRZ/protected-reopen_stale_open_retry
+ * branch            main       -> FETCH_HEAD
+From /tmp/tmp.0TY29IlrRZ/protected-reopen_stale_open_retry
+ * branch            main       -> FETCH_HEAD
+From /tmp/tmp.0TY29IlrRZ/protected-reopen_stale_open_retry
+ * branch            main       -> FETCH_HEAD
+   2c39da3..ad0632f  main       -> origin/main
+From /tmp/tmp.0TY29IlrRZ/protected-reopen_stale_closed_retry
+ * branch            main       -> FETCH_HEAD
+Switched to a new branch 'ledger/test-reopen_stale_closed_retry'
+To /tmp/tmp.0TY29IlrRZ/protected-reopen_stale_closed_retry.git
+ * [new branch]      ledger/test-reopen_stale_closed_retry -> ledger/test-reopen_stale_closed_retry
+To /tmp/tmp.0TY29IlrRZ/protected-reopen_stale_closed_retry.git
+ * [new branch]      ledger/test-reopen_stale_closed_retry-retry-local-1 -> ledger/test-reopen_stale_closed_retry-retry-local-1
+To /tmp/tmp.0TY29IlrRZ/protected-reopen_stale_closed_retry.git
+ - [deleted]         ledger/test-reopen_stale_closed_retry
+From /tmp/tmp.0TY29IlrRZ/protected-reopen_stale_closed_retry
+ * branch            main       -> FETCH_HEAD
+From /tmp/tmp.0TY29IlrRZ/protected-reopen_stale_closed_retry
+ * branch            main       -> FETCH_HEAD
+From /tmp/tmp.0TY29IlrRZ/protected-reopen_stale_closed_retry
+ * branch            main       -> FETCH_HEAD
+   005bbe8..5f513c5  main       -> origin/main
+From /tmp/tmp.0TY29IlrRZ/protected-merge_race
+ * branch            main       -> FETCH_HEAD
+Switched to a new branch 'ledger/test-merge_race'
+To /tmp/tmp.0TY29IlrRZ/protected-merge_race.git
+ * [new branch]      ledger/test-merge_race -> ledger/test-merge_race
+From /tmp/tmp.0TY29IlrRZ/protected-merge_race
+ * branch            main       -> FETCH_HEAD
+From /tmp/tmp.0TY29IlrRZ/protected-merge_race
+ * branch            main       -> FETCH_HEAD
+fixture: the pull request merged out of band
+From /tmp/tmp.0TY29IlrRZ/protected-merge_race
+ * branch            main       -> FETCH_HEAD
+   d017dfd..efc4b62  main       -> origin/main
+From /tmp/tmp.0TY29IlrRZ/protected-delayed
+ * branch            main       -> FETCH_HEAD
+Switched to a new branch 'ledger/test-delayed'
+To /tmp/tmp.0TY29IlrRZ/protected-delayed.git
+ * [new branch]      ledger/test-delayed -> ledger/test-delayed
+From /tmp/tmp.0TY29IlrRZ/protected-delayed
+ * branch            main       -> FETCH_HEAD
+From /tmp/tmp.0TY29IlrRZ/protected-delayed
+ * branch            main       -> FETCH_HEAD
+   398e52d..0d1d0f8  main       -> origin/main
+From /tmp/tmp.0TY29IlrRZ/protected-protection_classic
+ * branch            main       -> FETCH_HEAD
+Switched to a new branch 'ledger/test-protection_classic'
+To /tmp/tmp.0TY29IlrRZ/protected-protection_classic.git
+ * [new branch]      ledger/test-protection_classic -> ledger/test-protection_classic
+From /tmp/tmp.0TY29IlrRZ/protected-protection_classic
+ * branch            main       -> FETCH_HEAD
+From /tmp/tmp.0TY29IlrRZ/protected-protection_classic
+ * branch            main       -> FETCH_HEAD
+From /tmp/tmp.0TY29IlrRZ/protected-protection_classic
+ * branch            main       -> FETCH_HEAD
+   f95c16f..0a5105c  main       -> origin/main
+From /tmp/tmp.0TY29IlrRZ/protected-base_advanced_exact
+ * branch            main       -> FETCH_HEAD
+Switched to a new branch 'ledger/test-base_advanced_exact'
+To /tmp/tmp.0TY29IlrRZ/protected-base_advanced_exact.git
+ * [new branch]      ledger/test-base_advanced_exact -> ledger/test-base_advanced_exact
+From /tmp/tmp.0TY29IlrRZ/protected-base_advanced_exact
+ * branch            main       -> FETCH_HEAD
+From /tmp/tmp.0TY29IlrRZ/protected-base_advanced_exact
+ * branch            main       -> FETCH_HEAD
+   4ed878a..a95dbab  main       -> origin/main
+PASS: distribution guards
+task: [test:mutation-floor] scripts/check-mutation-floor-test.sh
+mutation floor checks passed
+task: [build] go build ./cmd/orgtop
+task: [run:smoke] go run ./cmd/orgtop --help
+Usage: orgtop --repo OWNER/REPOSITORY [--repo OWNER/REPOSITORY ...] [--path (PATTERN | OWNER/REPOSITORY:PATTERN) ...] [--no-cache]
+       orgtop --path OWNER/REPOSITORY:PATTERN [--path OWNER/REPOSITORY:PATTERN ...] [--repo OWNER/REPOSITORY ...] [--no-cache]
+       orgtop (--org ORGANIZATION | --repo 'ORGANIZATION/*') [...] [--repo OWNER/REPOSITORY ...] [--path OWNER/REPOSITORY:PATTERN ...] [--include-archived] [--include-forks] [--no-cache]
+       orgtop (--org ORGANIZATION | --repo 'ORGANIZATION/*') [...] --repo OWNER/REPOSITORY [--repo OWNER/REPOSITORY ...] --path PATTERN [--path PATTERN ...] [--path OWNER/REPOSITORY:PATTERN ...] [--include-archived] [--include-forks] [--no-cache]
+       orgtop --reset-cache
+       orgtop --version
+
+Flags:
+  --repo owner/repository
+        select an exact GitHub owner/repository; repeat the flag to select several
+  --path (PATTERN | OWNER/REPOSITORY:PATTERN)
+        select a path pattern; a bare PATTERN filters every --repo selection, a qualified OWNER/REPOSITORY:PATTERN stands alone; repeat the flag to select several
+  --org (ORGANIZATION), --repo 'ORGANIZATION/*'
+        select every eligible repository of a GitHub organization; repeat the flag to select several
+  --include-archived
+        include archived repositories when expanding organization selectors
+  --include-forks
+        include forked repositories when expanding organization selectors
+  --no-cache
+        run without opening, reading, or writing the enrichment cache
+  --reset-cache
+        remove OrgTop's cached enrichment state and exit; accepts no other flag
+  --version, -v
+        print the release version and exit
+
+Rain windows:
+  -/+ select a shorter or longer window: 15m, 30m, 60m, 6h, 24h, 7d, available
+        a session starts at 24h; each finite window drops an event at that exact age
+        available keeps every event of the last refresh, which is the newest 100
+        events per repository GitHub returned, not complete repository history
+        Interesting Now samples the last 15m as a Scope-fair recent-event sample,
+        not an importance ranking
+
+Enrichment cache:
+  changed-file evidence is reused from orgtop/enrichment-v1.db under the user
+        cache directory, beside its enrichment-v1.lock maintenance lock
+        it stores no credential, header, or raw payload, and it is disposable:
+        deleting it changes request volume, never what a Scope matches
+        a record stays usable for 30 days; bounded cleanup removes invalid and
+        expired records first, then the least recently used, at 10,000 records,
+        250,000 paths, or 128 MiB
+  --no-cache runs one process without it, --reset-cache removes it and exits
+        a cache that is unusable degrades to direct GitHub requests and shows
+        CACHE DEGRADED rather than failing the refresh
+
+GitHub requests:
+  one request per selected repository per refresh, out of the 5000 REST requests
+        an authenticated token gets per hour
+        changed-file enrichment may spend at most 20 changed-file requests more
+        per refresh; cache hits and deduplicated work spend none
+        an exhausted limit shows RATE LIMITED with the instructed retry time and
+        leaves path membership unknown; unknown membership is never guessed
+task: [licenses:check] go-licenses check ./... --include_tests --allowed_licenses=Apache-2.0,MIT,BSD-2-Clause,BSD-3-Clause,ISC
+W1005 01:57:27.961409   70331 library.go:141] "golang.org/x/sys/unix" contains non-Go code that can't be inspected for further dependencies:
+/home/user/go/pkg/mod/golang.org/x/sys@v0.48.0/unix/asm_linux_amd64.s
+W1005 01:57:27.961500   70331 library.go:141] "modernc.org/libc" contains non-Go code that can't be inspected for further dependencies:
+/home/user/go/pkg/mod/modernc.org/libc@v1.77.1/abi0_linux_amd64.s
+/home/user/go/pkg/mod/modernc.org/libc@v1.77.1/tls_linux_amd64.s
+task: [workflow:validate] taskrail validate
+warning: installed skills were written by taskrail v0.4.0, running taskrail 0.0.0-dev (autonomous-backlog, autonomous-manual-test, autonomous-recovery, autonomous-task, autonomous-verify, taskrail-decompose, taskrail-gap, taskrail-import, taskrail-repair, taskrail-retrofit, taskrail-spec); run taskrail init --with-skills --force to refresh
+state valid
+task: [workflow:verify:spec] taskrail coverage
+warning: installed skills were written by taskrail v0.4.0, running taskrail 0.0.0-dev (autonomous-backlog, autonomous-manual-test, autonomous-recovery, autonomous-task, autonomous-verify, taskrail-decompose, taskrail-gap, taskrail-import, taskrail-repair, taskrail-retrofit, taskrail-spec); run taskrail init --with-skills --force to refresh
+coverage: 100% (12/12 areas) — specs/v0.2.0.md
+implementation: 83.3% (10/12 areas) — specs/v0.2.0.md
+coverage map:
+  - unified-repository-and-path-scopes: T-044-implement-the-unified-scope-domain-model, T-045-implement-unified-scope-cli-parsing, T-046-implement-canonical-path-matching, T-076-retire-repository-only-scope-set-constructor, T-077-document-cli-path-diagnostic-offsets (double-covered)
+  - organization-selection: T-047-implement-bounded-organization-expansion, T-048-implement-organization-selection-snapshots, T-073-implement-organization-selector-cli-parsing, T-080-disclose-organization-selection (double-covered)
+  - distribution-channels: T-067-configure-multi-channel-release-workflows, T-068-verify-distribution-channel-parity, T-074-provision-and-validate-distribution-repositories, T-105-complete-the-protected-ledger-step-when-its-event, T-107-upload-release-assets-create-if-absent-so-a-retry, T-114-protected-ledger-merge-atomic, T-115-retry-reconciles-published-release, T-116-withdrawal-delete-token, T-117-retry-tap-staging-branch, T-118-extension-usage-name (double-covered)
+  - changed-file-enrichment: T-049-implement-changed-file-enrichment-in-the-github, T-052-implement-bounded-enrichment-coordination, T-056-integrate-enrichment-into-atomic-refresh, T-079-qualify-coalesced-commit-evidence-against-each, T-083-wire-the-enrichment-cache-into-the-launch (double-covered)
+  - explicit-scope-membership: T-053-implement-explicit-scope-membership-outcomes, T-054-implement-scoped-snapshots-and-direct-aggregation, T-081-retire-v01-repository-snapshot-aggregation, T-084-keep-repository-membership-through-canceled, T-101-render-the-returned-repository-display-identity-in (double-covered)
+  - bounded-sqlite-cache: T-050-implement-the-versioned-sqlite-enrichment-store, T-051-implement-cache-freshness-and-deterministic, T-055-implement-safe-cache-failure-and-recovery, T-078-verify-windows-cache-ownership-and-acl-enforcement, T-082-cover-contended-cache-lifecycle-reset-and-rebuild, T-096-migrate-the-windows-cache-lock-to-golang-org-x-sys (double-covered)
+  - scope-aware-overview-and-stream: T-057-render-mixed-scopes-in-overview, T-058-render-scope-context-in-stream, T-085-implement-cell-safe-scope-label-shortening, T-086-implement-bounded-stream-event-detail, T-087-report-mixed-scope-context-in-the-shared-header, T-097-cut-shared-body-text-on-grapheme-clusters, T-098-bound-overview-scope-labels-by-the-row-budget-the, T-099-account-for-clipped-detail-graphemes-at-one-cell, T-100-scope-context-outranks-header-cause, T-102-pin-the-overview-label-budget-fallback-with-a, T-109-clarify-overview-pr-event-counts-and-evidence, T-110-qualify-activity-counts-and-empty-states-by (double-covered)
+  - ambient-rain-view: T-061-implement-deterministic-bounded-rain-state, T-062-render-and-navigate-the-rain-view, T-090-move-rain-page-range-and-hidden-counts-into-the, T-103-extend-rain-windows-for-quiet-repositories (double-covered)
+  - interesting-now-strip: T-063-select-bounded-interesting-now-entries, T-064-render-the-interesting-now-strip, T-112-disclose-the-fixed-interesting-now-recency-window (double-covered)
+  - shared-glyph-and-recency-semantics: T-059-implement-shared-event-category-semantics, T-060-implement-shared-discrete-recency-semantics, T-089-resolve-terminal-capability-and-charset-at-launch (double-covered)
+  - responsive-and-degraded-experience: T-065-implement-deterministic-responsive-overflow, T-066-implement-honest-degraded-state-presentation, T-095-preserve-viewport-state-through-zero-row-resize, T-111-keep-stream-detail-navigation-discoverable-at (double-covered)
+  - integration-documentation-and-release-readiness: T-043-guard-the-v0-2-0-toolchain-and-dependency-baseline, T-069-integrate-the-closed-v0-2-0-binary-flow, T-070-document-the-closed-v0-2-0-behavior, T-071-verify-v0-2-0-release-readiness, T-075-make-the-changelog-release-guards-portable-to-bsd, T-106-test-the-v0-2-0-release-candidate-before-tagging, T-113-correct-readme-view-selection-and-detail-control (double-covered)
+decomposed, not implemented:
+  - distribution-channels
+  - integration-documentation-and-release-readiness
+drift: 0 uncovered area(s), 0 task(s) pointing away
+task: [release:check] goreleaser check
+  • checking                                  path=.goreleaser.yml
+  • 1 configuration file(s) validated
+  • thanks for using GoReleaser!

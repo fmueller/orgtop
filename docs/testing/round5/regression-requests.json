@@ -1,0 +1,596 @@
+[
+  {
+    "mode": "normal",
+    "phase": 0,
+    "path": "/repos/acme/api/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 679.004084399
+  },
+  {
+    "mode": "normal",
+    "phase": 0,
+    "path": "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 679.040916207
+  },
+  {
+    "mode": "normal",
+    "phase": 0,
+    "path": "/repos/acme/api/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 682.611833366
+  },
+  {
+    "mode": "normal",
+    "phase": 0,
+    "path": "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 682.653318791
+  },
+  {
+    "mode": "normal",
+    "phase": 0,
+    "path": "/repos/acme/api/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 684.926419568
+  },
+  {
+    "mode": "normal",
+    "phase": 0,
+    "path": "/repos/acme/api/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 687.156868333
+  },
+  {
+    "mode": "normal",
+    "phase": 0,
+    "path": "/repos/acme/api/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 688.80284543
+  },
+  {
+    "mode": "normal",
+    "phase": 0,
+    "path": "/repos/acme/api/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 693.697595652
+  },
+  {
+    "mode": "normal",
+    "phase": 0,
+    "path": "/repos/acme/api/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 695.895119576
+  },
+  {
+    "mode": "normal",
+    "phase": 0,
+    "path": "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 695.936905411
+  },
+  {
+    "mode": "org-oversize",
+    "phase": 0,
+    "path": "/orgs/alpha/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 698.199523496
+  },
+  {
+    "mode": "org-badnext",
+    "phase": 0,
+    "path": "/orgs/alpha/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 700.445397595
+  },
+  {
+    "mode": "org-partial",
+    "phase": 0,
+    "path": "/orgs/alpha/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 702.620409348
+  },
+  {
+    "mode": "org-partial",
+    "phase": 0,
+    "path": "/orgs/beta/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 702.665190486
+  },
+  {
+    "mode": "org-conflict",
+    "phase": 0,
+    "path": "/orgs/alpha/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 704.826812577
+  },
+  {
+    "mode": "org-empty",
+    "phase": 0,
+    "path": "/orgs/alpha/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 707.109212618
+  },
+  {
+    "mode": "org-empty",
+    "phase": 0,
+    "path": "/orgs/beta/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 707.152652984
+  },
+  {
+    "mode": "org-empty",
+    "phase": 0,
+    "path": "/repos/exact/keep/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 707.200582945
+  },
+  {
+    "mode": "org-pages",
+    "phase": 0,
+    "path": "/orgs/alpha/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 709.423351931
+  },
+  {
+    "mode": "org-pages",
+    "phase": 0,
+    "path": "/orgs/beta/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 709.474736156
+  },
+  {
+    "mode": "org-pages",
+    "phase": 0,
+    "path": "/orgs/alpha/repos?type=all&sort=full_name&direction=asc&per_page=100&page=2",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 709.477005384
+  },
+  {
+    "mode": "org-pages",
+    "phase": 0,
+    "path": "/orgs/beta/repos?type=all&sort=full_name&direction=asc&per_page=100&page=2",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 709.520813338
+  },
+  {
+    "mode": "org-pages",
+    "phase": 0,
+    "path": "/orgs/alpha/repos?type=all&sort=full_name&direction=asc&per_page=100&page=3",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 709.564866475
+  },
+  {
+    "mode": "org-pages",
+    "phase": 0,
+    "path": "/repos/exact/keep/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 709.609896389
+  },
+  {
+    "mode": "org-pages",
+    "phase": 0,
+    "path": "/repos/alpha/r000/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 709.652710068
+  },
+  {
+    "mode": "org-pages",
+    "phase": 0,
+    "path": "/repos/beta/r000/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 709.696598835
+  },
+  {
+    "mode": "org-pages",
+    "phase": 0,
+    "path": "/repos/alpha/r001/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 709.740697595
+  },
+  {
+    "mode": "org-pages",
+    "phase": 0,
+    "path": "/repos/beta/r001/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 709.784549962
+  },
+  {
+    "mode": "org-pages",
+    "phase": 0,
+    "path": "/repos/alpha/r002/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 709.828525327
+  },
+  {
+    "mode": "org-pages",
+    "phase": 0,
+    "path": "/repos/beta/r002/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 709.872533575
+  },
+  {
+    "mode": "org-pages",
+    "phase": 0,
+    "path": "/repos/alpha/r003/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 709.916747184
+  },
+  {
+    "mode": "org-pages",
+    "phase": 0,
+    "path": "/repos/beta/r003/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 709.960868167
+  },
+  {
+    "mode": "org-pages",
+    "phase": 0,
+    "path": "/repos/alpha/r004/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 710.004652052
+  },
+  {
+    "mode": "org-pages",
+    "phase": 0,
+    "path": "/repos/beta/r004/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 710.048654049
+  },
+  {
+    "mode": "org-pages",
+    "phase": 0,
+    "path": "/repos/alpha/r005/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 710.092549315
+  },
+  {
+    "mode": "org-pages",
+    "phase": 0,
+    "path": "/repos/beta/r005/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 710.136523586
+  },
+  {
+    "mode": "org-pages",
+    "phase": 0,
+    "path": "/repos/alpha/r006/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 710.180535474
+  },
+  {
+    "mode": "org-pages",
+    "phase": 0,
+    "path": "/repos/beta/r006/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 710.224585627
+  },
+  {
+    "mode": "org-pages",
+    "phase": 0,
+    "path": "/repos/alpha/r007/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 710.268485483
+  },
+  {
+    "mode": "org-pages",
+    "phase": 0,
+    "path": "/repos/beta/r007/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 710.3125134
+  },
+  {
+    "mode": "org-pages",
+    "phase": 0,
+    "path": "/repos/alpha/r008/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 710.356607046
+  },
+  {
+    "mode": "org-pages",
+    "phase": 0,
+    "path": "/repos/beta/r008/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 710.400550089
+  },
+  {
+    "mode": "org-pages",
+    "phase": 0,
+    "path": "/repos/alpha/r009/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 710.44463102
+  },
+  {
+    "mode": "capacity",
+    "phase": 0,
+    "path": "/repos/acme/r0/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 711.598072893
+  },
+  {
+    "mode": "capacity",
+    "phase": 0,
+    "path": "/repos/acme/r1/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 711.643080738
+  },
+  {
+    "mode": "capacity",
+    "phase": 0,
+    "path": "/repos/acme/r2/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 711.685132716
+  },
+  {
+    "mode": "capacity",
+    "phase": 0,
+    "path": "/repos/acme/r3/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 711.733109647
+  },
+  {
+    "mode": "capacity",
+    "phase": 0,
+    "path": "/repos/acme/r4/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 711.777175951
+  },
+  {
+    "mode": "capacity",
+    "phase": 0,
+    "path": "/repos/acme/r5/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 711.821084844
+  },
+  {
+    "mode": "normal",
+    "phase": 0,
+    "path": "/repos/acme/api/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 713.811835173
+  },
+  {
+    "mode": "normal",
+    "phase": 0,
+    "path": "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 713.849847613
+  },
+  {
+    "mode": "cycle",
+    "phase": 0,
+    "path": "/repos/acme/api/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 719.532615199
+  },
+  {
+    "mode": "cycle",
+    "phase": 0,
+    "path": "/repos/acme/other/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 719.576738709
+  },
+  {
+    "mode": "cycle",
+    "phase": 0,
+    "path": "/repos/acme/other/commits/2222222222222222222222222222222222222222?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 719.624683301
+  },
+  {
+    "mode": "cycle",
+    "phase": 0,
+    "path": "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 719.633652663
+  },
+  {
+    "mode": "cycle",
+    "phase": 1,
+    "path": "/repos/acme/api/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 779.677340802
+  },
+  {
+    "mode": "cycle",
+    "phase": 1,
+    "path": "/repos/acme/other/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 779.678836653
+  },
+  {
+    "mode": "cycle",
+    "phase": 2,
+    "path": "/repos/acme/api/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 839.726191801
+  },
+  {
+    "mode": "cycle",
+    "phase": 2,
+    "path": "/repos/acme/other/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 839.726643268
+  },
+  {
+    "mode": "cycle",
+    "phase": 2,
+    "path": "/repos/acme/other/commits/2222222222222222222222222222222222222222?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 839.768733233
+  },
+  {
+    "mode": "cycle",
+    "phase": 2,
+    "path": "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 839.772958862
+  },
+  {
+    "mode": "cycle",
+    "phase": 3,
+    "path": "/repos/acme/api/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 899.817883884
+  },
+  {
+    "mode": "cycle",
+    "phase": 3,
+    "path": "/repos/acme/other/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 899.81843464
+  },
+  {
+    "mode": "cycle",
+    "phase": 3,
+    "path": "/repos/acme/other/commits/2222222222222222222222222222222222222222?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 899.860785009
+  },
+  {
+    "mode": "cycle",
+    "phase": 3,
+    "path": "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 899.861220945
+  },
+  {
+    "mode": "hostile-entity",
+    "phase": 3,
+    "path": "/repos/acme/api/events?per_page=100",
+    "api": "2026-03-10",
+    "accept": "application/vnd.github+json",
+    "credential_match": true,
+    "time": 909.481249133
+  }
+]

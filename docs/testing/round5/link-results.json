@@ -1,0 +1,1224 @@
+[
+  {
+    "name": "commit-plain evidence",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 01:47:57",
+      "R1 acme/api        1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:other  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "commit-plain GET count",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "commit-plain",
+        "phase": 0,
+        "path": "/repos/acme/api/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 766.984877292
+      },
+      {
+        "mode": "commit-plain",
+        "phase": 0,
+        "path": "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 767.029152443
+      },
+      {
+        "mode": "commit-plain",
+        "phase": 0,
+        "path": "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100&page=2",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 767.072900777
+      }
+    ]
+  },
+  {
+    "name": "commit-plain atomic cache",
+    "pass_": true,
+    "detail": [
+      [
+        [
+          1,
+          2
+        ]
+      ],
+      [
+        [
+          "other/last.go"
+        ],
+        [
+          "src/first.go"
+        ]
+      ]
+    ]
+  },
+  {
+    "name": "commit-plain responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "commit-escaped-next evidence",
+    "pass_": false,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 01:48:00",
+      "R1 acme/api        1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:other  No activity in retained snapshot",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "commit-escaped-next GET count",
+    "pass_": false,
+    "detail": [
+      {
+        "mode": "commit-escaped-next",
+        "phase": 0,
+        "path": "/repos/acme/api/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 769.174442002
+      },
+      {
+        "mode": "commit-escaped-next",
+        "phase": 0,
+        "path": "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 769.221200618
+      }
+    ]
+  },
+  {
+    "name": "commit-escaped-next atomic cache",
+    "pass_": false,
+    "detail": [
+      [
+        [
+          1,
+          1
+        ]
+      ],
+      [
+        [
+          "src/first.go"
+        ]
+      ]
+    ]
+  },
+  {
+    "name": "commit-escaped-next responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "commit-escaped-next corrected warm terminal membership",
+    "pass_": false,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 01:48:02",
+      "R1 acme/api        1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:other  No activity in retained snapshot",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "commit-escaped-next corrected cache complete",
+    "pass_": false,
+    "detail": {
+      "rows": [
+        [
+          [
+            1,
+            1
+          ]
+        ],
+        [
+          [
+            "src/first.go"
+          ]
+        ]
+      ],
+      "new_lookups": 0
+    }
+  },
+  {
+    "name": "commit-escaped-next-corrected-warm responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "commit-escaped-list evidence",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 01:48:04",
+      "R1 acme/api        1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:other  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "commit-escaped-list GET count",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "commit-escaped-list",
+        "phase": 0,
+        "path": "/repos/acme/api/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 773.539317147
+      },
+      {
+        "mode": "commit-escaped-list",
+        "phase": 0,
+        "path": "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 773.580966981
+      },
+      {
+        "mode": "commit-escaped-list",
+        "phase": 0,
+        "path": "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100&page=2",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 773.628719717
+      }
+    ]
+  },
+  {
+    "name": "commit-escaped-list atomic cache",
+    "pass_": true,
+    "detail": [
+      [
+        [
+          1,
+          2
+        ]
+      ],
+      [
+        [
+          "other/last.go"
+        ],
+        [
+          "src/first.go"
+        ]
+      ]
+    ]
+  },
+  {
+    "name": "commit-escaped-list responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "commit-escaped-list corrected warm terminal membership",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 01:48:06",
+      "R1 acme/api        1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:other  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "commit-escaped-list corrected cache complete",
+    "pass_": true,
+    "detail": {
+      "rows": [
+        [
+          [
+            1,
+            2
+          ]
+        ],
+        [
+          [
+            "other/last.go"
+          ],
+          [
+            "src/first.go"
+          ]
+        ]
+      ],
+      "new_lookups": 0
+    }
+  },
+  {
+    "name": "commit-escaped-list-corrected-warm responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "commit-escaped-last evidence",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 01:48:08",
+      "R1 acme/api        1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:other  No activity in retained snapshot",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "commit-escaped-last GET count",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "commit-escaped-last",
+        "phase": 0,
+        "path": "/repos/acme/api/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 777.937462469
+      },
+      {
+        "mode": "commit-escaped-last",
+        "phase": 0,
+        "path": "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 777.980923262
+      }
+    ]
+  },
+  {
+    "name": "commit-escaped-last atomic cache",
+    "pass_": true,
+    "detail": [
+      [
+        [
+          1,
+          1
+        ]
+      ],
+      [
+        [
+          "src/first.go"
+        ]
+      ]
+    ]
+  },
+  {
+    "name": "commit-escaped-last responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "commit-cross-host evidence",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 PATH ?1 \u00b7 acme/api \u00b7 updated 01:48:10",
+      "R1 acme/api        1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:other  No confirmed activity \u00b7 1 unknown",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "commit-cross-host GET count",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "commit-cross-host",
+        "phase": 0,
+        "path": "/repos/acme/api/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 780.115258438
+      },
+      {
+        "mode": "commit-cross-host",
+        "phase": 0,
+        "path": "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 780.15721957
+      }
+    ]
+  },
+  {
+    "name": "commit-cross-host atomic cache",
+    "pass_": true,
+    "detail": [
+      [],
+      []
+    ]
+  },
+  {
+    "name": "commit-cross-host responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "commit-userinfo evidence",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 PATH ?1 \u00b7 acme/api \u00b7 updated 01:48:13",
+      "R1 acme/api        1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:other  No confirmed activity \u00b7 1 unknown",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "commit-userinfo GET count",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "commit-userinfo",
+        "phase": 0,
+        "path": "/repos/acme/api/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 782.28685763
+      },
+      {
+        "mode": "commit-userinfo",
+        "phase": 0,
+        "path": "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 782.333405044
+      }
+    ]
+  },
+  {
+    "name": "commit-userinfo atomic cache",
+    "pass_": true,
+    "detail": [
+      [],
+      []
+    ]
+  },
+  {
+    "name": "commit-userinfo responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "commit-fragment evidence",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 PATH ?1 \u00b7 acme/api \u00b7 updated 01:48:15",
+      "R1 acme/api        1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:other  No confirmed activity \u00b7 1 unknown",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "commit-fragment GET count",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "commit-fragment",
+        "phase": 0,
+        "path": "/repos/acme/api/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 784.477395014
+      },
+      {
+        "mode": "commit-fragment",
+        "phase": 0,
+        "path": "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 784.521130654
+      }
+    ]
+  },
+  {
+    "name": "commit-fragment atomic cache",
+    "pass_": true,
+    "detail": [
+      [],
+      []
+    ]
+  },
+  {
+    "name": "commit-fragment responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "commit-encoded-path evidence",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 PATH ?1 \u00b7 acme/api \u00b7 updated 01:48:17",
+      "R1 acme/api        1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:other  No confirmed activity \u00b7 1 unknown",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "commit-encoded-path GET count",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "commit-encoded-path",
+        "phase": 0,
+        "path": "/repos/acme/api/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 786.693418015
+      },
+      {
+        "mode": "commit-encoded-path",
+        "phase": 0,
+        "path": "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 786.737458508
+      }
+    ]
+  },
+  {
+    "name": "commit-encoded-path atomic cache",
+    "pass_": true,
+    "detail": [
+      [],
+      []
+    ]
+  },
+  {
+    "name": "commit-encoded-path responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "commit-encoded-duplicate evidence",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 PATH ?1 \u00b7 acme/api \u00b7 updated 01:48:19",
+      "R1 acme/api        1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:other  No confirmed activity \u00b7 1 unknown",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "commit-encoded-duplicate GET count",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "commit-encoded-duplicate",
+        "phase": 0,
+        "path": "/repos/acme/api/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 788.860351885
+      },
+      {
+        "mode": "commit-encoded-duplicate",
+        "phase": 0,
+        "path": "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 788.904897324
+      }
+    ]
+  },
+  {
+    "name": "commit-encoded-duplicate atomic cache",
+    "pass_": true,
+    "detail": [
+      [],
+      []
+    ]
+  },
+  {
+    "name": "commit-encoded-duplicate responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "commit-malformed-query evidence",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 PATH ?1 \u00b7 acme/api \u00b7 updated 01:48:21",
+      "R1 acme/api        1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:other  No confirmed activity \u00b7 1 unknown",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "commit-malformed-query GET count",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "commit-malformed-query",
+        "phase": 0,
+        "path": "/repos/acme/api/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 791.041335067
+      },
+      {
+        "mode": "commit-malformed-query",
+        "phase": 0,
+        "path": "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 791.085307531
+      }
+    ]
+  },
+  {
+    "name": "commit-malformed-query atomic cache",
+    "pass_": true,
+    "detail": [
+      [],
+      []
+    ]
+  },
+  {
+    "name": "commit-malformed-query responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "commit-cross-entity evidence",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 PATH ?1 \u00b7 acme/api \u00b7 updated 01:48:24",
+      "R1 acme/api        1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:other  No confirmed activity \u00b7 1 unknown",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "commit-cross-entity GET count",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "commit-cross-entity",
+        "phase": 0,
+        "path": "/repos/acme/api/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 793.229472509
+      },
+      {
+        "mode": "commit-cross-entity",
+        "phase": 0,
+        "path": "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 793.273015823
+      }
+    ]
+  },
+  {
+    "name": "commit-cross-entity atomic cache",
+    "pass_": true,
+    "detail": [
+      [],
+      []
+    ]
+  },
+  {
+    "name": "commit-cross-entity responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "commit-unclosed-title evidence",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 PATH ?1 \u00b7 acme/api \u00b7 updated 01:48:26",
+      "R1 acme/api        1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:other  No confirmed activity \u00b7 1 unknown",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "commit-unclosed-title GET count",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "commit-unclosed-title",
+        "phase": 0,
+        "path": "/repos/acme/api/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 795.418783577
+      },
+      {
+        "mode": "commit-unclosed-title",
+        "phase": 0,
+        "path": "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 795.460935773
+      }
+    ]
+  },
+  {
+    "name": "commit-unclosed-title atomic cache",
+    "pass_": true,
+    "detail": [
+      [],
+      []
+    ]
+  },
+  {
+    "name": "commit-unclosed-title responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "org-plain atomic selection",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 exact/keep, acme/r001, acme/r002 \u00b7 updated 01:48:28 \u00b7 selection: 3 repos \u00b7 3 scopes \u00b7 1 exact \u00b7 2 expanded",
+      "R3 exact/keep  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "R1 acme/r001   No activity in retained snapshot",
+      "R2 acme/r002   No activity in retained snapshot",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "org-plain ordered GETs",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "org-plain",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 797.594725917
+      },
+      {
+        "mode": "org-plain",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=2",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 797.636552023
+      },
+      {
+        "mode": "org-plain",
+        "phase": 0,
+        "path": "/repos/exact/keep/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 797.684744363
+      },
+      {
+        "mode": "org-plain",
+        "phase": 0,
+        "path": "/repos/acme/r001/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 797.728652598
+      },
+      {
+        "mode": "org-plain",
+        "phase": 0,
+        "path": "/repos/acme/r002/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 797.772558829
+      }
+    ]
+  },
+  {
+    "name": "org-plain responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "org-escaped-next atomic selection",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 exact/keep, acme/r001 \u00b7 updated 01:48:30 \u00b7 selection: 2 repos \u00b7 2 scopes \u00b7 1 exact \u00b7 1 expanded",
+      "R2 exact/keep  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "R1 acme/r001   No activity in retained snapshot",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "org-escaped-next ordered GETs",
+    "pass_": false,
+    "detail": [
+      {
+        "mode": "org-escaped-next",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 799.775537244
+      },
+      {
+        "mode": "org-escaped-next",
+        "phase": 0,
+        "path": "/repos/exact/keep/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 799.8166833
+      },
+      {
+        "mode": "org-escaped-next",
+        "phase": 0,
+        "path": "/repos/acme/r001/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 799.86226622
+      }
+    ]
+  },
+  {
+    "name": "org-escaped-next responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "org-escaped-list atomic selection",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 exact/keep, acme/r001, acme/r002 \u00b7 updated 01:48:32 \u00b7 selection: 3 repos \u00b7 3 scopes \u00b7 1 exact \u00b7 2 expanded",
+      "R3 exact/keep  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "R1 acme/r001   No activity in retained snapshot",
+      "R2 acme/r002   No activity in retained snapshot",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "org-escaped-list ordered GETs",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "org-escaped-list",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 801.973902283
+      },
+      {
+        "mode": "org-escaped-list",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=2",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 802.016807842
+      },
+      {
+        "mode": "org-escaped-list",
+        "phase": 0,
+        "path": "/repos/exact/keep/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 802.060541079
+      },
+      {
+        "mode": "org-escaped-list",
+        "phase": 0,
+        "path": "/repos/acme/r001/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 802.104603469
+      },
+      {
+        "mode": "org-escaped-list",
+        "phase": 0,
+        "path": "/repos/acme/r002/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 802.148678891
+      }
+    ]
+  },
+  {
+    "name": "org-escaped-list responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "org-escaped-last atomic selection",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 exact/keep, acme/r001 \u00b7 updated 01:48:35 \u00b7 selection: 2 repos \u00b7 2 scopes \u00b7 1 exact \u00b7 1 expanded",
+      "R2 exact/keep  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "R1 acme/r001   No activity in retained snapshot",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "org-escaped-last ordered GETs",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "org-escaped-last",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 804.16711113
+      },
+      {
+        "mode": "org-escaped-last",
+        "phase": 0,
+        "path": "/repos/exact/keep/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 804.208641916
+      },
+      {
+        "mode": "org-escaped-last",
+        "phase": 0,
+        "path": "/repos/acme/r001/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 804.252966771
+      }
+    ]
+  },
+  {
+    "name": "org-escaped-last responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "org-cross-host atomic selection",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 ERROR \u00b7 expanding acme: invalid github organization listing pagination: the next page link is not a github api url \u00b7 exact/keep",
+      "Repository activity is unavailable",
+      "",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "org-cross-host ordered GETs",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "org-cross-host",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 806.347138099
+      }
+    ]
+  },
+  {
+    "name": "org-cross-host responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "org-userinfo atomic selection",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 ERROR \u00b7 expanding acme: invalid github organization listing pagination: the next page link is not a github api url \u00b7 exact/keep",
+      "Repository activity is unavailable",
+      "",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "org-userinfo ordered GETs",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "org-userinfo",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 808.548792852
+      }
+    ]
+  },
+  {
+    "name": "org-userinfo responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "org-fragment atomic selection",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 ERROR \u00b7 expanding acme: invalid github organization listing pagination: the next page link is not a github api url \u00b7 exact/keep",
+      "Repository activity is unavailable",
+      "",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "org-fragment ordered GETs",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "org-fragment",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 810.747675864
+      }
+    ]
+  },
+  {
+    "name": "org-fragment responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "org-encoded-path atomic selection",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 ERROR \u00b7 expanding acme: invalid github organization listing pagination: the next page link is not a github api url \u00b7 exact/keep",
+      "Repository activity is unavailable",
+      "",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "org-encoded-path ordered GETs",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "org-encoded-path",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 812.93522664
+      }
+    ]
+  },
+  {
+    "name": "org-encoded-path responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "org-encoded-duplicate atomic selection",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 ERROR \u00b7 expanding acme: invalid github organization listing pagination: the next page link does not advance the requested listing query \u00b7 exact/keep",
+      "Repository activity is unavailable",
+      "",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "org-encoded-duplicate ordered GETs",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "org-encoded-duplicate",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 815.110091537
+      }
+    ]
+  },
+  {
+    "name": "org-encoded-duplicate responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "org-malformed-query atomic selection",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 ERROR \u00b7 expanding acme: invalid github organization listing pagination: the next page link does not advance the requested listing query \u00b7 exact/keep",
+      "Repository activity is unavailable",
+      "",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "org-malformed-query ordered GETs",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "org-malformed-query",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 817.297615842
+      }
+    ]
+  },
+  {
+    "name": "org-malformed-query responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "org-cross-entity atomic selection",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 ERROR \u00b7 expanding acme: invalid github organization listing pagination: the next page link does not name the requested organization listing \u00b7 exact/keep",
+      "Repository activity is unavailable",
+      "",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "org-cross-entity ordered GETs",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "org-cross-entity",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 819.483170429
+      }
+    ]
+  },
+  {
+    "name": "org-cross-entity responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "org-unclosed-title atomic selection",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 ERROR \u00b7 expanding acme: invalid github organization listing pagination: the next page link is not a github api url \u00b7 exact/keep",
+      "Repository activity is unavailable",
+      "",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "org-unclosed-title ordered GETs",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "org-unclosed-title",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 821.670153299
+      }
+    ]
+  },
+  {
+    "name": "org-unclosed-title responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "all request headers",
+    "pass_": true,
+    "detail": null
+  }
+]

@@ -1,0 +1,498 @@
+[
+  {
+    "name": "org-normal atomic result",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "org-normal",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 678.709982947
+      },
+      {
+        "mode": "org-normal",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=2",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 678.752864941
+      },
+      {
+        "mode": "org-normal",
+        "phase": 0,
+        "path": "/repos/exact/keep/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 678.797069651
+      },
+      {
+        "mode": "org-normal",
+        "phase": 0,
+        "path": "/repos/acme/r001/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 678.84479933
+      },
+      {
+        "mode": "org-normal",
+        "phase": 0,
+        "path": "/repos/acme/r002/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 678.888951073
+      }
+    ]
+  },
+  {
+    "name": "org-normal responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "org-duplicate-page atomic result",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "org-duplicate-page",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 680.945973267
+      }
+    ]
+  },
+  {
+    "name": "org-duplicate-page responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "org-duplicate-size atomic result",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "org-duplicate-size",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 683.273399894
+      }
+    ]
+  },
+  {
+    "name": "org-duplicate-size responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "org-bad-escape atomic result",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "org-bad-escape",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 685.515989262
+      }
+    ]
+  },
+  {
+    "name": "org-bad-escape responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "org-semicolon atomic result",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "org-semicolon",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 687.835297978
+      }
+    ]
+  },
+  {
+    "name": "org-semicolon responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "org-extra-query atomic result",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "org-extra-query",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 690.059248088
+      }
+    ]
+  },
+  {
+    "name": "org-extra-query responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-normal completeness",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 01:46:43",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "link-normal request count",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-normal responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-rel-list completeness",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 01:46:45",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "link-rel-list request count",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-rel-list responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-title-comma completeness",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 01:46:47",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "link-title-comma request count",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-title-comma responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-title-semicolon completeness",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 01:46:49",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "link-title-semicolon request count",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-title-semicolon responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-other-first completeness",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 01:46:52",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "link-other-first request count",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-other-first responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-duplicate completeness",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 PATH ?1 \u00b7 acme/api \u00b7 updated 01:46:54",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  No confirmed activity \u00b7 1 unknown",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "link-duplicate request count",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-duplicate responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-encoded-query completeness",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 01:46:56",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "link-encoded-query request count",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "link-encoded-query responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "seed query-specific membership",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 01:46:58",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "seed immutable cache reuse",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "cache-seed responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "sibling query-specific membership",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 01:47:01",
+      "R1 acme/api       1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src2  No activity in retained snapshot",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "sibling immutable cache reuse",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "cache-sibling responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "case query-specific membership",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 01:47:03",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:SRC  No activity in retained snapshot",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "case immutable cache reuse",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "cache-case responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "glob query-specific membership",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 01:47:05",
+      "R1 acme/api           1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src/*.go  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "glob immutable cache reuse",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "cache-glob responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "parent query-specific membership",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 PATH ?1 \u00b7 acme/api \u00b7 updated 01:47:07",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  No confirmed activity \u00b7 1 unknown",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "parent immutable cache reuse",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "cache-parent responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "restore query-specific membership",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 01:47:09",
+      "R1 acme/api      1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:src  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "restore immutable cache reuse",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "cache-restore responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "composed rate initial current unknown",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "source 130s floor outlasts 120s retry",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "composed automatic recovery requests",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "composed-rate",
+        "phase": 1,
+        "path": "/repos/acme/api/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 851.541558465
+      },
+      {
+        "mode": "composed-rate",
+        "phase": 1,
+        "path": "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 851.5846089
+      }
+    ]
+  },
+  {
+    "name": "composed recovery clears unknown and rate",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "private response absent",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "composed-rate responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "HTTP contract headers",
+    "pass_": true,
+    "detail": null
+  }
+]
