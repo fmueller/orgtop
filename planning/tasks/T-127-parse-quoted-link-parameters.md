@@ -1,11 +1,11 @@
 ---
 id: T-127-parse-quoted-link-parameters
 title: Preserve quoted Link parameters when parsing pagination
-status: todo
+status: completed
 priority: medium
 spec_ref: specs/v0.2.0.md#rg-003-github-enrichment-contract
 dependencies: []
-updated_at: "2026-10-04T23:48:53Z"
+updated_at: "2026-10-05T00:53:04Z"
 ---
 
 # T-127-parse-quoted-link-parameters Preserve quoted Link parameters when parsing pagination
@@ -59,3 +59,5 @@ explicitly parses quoted strings before interpreting comma separators.
 `internal/github/enrich_commit.go` implements `linkRelation` with unconditional
 `strings.Split(value, ",")` and `strings.Split(entry, ";")`. Review the shared
 parser rather than weakening its malformed-target validation.
+- 2026-10-05T00:52:53Z: verification pass
+- 2026-10-05T00:53:04Z: Implemented shared quoted/escaped/bracket-aware Link splitting without weakening URL or relation restrictions. Reviewed and disposition verified; final full gate, differential mutation and binary HTTPS/PTYS cold/warm/terminal cache checks passed. Auditable report and reproduction: docs/testing/t127/.

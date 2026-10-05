@@ -1,0 +1,4 @@
+warning: installed skills were written by taskrail v0.4.0, running taskrail 0.0.0-dev (autonomous-backlog, autonomous-manual-test, autonomous-recovery, autonomous-task, autonomous-verify, taskrail-decompose, taskrail-gap, taskrail-import, taskrail-repair, taskrail-retrofit, taskrail-spec); run taskrail init --with-skills --force to refresh
+planning/artifacts/verify/T-127-parse-quoted-link-parameters/20261005T005253Z/report.json
+warning: installed skills were written by taskrail v0.4.0, running taskrail 0.0.0-dev (autonomous-backlog, autonomous-manual-test, autonomous-recovery, autonomous-task, autonomous-verify, taskrail-decompose, taskrail-gap, taskrail-import, taskrail-repair, taskrail-retrofit, taskrail-spec); run taskrail init --with-skills --force to refresh
+T-127-parse-quoted-link-parameters

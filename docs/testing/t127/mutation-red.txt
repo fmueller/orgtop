@@ -1,0 +1,6 @@
+--- FAIL: TestLinkRelationDelimiters (0.00s)
+    --- FAIL: TestLinkRelationDelimiters/next_uri_delimiters (0.00s)
+        link_test.go:29: linkRelation = "", true; want "https://example.com/a,b;c", true
+FAIL
+FAIL	github.com/fmueller/orgtop/internal/github	0.004s
+FAIL

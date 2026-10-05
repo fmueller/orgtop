@@ -1,0 +1,1 @@
+ok  	github.com/fmueller/orgtop/internal/github	(cached)	coverage: 95.4% of statements

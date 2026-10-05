@@ -158,6 +158,9 @@ workflow refuses to publish otherwise.
 
 ### Fixed
 
+- Commit evidence and organization listings now follow valid pagination links
+  with quoted commas, semicolons, or escaped quotes in unrelated attributes.
+  Malformed and ambiguous next links still fail conservatively.
 - Organization expansion now rejects malformed or duplicate pagination query
   keys before polling any repository, instead of publishing a partial selection.
 - Automatic refreshes now honor the settled enrichment retry time as well as

@@ -1,0 +1,15 @@
+PASS terminal page requested over HTTPS
+PASS no partial paths cached before terminal response
+PASS cold complete confirmed membership ['OrgTop · OVERVIEW · POLLING · acme/api · updated 00:42:48', 'R1 acme/api      1 activity · 0 PR events · 1 push', 'P2 acme/api:src  1 activity · 0 PR events · 1 push', '', '', '']
+PASS cold two commit GETs
+PASS both paths admitted only after terminal response ([(1, 2)], [('other/end.go',), ('src/main.go',)])
+PASS cold responsive quit
+PASS warm terminal-page path confirmed ['OrgTop · OVERVIEW · POLLING · acme/api · updated 00:42:50', 'R1 acme/api        1 activity · 0 PR events · 1 push', 'P2 acme/api:other  1 activity · 0 PR events · 1 push', '', '', '']
+PASS warm zero enrichment lookups
+PASS warm-terminal-path responsive quit
+PASS ambiguous next stays unknown
+PASS ambiguous next not followed or cached
+PASS ambiguous responsive quit
+PASS quoted organization listing current
+FAIL organization follows both pages then polls both repositories [{'mode': 'org-normal', 'phase': 0, 'path': '/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1', 'api': '2026-03-10', 'accept': 'application/vnd.github+json', 'credential_match': True, 'time': 1239.490846365}, {'mode': 'org-normal', 'phase': 0, 'path': '/repos/acme/r001/events?per_page=100', 'api': '2026-03-10', 'accept': 'application/vnd.github+json', 'credential_match': True, 'time': 1239.536715378}, {'mode': 'org-normal', 'phase': 0, 'path': '/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=2', 'api': '2026-03-10', 'accept': 'application/vnd.github+json', 'credential_match': True, 'time': 1239.491913792}, {'mode': 'org-normal', 'phase': 0, 'path': '/repos/acme/r002/events?per_page=100', 'api': '2026-03-10', 'accept': 'application/vnd.github+json', 'credential_match': True, 'time': 1239.580804757}]
+PASS organization responsive quit

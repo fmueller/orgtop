@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "task_id": "T-127-parse-quoted-link-parameters",
+  "task_title": "Preserve quoted Link parameters when parsing pagination",
+  "result": "pass",
+  "summary": "Quoted Link delimiters preserved for commit and organization pagination; strict TDD, four independent review lanes, validated test finding fixed and disposition verified; task check pass; mutation 9 killed/0 lived; HTTPS PTY/cache 15/15.",
+  "details": "Pinned specs/v0.2.0.md RG-003/RG-010. Evidence docs/testing/t127/: red.txt, mutation-red.txt, order-red.txt, results.json, requests.json, cold.txt, warm-terminal-path.txt, ambiguous.txt, organization.txt, mutation.txt. Cold HTTPS exact-SHA two-page acquisition: no evidence or paths before terminal response, complete=1/path_count=2 afterward; warm terminal-page membership no enrichment GET; ambiguous next remains uncached. General/Go/Security no findings; T127-PY-1 organization request-order assertion fixed and independently verified. Final mise exec -- task check passed; final task test:mutate BASE=f2b23973d1a81d197c28b8958463fcd38d10bc9b killed9 lived0 notcovered3 timedout0; ordinary scanner branch-body coverage present, mutation predicate coverage limitation retained. No release/deploy, no T128 changes.",
+  "generated_at": "2026-10-05T00:52:53Z",
+  "spec_ref": "specs/v0.2.0.md#rg-003-github-enrichment-contract",
+  "artifacts": [
+    "planning/artifacts/verify/T-127-parse-quoted-link-parameters/20261005T005253Z/plan.md",
+    "planning/artifacts/verify/T-127-parse-quoted-link-parameters/20261005T005253Z/report.md"
+  ]
+}

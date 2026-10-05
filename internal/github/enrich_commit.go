@@ -112,8 +112,14 @@ func (e Enricher) nextCommitPage(header http.Header, descriptor domain.EvidenceD
 func linkRelation(header http.Header, relation string) (string, bool) {
 	raw, present := "", false
 	for _, value := range header.Values("Link") {
-		for _, entry := range strings.Split(value, ",") {
-			parts := strings.Split(entry, ";")
+		entries, ok := splitLink(value, ',')
+		if !ok {
+			return "", true
+		}
+		for _, entry := range entries {
+			// The entry scan already proved balanced quotes/brackets and
+			// valid bytes for every comma-delimited entry.
+			parts, _ := splitLink(entry, ';')
 			target := strings.TrimSpace(parts[0])
 			if _, parameter, found := strings.Cut(target, ">"); found && strings.TrimSpace(parameter) != "" {
 				// Read a relation even when its separator is missing. The
@@ -146,4 +152,42 @@ func linkRelation(header http.Header, relation string) (string, bool) {
 		}
 	}
 	return raw, present
+}
+
+// splitLink recognizes separators only outside URI brackets and quoted strings
+// (RFC 8288 section 3 and Appendix B). A quoted-pair consumes the next byte,
+// including a quote or backslash. Unclosed constructs cannot prove a final page.
+func splitLink(value string, separator byte) ([]string, bool) {
+	var parts []string
+	start := 0
+	quoted, escaped, bracketed := false, false, false
+	for index := 0; index < len(value); index++ {
+		char := value[index]
+		if (char < ' ' && char != '\t') || char == 127 {
+			return nil, false
+		}
+		switch {
+		case escaped:
+			escaped = false
+		case quoted:
+			switch char {
+			case '\\':
+				escaped = true
+			case '"':
+				quoted = false
+			}
+		case bracketed:
+			if char == '>' {
+				bracketed = false
+			}
+		case char == '<':
+			bracketed = true
+		case char == '"':
+			quoted = true
+		case char == separator:
+			parts = append(parts, value[start:index])
+			start = index + 1
+		}
+	}
+	return append(parts, value[start:]), !quoted && !bracketed
 }

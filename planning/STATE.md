@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-updated_at: "2026-10-05T00:20:57Z"
+updated_at: "2026-10-05T00:53:04Z"
 active_spec_version: v0.2.0
 active_spec_path: specs/v0.2.0.md
 current_task: ""
@@ -8,7 +8,7 @@ current_task_title: ""
 status_summary: idle
 blockers: []
 next_action: Select the next eligible task
-last_verification_result: pass for T-126-reject-ambiguous-organization-pagination at 2026-10-05T00:20:57Z
+last_verification_result: pass for T-127-parse-quoted-link-parameters at 2026-10-05T00:52:53Z
 relevant_artifacts: []
 continuation_notes:
     - This repository is using manual Taskrail-style workflow scaffolding until the product replaces more of the bootstrap steps.
@@ -34,7 +34,7 @@ continuation_notes:
 
 ## Last Verification
 
-- pass for T-126-reject-ambiguous-organization-pagination at 2026-10-05T00:20:57Z
+- pass for T-127-parse-quoted-link-parameters at 2026-10-05T00:52:53Z
 
 ## Next Action
 
@@ -50,8 +50,8 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 5
+- todo: 4
 - in_progress: 0
-- completed: 123
+- completed: 124
 - blocked: 0
 - cancelled: 0

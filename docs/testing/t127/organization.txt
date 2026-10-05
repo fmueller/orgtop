@@ -1,0 +1,32 @@
+OrgTop · OVERVIEW · POLLING · acme/r001, acme/r002 · updated 00:56:45 · selection: 2 repos · 2 scopes · 0 exact · 2 expanded
+R1 acme/r001  1 activity · 0 PR events · 1 push
+R2 acme/r002  No activity in retained snapshot
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+1 overview · 2 stream · 3 rain · tab switch · up/down scroll · pgup/pgdn page · q quit

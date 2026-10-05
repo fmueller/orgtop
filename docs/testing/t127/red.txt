@@ -1,0 +1,22 @@
+--- FAIL: TestLinkRelationDelimiters (0.00s)
+    --- FAIL: TestLinkRelationDelimiters/uri_delimiters (0.00s)
+        link_test.go:26: linkRelation = "", true; want "https://api.github.com/repos/acme/api/commits/abc?per_page=100&page=2", true
+    --- FAIL: TestLinkRelationDelimiters/title_brackets (0.00s)
+        link_test.go:26: linkRelation = "", true; want "https://api.github.com/repos/acme/api/commits/abc?per_page=100&page=2", true
+    --- FAIL: TestLinkRelationDelimiters/control_byte (0.00s)
+        link_test.go:26: linkRelation = "https://api.github.com/repos/acme/api/commits/abc?per_page=100&page=2", true; want "", true
+--- FAIL: TestCommitPaginationProof (0.02s)
+    --- FAIL: TestCommitPaginationProof/quoted_comma (0.00s)
+        enrich_pagination_test.go:67: kind/paths/requests = incomplete/0/1, want complete/2/2
+    --- FAIL: TestCommitPaginationProof/escaped_quote (0.00s)
+        enrich_pagination_test.go:67: kind/paths/requests = incomplete/0/1, want complete/2/2
+    --- FAIL: TestCommitPaginationProof/dangling_escape (0.00s)
+        enrich_pagination_test.go:67: kind/paths/requests = complete/2/2, want incomplete/0/1
+--- FAIL: TestExpansionQuotedPagination (0.00s)
+    --- FAIL: TestExpansionQuotedPagination/;_title="page,_two";_rel="next" (0.00s)
+        expand_test.go:460: expanding [acme] failed: expanding acme: invalid github organization listing pagination: the next page link is not a github api url
+    --- FAIL: TestExpansionQuotedPagination/;_title="page\",;_two";_rel="next" (0.00s)
+        expand_test.go:460: expanding [acme] failed: expanding acme: invalid github organization listing pagination: the next page link is not a github api url
+FAIL
+FAIL	github.com/fmueller/orgtop/internal/github	0.026s
+FAIL

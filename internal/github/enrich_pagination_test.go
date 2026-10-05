@@ -16,6 +16,13 @@ func TestCommitPaginationProof(t *testing.T) {
 		{"previous only", `<%s>; rel="prev"`, true},
 		{"increasing", `<%s>; rel="next"`, true},
 		{"relation list", `<%s>; rel="prev next"`, true},
+		{"quoted comma", `<%s>; title="page, two"; rel="next"`, true},
+		{"quoted semicolon", `<%s>; title="page; two"; rel="next"`, true},
+		{"escaped quote", `<%s>; title="page\",; two"; rel="next"`, true},
+		{"relation first", `<%s>; rel="next"; title="page, two"`, true},
+		{"false relation in title", `<%s>; title="page; rel=\"next\", two"; rel="prev"`, true},
+		{"unclosed title", `<%s>; title="page, two; rel="next"`, false},
+		{"dangling escape", `<%s>; rel="next"; title="page\`, false},
 		{"missing brackets", `%s; rel="next"`, false},
 		{"missing closing bracket", `<%s; rel="next"`, false},
 		{"unquoted relation", `<%s>; rel=next`, false},
@@ -52,7 +59,7 @@ func TestCommitPaginationProof(t *testing.T) {
 			wantKind, wantPaths, wantRequests := domain.OutcomeIncomplete, 0, 1
 			if test.complete {
 				wantKind, wantPaths = domain.OutcomeComplete, 1
-				if test.name == "increasing" || test.name == "relation list" {
+				if test.name != "absent" && test.name != "previous only" && test.name != "false relation in title" {
 					wantPaths, wantRequests = 2, 2
 				}
 			}

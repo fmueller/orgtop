@@ -448,6 +448,26 @@ func TestExpansionWithFiveSelectorsDispatchesOnlyFirstPages(t *testing.T) {
 	}
 }
 
+func TestExpansionQuotedPagination(t *testing.T) {
+	const target = `<http://%s/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=2>`
+	for _, parameters := range []string{
+		`; title="page, two"; rel="next"`,
+		`; title="page; two"; rel="prev next"`,
+		`; title="page\",; two"; rel="next"`,
+		`; rel="next"; title="page, two"`,
+	} {
+		t.Run(parameters, func(t *testing.T) {
+			expansion, client := expandOrganizations(t, map[string]listingPage{
+				orgPage("acme", 1): {body: sourceListing("acme/api"), link: target + parameters},
+				orgPage("acme", 2): {body: sourceListing("acme/web")},
+			}, "acme")
+			if expansion.Scopes.Len() != 2 || len(client.recorded()) != 2 || selectorReport(t, expansion, "acme").HasMore {
+				t.Fatalf("scopes/requests/hasMore = %d/%d/%v, want 2/2/false", expansion.Scopes.Len(), len(client.recorded()), selectorReport(t, expansion, "acme").HasMore)
+			}
+		})
+	}
+}
+
 func TestExpansionRejectsInvalidPagination(t *testing.T) {
 	const query = "type=all&sort=full_name&direction=asc&per_page=100"
 	tests := map[string]string{
