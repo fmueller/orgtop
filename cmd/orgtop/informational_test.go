@@ -13,15 +13,9 @@ import (
 
 func TestInformationalExecutable(t *testing.T) {
 	dir := t.TempDir()
-	binary := filepath.Join(dir, "orgtop")
-	if output, err := exec.Command("go", "build", "-o", binary, ".").CombinedOutput(); err != nil {
-		t.Fatalf("build: %v\n%s", err, output)
-	}
-	marker := filepath.Join(dir, "credential-called")
-	if err := os.WriteFile(filepath.Join(dir, "gh"), []byte("#!/bin/sh\necho called > '"+marker+"'\nexit 1\n"), 0o700); err != nil {
-		t.Fatal(err)
-	}
-	cacheRoot := filepath.Join(dir, "cache")
+	binary := buildCLI(t, dir)
+	marker := credentialProbe(t, dir)
+	cacheRoot := isolateExecutable(t, filepath.Join(dir, "cache"))
 	cache := filepath.Join(cacheRoot, "orgtop", "enrichment-v1.db")
 	if err := os.MkdirAll(filepath.Dir(cache), 0o700); err != nil {
 		t.Fatal(err)
@@ -38,7 +32,6 @@ func TestInformationalExecutable(t *testing.T) {
 				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 				defer cancel()
 				cmd := exec.CommandContext(ctx, binary, args...)
-				cmd.Env = append(os.Environ(), "GH_TOKEN=", "GITHUB_TOKEN=", "PATH="+dir, "XDG_CACHE_HOME="+cacheRoot)
 				var stdout, stderr bytes.Buffer
 				cmd.Stdout, cmd.Stderr = &stdout, &stderr
 				if err := cmd.Run(); err != nil {

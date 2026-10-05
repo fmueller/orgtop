@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -154,12 +153,10 @@ func TestRejectedConfigurationReportsUsageBeforeAnyAuthenticationWork(t *testing
 }
 
 func TestExecutableBooleanAssignmentsPreserveCache(t *testing.T) {
-	binary := filepath.Join(t.TempDir(), "orgtop")
-	build := exec.Command("go", "build", "-o", binary, ".")
-	if output, err := build.CombinedOutput(); err != nil {
-		t.Fatalf("build: %v\n%s", err, output)
-	}
-	root := t.TempDir()
+	dir := t.TempDir()
+	binary := buildCLI(t, dir)
+	marker := credentialProbe(t, dir)
+	root := isolateExecutable(t, t.TempDir())
 	location := cache.LocationIn(root)
 	store, err := cache.Open(location)
 	if err != nil {
@@ -190,11 +187,13 @@ func TestExecutableBooleanAssignmentsPreserveCache(t *testing.T) {
 			args := []string{"--reset-cache", "--" + name + "=" + value}
 			t.Run(strings.Join(args, " "), func(t *testing.T) {
 				command := exec.Command(binary, args...)
-				command.Env = []string{"HOME=" + root, "XDG_CACHE_HOME=" + root}
 				output, err := command.CombinedOutput()
 				var exit *exec.ExitError
 				if !errors.As(err, &exit) || exit.ExitCode() != exitUsage || !strings.Contains(string(output), "bare form") {
 					t.Errorf("exit = %v, want usage 2; output = %s", err, output)
+				}
+				if _, err := os.Stat(marker); !os.IsNotExist(err) {
+					t.Fatalf("credential hook ran: %v", err)
 				}
 				after, err := os.ReadFile(location.Database())
 				if err != nil || !bytes.Equal(before, after) {
