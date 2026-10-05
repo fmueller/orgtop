@@ -1,11 +1,11 @@
 ---
 id: T-128-run-cli-regressions-on-windows
 title: Make executable CLI regression tests runnable on Windows
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#nfr-006-verification-quality
 dependencies: []
-updated_at: "2026-10-04T23:48:54Z"
+updated_at: "2026-10-05T01:35:12Z"
 ---
 
 # T-128-run-cli-regressions-on-windows Make executable CLI regression tests runnable on Windows
@@ -55,3 +55,5 @@ Windows Startup smoke is skipped after Test fails. Linux/macOS/ARM tests pass.
 Start at `cmd/orgtop/informational_test.go:16` and `cmd/orgtop/main_test.go:157`.
 The informational test also creates a POSIX `gh` shell script and sets
 XDG_CACHE_HOME; preserve intended test coverage when making the fixture portable.
+- 2026-10-05T01:35:12Z: verification pass
+- 2026-10-05T01:35:12Z: Completed after native Windows test and startup smoke passed in automatic push CI 37251540577, independent review/disposition checks, and final task check. See docs/testing/t128-windows.md.
