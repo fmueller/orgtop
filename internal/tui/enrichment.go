@@ -26,7 +26,7 @@ type Evidence struct {
 	// CacheDegraded is the sanitized cause of a skipped or failed enrichment
 	// cache operation. A degraded cache never fails the refresh (RG-005).
 	CacheDegraded string
-	// RetryAt is the earliest instructed enrichment retry a rate limit named,
+	// RetryAt is the latest instructed enrichment retry a rate limit named,
 	// and stays zero when nothing was rate limited.
 	RetryAt time.Time
 }

@@ -151,6 +151,11 @@ func (r *run) settle(ctx context.Context, events []domain.Event) Result {
 			continue
 		}
 		outcomes[index] = forDescriptor(r.identities[r.resolve(keys[index])], event.Evidence)
+		if outcomes[index].Kind() == domain.OutcomeRateLimited {
+			// All limited work shares the final refresh constraint, including
+			// queued identities settled before the last in-flight response.
+			outcomes[index] = domain.RateLimitedOutcome(r.ledger.RetryAt)
+		}
 	}
 	return Result{Outcomes: outcomes, Ledger: r.ledger}
 }
@@ -289,10 +294,10 @@ func (r *run) settleIdentity(work unit, outcome domain.EvidenceOutcome) {
 	r.identities[work.key] = outcome
 	switch outcome.Kind() {
 	case domain.OutcomeRateLimited:
-		// The first instructed retry is the one the refresh reports: a later
-		// unit cannot make the earliest allowed retry any earlier.
-		if !r.limited {
-			r.limited = true
+		// Stop queued dispatch immediately, but let every in-flight result
+		// extend the refresh's retry floor without ever shortening it.
+		r.limited = true
+		if outcome.RetryAt().After(r.ledger.RetryAt) {
 			r.ledger.RetryAt = outcome.RetryAt()
 		}
 	case domain.OutcomeCanceled:

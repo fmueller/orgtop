@@ -158,6 +158,9 @@ workflow refuses to publish otherwise.
 
 ### Fixed
 
+- Concurrent enrichment rate limits now retain the latest instructed retry
+  deadline, so automatic refresh cannot recover before all in-flight constraints
+  permit it. Queued work still stops immediately after the first rate response.
 - Commit evidence and organization listings now decode escaped pagination
   relations, fetching all valid pages before confirming path activity or polling
   the expanded selection.

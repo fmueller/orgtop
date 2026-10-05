@@ -91,7 +91,7 @@ type Ledger struct {
 	Cleaned bool
 	// Canceled reports that the refresh ended before every unit settled.
 	Canceled bool
-	// RetryAt is the earliest instructed enrichment retry a rate limit named.
+	// RetryAt is the latest instructed enrichment retry a rate limit named.
 	RetryAt time.Time
 	// CacheDegraded is the sanitized cause of a skipped or failed cache
 	// operation. A degraded cache never fails the refresh.

@@ -1,0 +1,137 @@
+[
+  {
+    "name": "current repository and quantitative path unknowns",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "enrichment dispatch stopped",
+    "pass_": true,
+    "detail": 2
+  },
+  {
+    "name": "no source or enrichment at 61s",
+    "pass_": true,
+    "detail": {
+      "elapsed": 61.00023324500012,
+      "requests": 3
+    }
+  },
+  {
+    "name": "waiting snapshot preserved",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "no source or enrichment at 119s",
+    "pass_": true,
+    "detail": {
+      "elapsed": 119.00040395600013,
+      "requests": 3
+    }
+  },
+  {
+    "name": "automatic retry no earlier than 120s",
+    "pass_": true,
+    "detail": [
+      {
+        "path": "/repos/acme/api/events?per_page=100",
+        "elapsed": 120.04664711100008
+      },
+      {
+        "path": "/repos/acme/api/commits/0000000000000000000000000000000000000003?per_page=100",
+        "elapsed": 120.08811341500018
+      },
+      {
+        "path": "/repos/acme/api/commits/0000000000000000000000000000000000000002?per_page=100",
+        "elapsed": 120.09060129500017
+      },
+      {
+        "path": "/repos/acme/api/commits/0000000000000000000000000000000000000005?per_page=100",
+        "elapsed": 120.13610842400021
+      },
+      {
+        "path": "/repos/acme/api/commits/0000000000000000000000000000000000000004?per_page=100",
+        "elapsed": 120.136304268
+      },
+      {
+        "path": "/repos/acme/api/commits/0000000000000000000000000000000000000006?per_page=100",
+        "elapsed": 120.18324534300018
+      },
+      {
+        "path": "/repos/acme/api/commits/0000000000000000000000000000000000000007?per_page=100",
+        "elapsed": 120.18341676
+      },
+      {
+        "path": "/repos/acme/api/commits/0000000000000000000000000000000000000008?per_page=100",
+        "elapsed": 120.22404657600009
+      },
+      {
+        "path": "/repos/acme/api/commits/0000000000000000000000000000000000000009?per_page=100",
+        "elapsed": 120.22426982000002
+      }
+    ]
+  },
+  {
+    "name": "retry respects independently timed latest response deadline",
+    "pass_": true,
+    "detail": [
+      {
+        "path": "/repos/acme/api/events?per_page=100",
+        "offset_response_deadline": 0.046570322999968994
+      },
+      {
+        "path": "/repos/acme/api/commits/0000000000000000000000000000000000000003?per_page=100",
+        "offset_response_deadline": 0.08803662700006498
+      },
+      {
+        "path": "/repos/acme/api/commits/0000000000000000000000000000000000000002?per_page=100",
+        "offset_response_deadline": 0.09052450700005465
+      },
+      {
+        "path": "/repos/acme/api/commits/0000000000000000000000000000000000000005?per_page=100",
+        "offset_response_deadline": 0.13603163600009793
+      },
+      {
+        "path": "/repos/acme/api/commits/0000000000000000000000000000000000000004?per_page=100",
+        "offset_response_deadline": 0.1362274799998886
+      },
+      {
+        "path": "/repos/acme/api/commits/0000000000000000000000000000000000000006?per_page=100",
+        "offset_response_deadline": 0.18316855500006568
+      },
+      {
+        "path": "/repos/acme/api/commits/0000000000000000000000000000000000000007?per_page=100",
+        "offset_response_deadline": 0.18333997199988517
+      },
+      {
+        "path": "/repos/acme/api/commits/0000000000000000000000000000000000000008?per_page=100",
+        "offset_response_deadline": 0.2239697879999767
+      },
+      {
+        "path": "/repos/acme/api/commits/0000000000000000000000000000000000000009?per_page=100",
+        "offset_response_deadline": 0.22419303199990281
+      }
+    ]
+  },
+  {
+    "name": "source and all eight enrichment requests recover",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "membership recovers and rate limit clears",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "private response absent",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "retry responsive quit",
+    "pass_": true,
+    "detail": null
+  }
+]

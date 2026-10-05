@@ -1,0 +1,54 @@
+[
+  {
+    "name": "403 composed headers current unknown",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "later reset wins over 65s Retry-After",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "retry at reset not earlier",
+    "pass_": true,
+    "detail": {
+      "reset_monotonic": 1472.5157566070557,
+      "requests": [
+        {
+          "mode": "normal",
+          "phase": 1,
+          "path": "/repos/acme/api/events?per_page=100",
+          "api": "2026-03-10",
+          "accept": "application/vnd.github+json",
+          "credential_match": true,
+          "time": 1472.516557771
+        },
+        {
+          "mode": "normal",
+          "phase": 1,
+          "path": "/repos/acme/api/commits/2222222222222222222222222222222222222222?per_page=100",
+          "api": "2026-03-10",
+          "accept": "application/vnd.github+json",
+          "credential_match": true,
+          "time": 1472.518218182
+        }
+      ]
+    }
+  },
+  {
+    "name": "header recovery membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "header private body absent",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "headers responsive quit",
+    "pass_": true,
+    "detail": null
+  }
+]

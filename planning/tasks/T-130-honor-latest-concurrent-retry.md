@@ -1,11 +1,11 @@
 ---
 id: T-130-honor-latest-concurrent-retry
 title: Honor the latest concurrent enrichment retry deadline
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#rg-003-github-enrichment-contract
 dependencies: []
-updated_at: "2026-10-05T01:52:25Z"
+updated_at: "2026-10-05T03:06:05Z"
 ---
 
 # T-130-honor-latest-concurrent-retry Honor the latest concurrent enrichment retry deadline
@@ -14,7 +14,7 @@ updated_at: "2026-10-05T01:52:25Z"
 
 RG-003 Typed Outcomes and Failure Handling requires rate limiting until the
 latest instructed time, with polling no earlier than both the poll interval and
-that deadline. Concurrent in-flight enrichment results currently retain only
+that deadline. At the round5 baseline, concurrent in-flight results retained only
 the first rate-limit deadline. This is distinct from T-125's propagation of an
 already-computed enrichment deadline into the TUI scheduler.
 
@@ -25,7 +25,7 @@ with Retry-After 65 for one, then 429 with Retry-After 95 for the other 0.4 seco
 later. The upstream becomes healthy without keyboard input or injected clocks.
 
 Expected: no source or enrichment GET before the second response's 95-second
-deadline. Actual: Events and both commit GETs resume approximately 65 seconds
+deadline. Historical actual: Events and both commit GETs resume approximately 65 seconds
 after the first response, over 30 seconds before the latest instructed deadline.
 The initial UI publishes two unknowns and an earlier rate-limit deadline; it
 clears the badge and confirms both paths during the prohibited interval.
@@ -60,10 +60,16 @@ clears the badge and confirms both paths during the prohibited interval.
 - Existing T-125 regression also failed its >=120s assertion at 119.998494s
   relative to the second request. The independent 65/95s fixture establishes a
   material defect rather than relying on that millisecond-scale observation.
-- Confirmed by execution; not fixed. Task remains todo and T-106 is untouched.
+- Historical round5 result: confirmed by execution, not fixed at that time.
+  T-106 is untouched.
 
 ## Implementation Notes
 
-`internal/enrichment/coordinator.go:settleIdentity` sets `Ledger.RetryAt` only
-inside `if !r.limited`; later in-flight rate-limited outcomes cannot extend it.
-Inspect queued outcome and publication consistency when correcting aggregation.
+`internal/enrichment/coordinator.go:settleIdentity` now stops queued dispatch
+immediately and aggregates the maximum settled in-flight deadline under its
+existing mutex. Publication gives all rate-limited outcomes that final floor,
+including queued identities settled before the last response. The application
+continues composing it with source polling constraints. Verification and review
+evidence: `docs/testing/t130/report.md`.
+- 2026-10-05T03:06:05Z: verification pass
+- 2026-10-05T03:06:05Z: Maximum concurrent retry floor and final limited publication implemented; all workflow-v3 review dispositions resolved. Full task check, race, differential mutation and retained real-time HTTP/PTY evidence passed. See docs/testing/t130/report.md.

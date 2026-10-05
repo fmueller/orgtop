@@ -82,7 +82,7 @@ type State struct {
 	// failed enrichment cache work. A degraded cache never invalidates the
 	// evidence the refresh did acquire (RG-004).
 	CacheDegraded string
-	// EnrichmentRetryAt is the earliest instructed enrichment retry the latest
+	// EnrichmentRetryAt is the latest instructed enrichment retry the latest
 	// refresh was given, and stays zero when nothing was rate limited.
 	EnrichmentRetryAt time.Time
 	// RateLimited reports that GitHub rate limiting degraded the latest refresh

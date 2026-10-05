@@ -15,6 +15,20 @@ OUT.mkdir(exist_ok=True)
 SOCKET = 'orgtop-t125'
 mode = 'rate'
 rate_times = []
+rate_responses = []
+original_end_headers = Handler.end_headers
+
+
+def timed_end_headers(self):
+    for header in self._headers_buffer:
+        if header.lower().startswith(b'retry-after:'):
+            # Independent lower bound at buffered header emission, using the
+            # actual outgoing interval rather than a duplicated fixture value.
+            rate_responses.append(dict(path=self.path, time=time.monotonic(), retry=int(header.split(b':', 1)[1])))
+    return original_end_headers(self)
+
+
+Handler.end_headers = timed_end_headers
 
 
 def respond(path):
@@ -60,6 +74,10 @@ try:
     check('automatic retry no earlier than 120s', bool(later)
           and all(r['time'] >= settled + 120 for r in later),
           [{'path': r['path'], 'elapsed': r['time'] - settled} for r in later])
+    response_deadline = max(r['time'] + r['retry'] for r in rate_responses)
+    check('retry respects independently timed latest response deadline', bool(later)
+          and all(r['time'] >= response_deadline for r in later),
+          [{'path': r['path'], 'offset_response_deadline': r['time'] - response_deadline} for r in later])
     check('source and all eight enrichment requests recover',
           sum(urlparse(r['path']).path.endswith('/events') for r in later) == 1
           and sum('/commits/' in r['path'] for r in later) == 8)
@@ -70,6 +88,7 @@ try:
     app.quit()  # First and only keypress, after the timed recovery.
 finally:
     (OUT/'requests.json').write_text(json.dumps(requests, indent=2))
+    (OUT/'responses.json').write_text(json.dumps(rate_responses, indent=2))
     server.shutdown()
     server.server_close()
     tm('kill-server')

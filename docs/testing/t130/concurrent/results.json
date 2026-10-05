@@ -1,0 +1,66 @@
+[
+  {
+    "name": "both requests in flight before either response",
+    "pass_": true,
+    "detail": [
+      {
+        "path": "/repos/acme/api/commits/0000000000000000000000000000000000000002?per_page=100",
+        "retry": 65,
+        "time": 1397.7777864
+      },
+      {
+        "path": "/repos/acme/api/commits/0000000000000000000000000000000000000003?per_page=100",
+        "retry": 95,
+        "time": 1398.177703727
+      }
+    ]
+  },
+  {
+    "name": "current repository and two path unknowns",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "no requests at 70s while later deadline applies",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "waiting retains current unknown membership",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "no requests one second before latest deadline",
+    "pass_": true,
+    "detail": []
+  },
+  {
+    "name": "all automatic GETs respect latest response deadline",
+    "pass_": true,
+    "detail": [
+      {
+        "path": "/repos/acme/api/events?per_page=100",
+        "offset_latest_deadline": 0.00994556199998442
+      },
+      {
+        "path": "/repos/acme/api/commits/0000000000000000000000000000000000000003?per_page=100",
+        "offset_latest_deadline": 0.050919836999810286
+      },
+      {
+        "path": "/repos/acme/api/commits/0000000000000000000000000000000000000002?per_page=100",
+        "offset_latest_deadline": 0.0751121159999002
+      }
+    ]
+  },
+  {
+    "name": "complete sanitized recovery",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "concurrent responsive quit",
+    "pass_": true,
+    "detail": null
+  }
+]
