@@ -1,0 +1,20 @@
+--- FAIL: TestLinkRelationDelimiters (0.00s)
+    --- FAIL: TestLinkRelationDelimiters/escaped_letter (0.00s)
+        link_test.go:37: linkRelation = "", false; want "https://api.github.com/repos/acme/api/commits/abc?per_page=100&page=2", true
+    --- FAIL: TestLinkRelationDelimiters/escaped_letters (0.00s)
+        link_test.go:37: linkRelation = "", false; want "https://api.github.com/repos/acme/api/commits/abc?per_page=100&page=2", true
+    --- FAIL: TestLinkRelationDelimiters/escaped_trailing_junk (0.00s)
+        link_test.go:37: linkRelation = "", false; want "", true
+    --- FAIL: TestLinkRelationDelimiters/escaped_duplicate (0.00s)
+        link_test.go:37: linkRelation = "https://api.github.com/repos/acme/api/commits/abc?per_page=100&page=2", true; want "", true
+--- FAIL: TestCommitPaginationProof (0.01s)
+    --- FAIL: TestCommitPaginationProof/escaped_letter (0.00s)
+        enrich_pagination_test.go:72: kind/paths/requests = complete/1/1, want complete/2/2
+    --- FAIL: TestCommitPaginationProof/escaped_trailing_junk (0.00s)
+        enrich_pagination_test.go:72: kind/paths/requests = complete/1/1, want incomplete/0/1
+--- FAIL: TestExpansionQuotedPagination (0.00s)
+    --- FAIL: TestExpansionQuotedPagination/;_rel="ne\xt" (0.00s)
+        expand_test.go:468: scopes/requests/hasMore = 1/1/false, want 2/2/false
+FAIL
+FAIL	github.com/fmueller/orgtop/internal/github	0.015s
+FAIL

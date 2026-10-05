@@ -136,7 +136,23 @@ func linkRelation(header http.Header, relation string) (string, bool) {
 					return "", true
 				}
 				relations = strings.TrimSpace(relations)
-				for _, token := range strings.FieldsFunc(relations, func(r rune) bool {
+				tokens := relations
+				if strings.HasPrefix(relations, `"`) {
+					// RFC 8288 quoted pairs represent the following byte,
+					// not a Go escape. Keep the raw value for validation below.
+					var decoded strings.Builder
+					escaped := false
+					for _, b := range []byte(relations) {
+						if b == '\\' && !escaped {
+							escaped = true
+							continue
+						}
+						decoded.WriteByte(b)
+						escaped = false
+					}
+					tokens = decoded.String()
+				}
+				for _, token := range strings.FieldsFunc(tokens, func(r rune) bool {
 					return r == '"' || r == '\'' || r == ' ' || r == '\t'
 				}) {
 					if !strings.EqualFold(token, relation) {

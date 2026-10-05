@@ -451,6 +451,9 @@ func TestExpansionWithFiveSelectorsDispatchesOnlyFirstPages(t *testing.T) {
 func TestExpansionQuotedPagination(t *testing.T) {
 	const target = `<http://%s/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=2>`
 	for _, parameters := range []string{
+		`; rel="next"`,
+		`; rel="ne\xt"`,
+		`; rel="prev\ next"`,
 		`; title="page, two"; rel="next"`,
 		`; title="page; two"; rel="prev next"`,
 		`; title="page\",; two"; rel="next"`,

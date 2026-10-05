@@ -1,0 +1,648 @@
+[
+  {
+    "name": "commit-plain terminal requested",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "commit-plain no premature complete cache",
+    "pass_": true,
+    "detail": [
+      [],
+      []
+    ]
+  },
+  {
+    "name": "commit-plain exact complete cache",
+    "pass_": true,
+    "detail": [
+      [
+        [
+          1,
+          2
+        ]
+      ],
+      [
+        [
+          "other/last.go"
+        ],
+        [
+          "src/first.go"
+        ]
+      ]
+    ]
+  },
+  {
+    "name": "commit-plain evidence",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 02:07:46",
+      "R1 acme/api        1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:other  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "commit-plain commit GETs",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "commit-plain responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "commit-plain warm terminal membership",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 02:07:47",
+      "R1 acme/api        1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:other  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "commit-plain warm zero enrichment GETs",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "commit-plain warm exact cache",
+    "pass_": true,
+    "detail": [
+      [
+        [
+          1,
+          2
+        ]
+      ],
+      [
+        [
+          "other/last.go"
+        ],
+        [
+          "src/first.go"
+        ]
+      ]
+    ]
+  },
+  {
+    "name": "commit-plain-corrected-warm responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "commit-escaped-next terminal requested",
+    "pass_": false,
+    "detail": null
+  },
+  {
+    "name": "commit-escaped-next no premature complete cache",
+    "pass_": false,
+    "detail": [
+      [
+        [
+          1,
+          1
+        ]
+      ],
+      [
+        [
+          "src/first.go"
+        ]
+      ]
+    ]
+  },
+  {
+    "name": "commit-escaped-next exact complete cache",
+    "pass_": false,
+    "detail": [
+      [
+        [
+          1,
+          1
+        ]
+      ],
+      [
+        [
+          "src/first.go"
+        ]
+      ]
+    ]
+  },
+  {
+    "name": "commit-escaped-next evidence",
+    "pass_": false,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 02:07:49",
+      "R1 acme/api        1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:other  No activity in retained snapshot",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "commit-escaped-next commit GETs",
+    "pass_": false,
+    "detail": null
+  },
+  {
+    "name": "commit-escaped-next responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "commit-escaped-next warm terminal membership",
+    "pass_": false,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 02:07:52",
+      "R1 acme/api        1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:other  No activity in retained snapshot",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "commit-escaped-next warm zero enrichment GETs",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "commit-escaped-next warm exact cache",
+    "pass_": false,
+    "detail": [
+      [
+        [
+          1,
+          1
+        ]
+      ],
+      [
+        [
+          "src/first.go"
+        ]
+      ]
+    ]
+  },
+  {
+    "name": "commit-escaped-next-corrected-warm responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "commit-escaped-list terminal requested",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "commit-escaped-list no premature complete cache",
+    "pass_": true,
+    "detail": [
+      [],
+      []
+    ]
+  },
+  {
+    "name": "commit-escaped-list exact complete cache",
+    "pass_": true,
+    "detail": [
+      [
+        [
+          1,
+          2
+        ]
+      ],
+      [
+        [
+          "other/last.go"
+        ],
+        [
+          "src/first.go"
+        ]
+      ]
+    ]
+  },
+  {
+    "name": "commit-escaped-list evidence",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 02:07:56",
+      "R1 acme/api        1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:other  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "commit-escaped-list commit GETs",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "commit-escaped-list responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "commit-escaped-list warm terminal membership",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 02:07:57",
+      "R1 acme/api        1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:other  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "commit-escaped-list warm zero enrichment GETs",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "commit-escaped-list warm exact cache",
+    "pass_": true,
+    "detail": [
+      [
+        [
+          1,
+          2
+        ]
+      ],
+      [
+        [
+          "other/last.go"
+        ],
+        [
+          "src/first.go"
+        ]
+      ]
+    ]
+  },
+  {
+    "name": "commit-escaped-list-corrected-warm responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "commit-escaped-last terminal requested",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "commit-escaped-last exact complete cache",
+    "pass_": true,
+    "detail": [
+      [
+        [
+          1,
+          1
+        ]
+      ],
+      [
+        [
+          "src/first.go"
+        ]
+      ]
+    ]
+  },
+  {
+    "name": "commit-escaped-last evidence",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 acme/api \u00b7 updated 02:07:59",
+      "R1 acme/api        1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:other  No activity in retained snapshot",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "commit-escaped-last commit GETs",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "commit-escaped-last responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "commit-unclosed-title terminal requested",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "commit-unclosed-title exact complete cache",
+    "pass_": true,
+    "detail": [
+      [],
+      []
+    ]
+  },
+  {
+    "name": "commit-unclosed-title evidence",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 PATH ?1 \u00b7 acme/api \u00b7 updated 02:08:02",
+      "R1 acme/api        1 activity \u00b7 0 PR events \u00b7 1 push",
+      "P2 acme/api:other  No confirmed activity \u00b7 1 unknown",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "commit-unclosed-title commit GETs",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "commit-unclosed-title responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "org-plain selection",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 exact/keep, acme/r001, acme/r002 \u00b7 updated 02:08:05 \u00b7 selection: 3 repos \u00b7 3 scopes \u00b7 1 exact \u00b7 2 expanded",
+      "R3 exact/keep  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "R1 acme/r001   No activity in retained snapshot",
+      "R2 acme/r002   No activity in retained snapshot",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "org-plain listings before every event GET",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "org-plain",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 714.760402701
+      },
+      {
+        "mode": "org-plain",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=2",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 714.804554066
+      },
+      {
+        "mode": "org-plain",
+        "phase": 0,
+        "path": "/repos/exact/keep/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 714.848649908
+      },
+      {
+        "mode": "org-plain",
+        "phase": 0,
+        "path": "/repos/acme/r001/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 714.892626991
+      },
+      {
+        "mode": "org-plain",
+        "phase": 0,
+        "path": "/repos/acme/r002/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 714.93652047
+      }
+    ]
+  },
+  {
+    "name": "org-plain responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "org-escaped-next selection",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 exact/keep, acme/r001 \u00b7 updated 02:08:07 \u00b7 selection: 2 repos \u00b7 2 scopes \u00b7 1 exact \u00b7 1 expanded",
+      "R2 exact/keep  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "R1 acme/r001   No activity in retained snapshot",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "org-escaped-next listings before every event GET",
+    "pass_": false,
+    "detail": [
+      {
+        "mode": "org-escaped-next",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 716.948505318
+      },
+      {
+        "mode": "org-escaped-next",
+        "phase": 0,
+        "path": "/repos/exact/keep/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 716.992813716
+      },
+      {
+        "mode": "org-escaped-next",
+        "phase": 0,
+        "path": "/repos/acme/r001/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 717.036699032
+      }
+    ]
+  },
+  {
+    "name": "org-escaped-next responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "org-escaped-list selection",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 exact/keep, acme/r001, acme/r002 \u00b7 updated 02:08:09 \u00b7 selection: 3 repos \u00b7 3 scopes \u00b7 1 exact \u00b7 2 expanded",
+      "R3 exact/keep  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "R1 acme/r001   No activity in retained snapshot",
+      "R2 acme/r002   No activity in retained snapshot",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "org-escaped-list listings before every event GET",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "org-escaped-list",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 719.12808313
+      },
+      {
+        "mode": "org-escaped-list",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=2",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 719.171910406
+      },
+      {
+        "mode": "org-escaped-list",
+        "phase": 0,
+        "path": "/repos/exact/keep/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 719.216666894
+      },
+      {
+        "mode": "org-escaped-list",
+        "phase": 0,
+        "path": "/repos/acme/r001/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 719.260651488
+      },
+      {
+        "mode": "org-escaped-list",
+        "phase": 0,
+        "path": "/repos/acme/r002/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 719.304611585
+      }
+    ]
+  },
+  {
+    "name": "org-escaped-list responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "org-escaped-last selection",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 exact/keep, acme/r001 \u00b7 updated 02:08:11 \u00b7 selection: 2 repos \u00b7 2 scopes \u00b7 1 exact \u00b7 1 expanded",
+      "R2 exact/keep  1 activity \u00b7 0 PR events \u00b7 1 push",
+      "R1 acme/r001   No activity in retained snapshot",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "org-escaped-last listings before every event GET",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "org-escaped-last",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 721.29875456
+      },
+      {
+        "mode": "org-escaped-last",
+        "phase": 0,
+        "path": "/repos/exact/keep/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 721.340649701
+      },
+      {
+        "mode": "org-escaped-last",
+        "phase": 0,
+        "path": "/repos/acme/r001/events?per_page=100",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 721.38469554
+      }
+    ]
+  },
+  {
+    "name": "org-escaped-last responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "org-unclosed-title selection",
+    "pass_": true,
+    "detail": [
+      "OrgTop \u00b7 OVERVIEW \u00b7 POLLING \u00b7 ERROR \u00b7 expanding acme: invalid github organization listing pagination: the next page link is not a github api url \u00b7 exact/keep",
+      "Repository activity is unavailable",
+      "",
+      "",
+      "",
+      ""
+    ]
+  },
+  {
+    "name": "org-unclosed-title listings before every event GET",
+    "pass_": true,
+    "detail": [
+      {
+        "mode": "org-unclosed-title",
+        "phase": 0,
+        "path": "/orgs/acme/repos?type=all&sort=full_name&direction=asc&per_page=100&page=1",
+        "api": "2026-03-10",
+        "accept": "application/vnd.github+json",
+        "credential_match": true,
+        "time": 723.48898886
+      }
+    ]
+  },
+  {
+    "name": "org-unclosed-title responsive quit",
+    "pass_": true,
+    "detail": null
+  },
+  {
+    "name": "request headers",
+    "pass_": true,
+    "detail": null
+  }
+]

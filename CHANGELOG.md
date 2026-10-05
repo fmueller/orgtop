@@ -158,6 +158,9 @@ workflow refuses to publish otherwise.
 
 ### Fixed
 
+- Commit evidence and organization listings now decode escaped pagination
+  relations, fetching all valid pages before confirming path activity or polling
+  the expanded selection.
 - Commit evidence and organization listings now follow valid pagination links
   with quoted commas, semicolons, or escaped quotes in unrelated attributes.
   Malformed and ambiguous next links still fail conservatively.

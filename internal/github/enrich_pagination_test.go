@@ -15,6 +15,11 @@ func TestCommitPaginationProof(t *testing.T) {
 		{"absent", "", true},
 		{"previous only", `<%s>; rel="prev"`, true},
 		{"increasing", `<%s>; rel="next"`, true},
+		{"escaped letter", `<%s>; rel="ne\xt"`, true},
+		{"escaped space", `<%s>; rel="prev\ next"`, true},
+		{"escaped non-next", `<%s>; rel="la\st"`, true},
+		{"escaped dangling", `<%s>; rel="ne\xt\`, false},
+		{"escaped trailing junk", `<%s>; rel="ne\xt"junk`, false},
 		{"relation list", `<%s>; rel="prev next"`, true},
 		{"quoted comma", `<%s>; title="page, two"; rel="next"`, true},
 		{"quoted semicolon", `<%s>; title="page; two"; rel="next"`, true},
@@ -59,7 +64,7 @@ func TestCommitPaginationProof(t *testing.T) {
 			wantKind, wantPaths, wantRequests := domain.OutcomeIncomplete, 0, 1
 			if test.complete {
 				wantKind, wantPaths = domain.OutcomeComplete, 1
-				if test.name != "absent" && test.name != "previous only" && test.name != "false relation in title" {
+				if test.name != "absent" && test.name != "previous only" && test.name != "false relation in title" && test.name != "escaped non-next" {
 					wantPaths, wantRequests = 2, 2
 				}
 			}

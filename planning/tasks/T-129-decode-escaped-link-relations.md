@@ -1,11 +1,11 @@
 ---
 id: T-129-decode-escaped-link-relations
 title: Decode escaped Link relations before proving pagination complete
-status: todo
+status: completed
 priority: high
 spec_ref: specs/v0.2.0.md#rg-003-github-enrichment-contract
 dependencies: []
-updated_at: "2026-10-05T01:51:06Z"
+updated_at: "2026-10-05T02:32:54Z"
 ---
 
 # T-129-decode-escaped-link-relations Decode escaped Link relations before proving pagination complete
@@ -66,11 +66,25 @@ acme/r001, omitting acme/r002 rather than fetching both listings first.
   captures; SQLite query results and zero warm lookup count are in results JSON.
 - Syntax source: https://www.rfc-editor.org/rfc/rfc8288.html#section-3 and
   https://www.rfc-editor.org/rfc/rfc8288.html#appendix-B.4.
-- Confirmed by execution, not fixed. Task remains todo; no release acceptance.
+- Historical round5 result: confirmed by execution, not fixed at that time;
+  this evidence did not constitute release acceptance.
+- T-129 verification against source main/origin/main
+  `0aa5b328be10f9c4610117c2054263397786bfda`: focused source tests reproduced
+  premature completeness and partial organization selection before the fix.
+  `docs/testing/t129/results.json` records 56 passing binary assertions, including
+  an empty cache while page two is blocked, both paths after completion, zero
+  warm enrichment GETs, and listing completion before every repository poll.
+  `docs/testing/t129/check.txt` and `mutation.txt` record the full local gate
+  and differential mutation checks. This is task verification, not a new
+  global adversarial round or release acceptance.
 
 ## Implementation Notes
 
-`internal/github/enrich_commit.go:linkRelation` splits raw quoted text into
-relation tokens but does not decode quoted pairs. `splitLink` correctly consumes
-escapes while scanning separators; that alone does not normalize the value.
-This task need not introduce a broad HTTP parser replacement or cache migration.
+The baseline `internal/github/enrich_commit.go:linkRelation` split raw quoted
+text into relation tokens without decoding quoted pairs. The fix decodes each
+quoted pair to its following byte before token recognition, retaining the raw
+value for conservative validation. `splitLink` continues to own delimiter
+scanning. URL, query, page, capacity, and cache contracts remain unchanged;
+there is no parser replacement or cache migration.
+- 2026-10-05T02:32:54Z: verification pass
+- 2026-10-05T02:32:54Z: Decoded quoted-pair relations with unchanged trust/pagination/cache contracts; reviewed and verified with full gate and focused binary proof.

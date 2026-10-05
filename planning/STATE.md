@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-updated_at: "2026-10-05T01:52:25Z"
+updated_at: "2026-10-05T02:32:54Z"
 active_spec_version: v0.2.0
 active_spec_path: specs/v0.2.0.md
 current_task: ""
@@ -8,7 +8,7 @@ current_task_title: ""
 status_summary: idle
 blockers: []
 next_action: Select the next eligible task
-last_verification_result: pass for T-128-run-cli-regressions-on-windows at 2026-10-05T01:35:12Z
+last_verification_result: pass for T-129-decode-escaped-link-relations at 2026-10-05T02:32:54Z
 relevant_artifacts: []
 continuation_notes:
     - This repository is using manual Taskrail-style workflow scaffolding until the product replaces more of the bootstrap steps.
@@ -34,7 +34,7 @@ continuation_notes:
 
 ## Last Verification
 
-- pass for T-128-run-cli-regressions-on-windows at 2026-10-05T01:35:12Z
+- pass for T-129-decode-escaped-link-relations at 2026-10-05T02:32:54Z
 
 ## Next Action
 
@@ -50,8 +50,8 @@ continuation_notes:
 
 ## Task Counts
 
-- todo: 5
+- todo: 4
 - in_progress: 0
-- completed: 125
+- completed: 126
 - blocked: 0
 - cancelled: 0
