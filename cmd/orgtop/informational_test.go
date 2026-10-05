@@ -38,7 +38,7 @@ func TestInformationalExecutable(t *testing.T) {
 					t.Fatalf("exit: %v; stderr: %s", err, stderr.String())
 				}
 				if info == "--help" || info == "-h" {
-					if stdout.Len() != 0 || !strings.HasPrefix(stderr.String(), "Usage: orgtop ") || strings.Contains(stderr.String(), "flag provided") {
+					if stdout.Len() != 0 || !strings.HasPrefix(stderr.String(), "Usage: "+filepath.Base(binary)+" ") || strings.Contains(stderr.String(), "flag provided") {
 						t.Fatalf("help streams: stdout=%q stderr=%q", stdout.String(), stderr.String())
 					}
 				} else if stdout.String() != "orgtop dev\n" || stderr.Len() != 0 {
