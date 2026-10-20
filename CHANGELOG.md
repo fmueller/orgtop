@@ -11,6 +11,8 @@ workflow refuses to publish otherwise.
 
 ## [Unreleased]
 
+## [0.2.0]
+
 ### Added
 
 - `README.md` and `orgtop --help` now document the local enrichment cache: its
@@ -301,7 +303,8 @@ workflow refuses to publish otherwise.
   as soon as that rehearsal is verified. It carries no OrgTop behavior of its
   own; install v0.1.0 or later.
 
-[Unreleased]: https://github.com/fmueller/orgtop/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/fmueller/orgtop/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/fmueller/orgtop/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/fmueller/orgtop/releases/tag/v0.1.0
 [0.0.5]: https://github.com/fmueller/orgtop/releases/tag/v0.0.5
 [0.0.4]: https://github.com/fmueller/orgtop/releases/tag/v0.0.4
