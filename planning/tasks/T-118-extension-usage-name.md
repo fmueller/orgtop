@@ -1,12 +1,12 @@
 ---
 id: T-118-extension-usage-name
 title: Name the extension channel in its own usage text
-status: todo
+status: completed
 priority: low
 spec_ref: specs/v0.2.0.md#distribution-channels
 dependencies:
     - T-068-verify-distribution-channel-parity
-updated_at: "2026-09-20T10:23:57Z"
+updated_at: "2026-10-20T19:48:48Z"
 ---
 
 # T-118-extension-usage-name Name the extension channel in its own usage text
@@ -48,3 +48,5 @@ difference between a direct run and a run through `gh orgtop`.
 - `gh` execs the extension executable directly, so `argv[0]` is the only signal
   available; the mapping from the published `gh-orgtop-<os>-<arch>` names back
   to `gh orgtop` belongs with the rendering.
+- 2026-10-20T19:48:47Z: verification pass
+- 2026-10-20T19:48:48Z: Reviewed and verified after strict red-green TDD; same executable renders gh orgtop for extension usage. Final task check and fresh disposition verification pass; focused evidence in docs/testing/v0.2.0-readiness.md.

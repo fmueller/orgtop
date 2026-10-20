@@ -22,6 +22,41 @@ func repositoryStrings(scopes domain.ScopeSet) []string {
 	return out
 }
 
+func TestUsageNamesTheInvocation(t *testing.T) {
+	for _, invocation := range []struct {
+		name string
+		want string
+	}{
+		{"orgtop", "orgtop"},
+		{"orgtop.exe", "orgtop.exe"},
+		{"custom-orgtop", "custom-orgtop"},
+		{"gh-orgtop-helper", "gh-orgtop-helper"},
+		{"gh-orgtop", "gh orgtop"},
+		{"gh-orgtop.exe", "gh orgtop"},
+		{"gh-orgtop-linux-amd64", "gh orgtop"},
+		{"gh-orgtop-linux-arm64", "gh orgtop"},
+		{"gh-orgtop-darwin-amd64", "gh orgtop"},
+		{"gh-orgtop-darwin-arm64", "gh orgtop"},
+		{"gh-orgtop-windows-amd64.exe", "gh orgtop"},
+		{"gh-orgtop-windows-arm64.exe", "gh orgtop"},
+	} {
+		t.Run(invocation.name, func(t *testing.T) {
+			for _, args := range [][]string{{"--help"}, {"--unknown"}, nil} {
+				var baseline, output bytes.Buffer
+				_, baselineErr := cli.ParseArgs("orgtop", args, &baseline)
+				_, err := cli.ParseArgs(invocation.name, args, &output)
+				if err == nil || err.Error() != baselineErr.Error() {
+					t.Fatalf("ParseArgs(%v) error = %v, want %v", args, err, baselineErr)
+				}
+				want := strings.NewReplacer("orgtop --", invocation.want+" --", "orgtop (", invocation.want+" (").Replace(baseline.String())
+				if output.String() != want {
+					t.Errorf("ParseArgs(%v) output:\n%s\nwant:\n%s", args, output.String(), want)
+				}
+			}
+		})
+	}
+}
+
 func TestParseArgsCollectsRepeatedRepositories(t *testing.T) {
 	tests := []struct {
 		name string

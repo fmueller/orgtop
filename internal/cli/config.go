@@ -281,6 +281,12 @@ func reject(output io.Writer, flags *flag.FlagSet, err error) error {
 }
 
 func writeUsage(output io.Writer, name string) {
+	switch strings.TrimSuffix(name, ".exe") {
+	case "gh-orgtop", "gh-orgtop-linux-amd64", "gh-orgtop-linux-arm64",
+		"gh-orgtop-darwin-amd64", "gh-orgtop-darwin-arm64",
+		"gh-orgtop-windows-amd64", "gh-orgtop-windows-arm64":
+		name = "gh orgtop"
+	}
 	_, _ = fmt.Fprintf(output, "Usage: %s --%s OWNER/REPOSITORY [--%s OWNER/REPOSITORY ...] [--%s (PATTERN | OWNER/REPOSITORY:PATTERN) ...] [--%s]\n", name, repoFlag, repoFlag, pathFlag, noCacheFlag)
 	_, _ = fmt.Fprintf(output, "       %s --%s OWNER/REPOSITORY:PATTERN [--%s OWNER/REPOSITORY:PATTERN ...] [--%s OWNER/REPOSITORY ...] [--%s]\n", name, pathFlag, pathFlag, repoFlag, noCacheFlag)
 	_, _ = fmt.Fprintf(output, "       %s (--%s ORGANIZATION | --%s 'ORGANIZATION/*') [...] [--%s OWNER/REPOSITORY ...] [--%s OWNER/REPOSITORY:PATTERN ...] [--%s] [--%s] [--%s]\n", name, orgFlag, repoFlag, repoFlag, pathFlag, includeArchivedFlag, includeForksFlag, noCacheFlag)

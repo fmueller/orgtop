@@ -11,6 +11,11 @@ workflow refuses to publish otherwise.
 
 ## [Unreleased]
 
+### Fixed
+
+- `gh orgtop --help` and invalid-flag usage now show `gh orgtop` instead of
+  the extension executable's filename. Direct `orgtop` usage is unchanged.
+
 ## [0.2.0]
 
 ### Added
