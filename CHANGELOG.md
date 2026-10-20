@@ -11,201 +11,83 @@ workflow refuses to publish otherwise.
 
 ## [Unreleased]
 
-### Fixed
-
-- `gh orgtop --help` and invalid-flag usage now show `gh orgtop` instead of
-  the extension executable's filename. Direct `orgtop` usage is unchanged.
-
 ## [0.2.0]
 
 ### Added
 
-- `README.md` and `orgtop --help` now document the local enrichment cache: its
-  fixed `orgtop/enrichment-v1.db` location under the user cache directory, what
-  it does and does not store, the 30-day record freshness, the 10,000-record,
-  250,000-path, and 128 MiB bounds its deterministic bounded cleanup converges
-  toward, and the `--no-cache` and `--reset-cache` controls that disable and
-  remove it. Both surfaces state what one refresh spends at GitHub — one request
-  per selected repository plus at most 20 changed-file enrichment requests — and
-  what an exhausted limit looks like: `RATE LIMITED` with its instructed retry,
-  membership that stays unknown rather than being guessed, and `CACHE DEGRADED`
-  for a refresh that ran without the cache. `README.md` also documents Rain's
-  overlapping column membership and its `p` pause semantics.
-
-- One tag now publishes through three channels. Alongside the release archives,
-  a GitHub CLI extension release in `fmueller/gh-orgtop` carries a raw
-  `gh-orgtop-<os>-<arch>` executable for each of the six platform targets, and a
-  Homebrew formula in `fmueller/homebrew-tap` installs the macOS and Linux
-  builds as `brew install fmueller/tap/orgtop`. Every channel redistributes the
-  byte-identical executable one build produced: the extension assets are that
-  build copied and renamed, and the formula downloads the release archives and
-  pins their checksums. `gh orgtop` forwards its arguments unchanged and adds no
-  credential path of its own, and the archives remain a complete installation
-  path on a host with neither tool.
-- Releases publish `checksums.txt` covering all twelve artifacts and a
-  `provenance.intoto.jsonl` bundle of GitHub build attestations, plus a
-  `distribution-complete.json` manifest binding every published digest to the
-  source tag, commit, and workflow. `README.md` documents the checksum and
-  attestation verification routes.
-- The release workflow stages every channel before anything becomes public and
-  fails closed. A missing, extra, renamed, rebuilt, or digest-divergent artifact
-  stops the release before publication; a channel that fails leaves an
-  explicitly partial release that is retried or withdrawn rather than reported
-  as complete. `docs/distribution-ledger.jsonl` records each staged, completed,
-  and withdrawn version, and a withdrawal keeps a durable notice under
-  `docs/withdrawals/`.
-- A ledger transition is now proven atomic against a default branch that moves
-  underneath it. The release workflow requires the source default branch to
-  require an approving review and an up-to-date branch before merge, re-reads
-  the branch immediately before merging, and refuses a merge that did not land
-  on the base it validated, so an event landing concurrently can no longer
-  persist a duplicate or contradictory ledger record. Every refusal is recorded
-  in the job summary with the branch, event, base, and reason.
-- `--path` selects path Scopes. A bare `PATTERN` filters every `--repo`
-  selection, a qualified `OWNER/REPOSITORY:PATTERN` stands on its own, and both
-  forms may be repeated and mixed. Equivalent Scopes are deduplicated and keep
-  their first requested spelling.
-- `--org ORGANIZATION`, and its `--repo 'ORGANIZATION/*'` alias, select every
-  eligible repository of an organization. A launch expands its selectors before
-  it polls anything, re-expands every 15 minutes, and polls one immutable
-  selection per refresh. `--include-archived` and `--include-forks` widen that
-  eligibility. A failed re-expansion keeps the last successful selection and
-  marks it stale rather than narrowing or emptying it; an initial expansion
-  failure polls no subset, and a successful expansion with no eligible
-  repository is a current empty selection.
-- The shared header states every secondary condition of a refresh beside the
-  primary source state, in one fixed priority: `RATE LIMITED <retry>`,
-  `SELECTION STALE`, `PATH ?U` for unresolved path evidence, `CURRENT PR Q` for
-  the qualified current-PR members, `CACHE DEGRADED`, and `TRUNCATED`. A width
-  too narrow for all of them spends its last badge slot on `+N status` rather
-  than dropping a condition silently, and every badge is read from prepared
-  state instead of the sanitized failure text, so a rate limit is stated only
-  when a refresh actually reported one.
-- The shared header discloses an organization selection as
-  `selection: R repos · S scopes · X exact · G expanded`, appends the eligible
-  omission count and a remaining-page warning when a bounded expansion could
-  not admit everything, and marks a selection that a failed re-expansion left
-  behind as `SELECTION STALE` beside the primary state.
-- `--no-cache` runs a launch without any enrichment-cache operation, and
-  `--reset-cache` is a standalone administrative action that removes the
-  disposable enrichment cache and exits without resolving a credential, making
-  a request, or starting the terminal UI. The removal renames the database
-  before deleting its write-ahead sidecars, so no launch ever opens a fresh
-  database beside stale write-ahead state, and it preserves a database OrgTop
-  does not own rather than deleting it. Every other launch opens the
-  enrichment cache at its default location and reuses fresh complete
-  changed-file evidence instead of re-requesting it; a cache that cannot be
-  opened keeps the launch running and reports it as degraded rather than
-  failing the start.
-- A launch recovers from a structurally corrupt enrichment cache once per
-  process by discarding it and creating an empty one, and never serves the rows
-  that happened to survive the damage.
-- On Windows the enrichment cache is now used only when its directory and files
-  belong to the account running OrgTop and no other account may write to them.
-  A cache another user owns or may write to is reported as degraded and left
-  untouched, matching the ownership rule already enforced on macOS and Linux.
+- `--path` selects activity by changed files. Repeat or mix bare patterns with
+  `--repo` selections and standalone `OWNER/REPOSITORY:PATTERN` selections;
+  equivalent Scopes are deduplicated.
+- `--org ORGANIZATION` and `--repo 'ORGANIZATION/*'` expand eligible repositories,
+  with `--include-archived` and `--include-forks` options. Selection counts and
+  omissions stay visible; a failed 15-minute re-expansion preserves the last
+  selection and marks it `SELECTION STALE`.
+- A bounded local SQLite cache reuses complete changed-file evidence for up to
+  30 days. `--no-cache` bypasses it; standalone `--reset-cache` removes OrgTop's
+  cache without resolving credentials, contacting GitHub, or launching the UI.
+- `CACHE DEGRADED` keeps the application usable when its cache is unavailable.
+  Corrupt caches are rebuilt once per launch; incompatible or unsafe caches
+  are left untouched, including caches another account can write on Windows.
+- The shared header reports rate limits, stale selections, unknown path
+  membership, qualified current-PR evidence, cache degradation, and truncation.
+  Narrow layouts count conditions they cannot display instead of hiding them.
+- Homebrew (`brew install fmueller/tap/orgtop`) and the GitHub CLI extension
+  (`gh extension install fmueller/gh-orgtop`) redistribute the same executable
+  as the standalone archives, with unchanged arguments and credential handling.
+- Releases include checksums, GitHub build attestations, and a completion
+  manifest covering all six platforms. Cross-channel publication checks byte
+  parity before going public and records partial, completed, and withdrawn
+  versions rather than treating a partial publication as success.
 
 ### Changed
 
-- Overview, Stream, and Rain now qualify successful empty states and activity
-  counts by the retained snapshot. Coverage discloses the bounded newest-100
-  per-repository fetch and newest-500 global retention, without presenting a
-  quiet retained row or a Rain duration as complete history.
-- Rain offers the windows `15m`, `30m`, `60m`, `6h`, `24h`, `7d`, and
-  `available`, and a session now starts at `24h` instead of `60m`, so a quiet
-  repository keeps an ambient field. `-` and `+` step through the presets and
-  stop at either end. `available` keeps every event of the snapshot the last
-  refresh returned, whatever its age: that is the newest 100 events per
-  repository GitHub served, not complete repository history, and an event
-  leaves the field once a later successful refresh no longer returns it.
-- Rain visual recency and Rain removal are now separate. An event past 60
-  minutes is drawn as `old` and stays in the field under `6h`, `24h`, `7d`, and
-  `available`; only the selected window removes it. The no-color recency
-  accounting states the old items too, as
-  `recency: N new · R recent · A aging · O old` or `age N/R/A/O`.
-- Rain's `Interesting Now` strip now discloses its independent fixed last-15-minute
-  Scope-fair recent-event sample, rather than leaving its shown/hidden/omitted
-  accounting or empty state open to an importance-ranking interpretation. Narrow
-  layouts retain the `I15m:` forms and the `q I15+` overflow hint.
-- `--help` now lists the Rain windows beneath the flags, with the preset a
-  session starts at and what `available` covers, so the bound is readable
-  without opening the README.
-- Rain now reports its visible Scope range and disjoint hidden Scope/item
-  counts in the shared header instead of repeating them in the body context.
-- Overview and Stream now report the visible row range when terminal height
-  hides content. Stream navigation tracks a focused event and scrolls only when
-  that focus crosses the viewport, preserving it across resize and refresh.
-- Stream now marks the focused event as arrow keys move within a stationary
-  viewport, with an accessible UTF-8/ASCII indicator, and documents the focus,
-  detail, and return controls.
-- At narrow widths, Stream keeps `enter detail` or `esc back` beside `q quit`
-  in the active footer before optional navigation hints yield; Rain retains its
-  strip accounting.
-- Bare `--path` patterns turn their `--repo` selections into filtered path
-  Scopes rather than whole-repository Scopes. Repository-only invocations keep
-  their v0.1 meaning.
-- Stream rows name the Scopes an event belongs to: `in` lists the confirmed
-  members by their `R1`/`P2` tokens, `unresolved` lists the path Scopes whose
-  membership stayed undecided, and `~` marks a member proven from an open pull
-  request's current files. An event no Scope confirmed and none left undecided
-  no longer takes a row, and a narrow terminal counts the Scopes it cannot
-  spell rather than dropping them.
-- Stream names an event category from the shared category vocabulary every
-  event view will render through. A narrow Stream now spells `pull`, `review`,
-  `comment`, and `other` instead of the abbreviations `pr`, `rev`, `com`, and
-  `oth`; the wide spellings are unchanged. A category a release does not know
-  normalizes to `other` rather than reaching a row unnamed.
-- Overview now labels its direct pull-request-related count `PR events` (compact
-  `PR evts`), counting each pull-request event, review, and pull-request comment
-  separately rather than implying distinct, open, or waiting pull requests.
-  `current PR evidence` (compact `cur PR~`, with `~` as the ASCII evidence
-  marker; dense `PR evts`/`PR~` at the tightest widths) identifies the subset
-  of member events proven from an open PR's current files, while unknown path
-  coverage remains separate.
+- Bare `--path` patterns filter their `--repo` selections rather than adding
+  whole-repository Scopes. Repository-only invocations retain their v0.1 meaning.
+- Overview, Stream, and Rain describe counts and empty states as observations
+  of a retained snapshot: at most the newest 100 events per repository and 500
+  unique events globally, not complete history.
+- Overview labels pull-request-related activity `PR events`, not a count of
+  distinct or open PRs. `current PR evidence` identifies the subset proven from
+  an open PR's current files; unknown path membership remains separate.
+- Stream shows confirmed and unresolved Scope membership, including `~` for
+  current-PR evidence. Narrow layouts retain membership counts and readable
+  category names rather than silently dropping context.
+- Overview and Stream show visible row ranges. Stream has a visible UTF-8/ASCII
+  focus marker and preserves focus across resize and refresh; narrow footers
+  retain the active detail/back action beside quit.
+- Rain starts at `24h` instead of `60m`. `-` and `+` select `15m`, `30m`, `60m`,
+  `6h`, `24h`, `7d`, or `available`; the last option keeps every event still in
+  the fetched snapshot, not complete repository history. Help lists the windows.
+- Rain draws older events at `old` emphasis until the selected window removes
+  them, with text recency counts when colour cannot distinguish age. The header
+  reports visible columns and hidden Scope/item counts.
+- Interesting Now explicitly describes its independent last-15-minute,
+  Scope-fair recent-event sample, not an importance ranking. Shown, hidden, and
+  omitted counts remain available in narrow and collapsed layouts.
 
 ### Fixed
 
-- Concurrent enrichment rate limits now retain the latest instructed retry
-  deadline, so automatic refresh cannot recover before all in-flight constraints
-  permit it. Queued work still stops immediately after the first rate response.
-- Commit evidence and organization listings now decode escaped pagination
-  relations, fetching all valid pages before confirming path activity or polling
-  the expanded selection.
-- Commit evidence and organization listings now follow valid pagination links
-  with quoted commas, semicolons, or escaped quotes in unrelated attributes.
-  Malformed and ambiguous next links still fail conservatively.
-- Organization expansion now rejects malformed or duplicate pagination query
-  keys before polling any repository, instead of publishing a partial selection.
-- Automatic refreshes now honor the settled enrichment retry time as well as
-  source scheduling and the polling floor, keeping current activity and path
-  unknowns visible until a permitted retry can recover membership.
-- Path activity now stays unknown when GitHub offers malformed, ambiguous, or
-  nonadvancing commit pagination, instead of caching a partial changed-file set.
-  Valid increasing chains and final pages without a next link remain complete.
-- Path activity now stays unknown when GitHub omits or nulls a changed-file
-  array, instead of caching false non-membership or a partial file set. Explicit
-  empty arrays still confirm no matching path activity.
-- Interesting Now entity references now show control and bidi characters as
-  visible uppercase escapes before choosing a width, consistently with event
-  detail. Source identifiers and ordinary Unicode remain unchanged.
-- Stream actor and event summaries now show bidi controls as visible uppercase
-  escapes before width measurement, consistently with event detail. Interesting
-  Now applies the same sanitizer to its shared actor text; source data is unchanged.
-- Boolean flag assignments such as `--reset-cache=true` and `--no-cache=false`
-  now fail with usage exit 2 before cache removal or launch work. Bare controls,
-  value-flag assignments, and help/version precedence remain unchanged.
-- Help and version requests now succeed even when unknown flags, missing values,
-  or administrative flags appear elsewhere in the command, without touching
-  credentials or the cache. Informational-looking selection values remain values.
-- A retried release no longer leaves its tap staging branch behind. A retry of
-  an already completed publication restages `release/orgtop-v<version>`, and the
-  merge that follows finds its pull request already merged and deletes nothing,
-  so the branch survived in the public tap. The deletion is now requested
-  explicitly, and only for a branch carrying exactly the formula that tag
-  published.
-- Coalesced one-commit push enrichment now checks each event's own `before` SHA,
-  including cached evidence, so events sharing a head never borrow another
-  event's changed-file proof.
+- `gh orgtop --help` and invalid-flag usage show `gh orgtop` instead of the
+  extension executable's filename. Direct `orgtop` usage is unchanged.
+- Automatic refresh respects both source and enrichment retry deadlines,
+  including the latest concurrent rate-limit response. Current activity and
+  unknown membership stay visible until a permitted retry can recover them.
+- Commit and organization pagination accepts valid quoted and escaped link
+  attributes, but rejects malformed, ambiguous, nonadvancing, or duplicate-key
+  links rather than confirming partial path evidence or organization selections.
+- Missing or null changed-file arrays leave path membership unknown instead of
+  caching false absence. Explicit empty arrays still confirm no matching files.
+- Push events sharing a head check their own `before` SHA, including cached
+  evidence, so one event cannot borrow another event's changed-file proof.
+- Stream and Interesting Now render control and bidi characters as visible
+  escapes before measuring text, consistently with event detail.
+- Boolean assignments such as `--reset-cache=true` and `--no-cache=false` fail
+  with usage exit 2 before cache removal or launch work. Bare help/version
+  requests take precedence over invalid arguments without accessing credentials
+  or the cache; informational-looking selection values remain values.
+- Release retries remove the tap staging branch only when it carries exactly
+  the formula already published, and ledger writes reject conflicting default-
+  branch movement rather than persisting contradictory publication records.
 
 ## [0.1.0] - 2026-08-25
 

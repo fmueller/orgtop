@@ -9,16 +9,35 @@
 happening across the repositories you care about, without opening a browser
 dashboard.
 
+This README documents v0.2.0. For v0.1.0, see the
+[versioned README](https://github.com/fmueller/orgtop/blob/v0.1.0/README.md).
+
+## Quick start
+
+[Install OrgTop](#installation) and provide an [existing GitHub credential](#authentication),
+then select repositories, paths, or an organization:
+
+```bash
+orgtop --repo acme/backend --repo acme/frontend
+orgtop --path 'acme/backend:src/**'
+orgtop --org acme
+```
+
+Press `1` for Overview, `2` for Stream, and `3` for Rain. In Stream, press
+`enter` to open event detail and `esc` to return. Press `q` to quit.
+See [Usage](#usage) for selection rules and [Controls](#controls) for all keys.
+
 <!-- docs:view-selection -->
+## Activity views
+
 OrgTop shows recent activity for an explicitly selected set of GitHub
 repositories. It reads; it never writes to GitHub, and it stores no credential
 of its own.
 
-### Views
-
 OrgTop has three primary views: Overview summarizes each Scope, Stream lists
 individual events and opens local event detail, and Rain shows an ambient
 activity field with its `Interesting Now` strip.
+A Scope is a whole repository or a path-filtered selection within one.
 
 <!-- docs:overview-counts -->
 ### Overview counts
@@ -27,7 +46,13 @@ Overview reports direct counts from the retained normalized event snapshot for
 each repository or path Scope. `N activity` counts confirmed member events;
 `U unknown` is separate coverage that keeps that activity count a lower bound.
 These are retained snapshot event counts, not rates or fixed-window totals. A
-Scope row with zero confirmed activity and zero unknowns says `No activity in retained snapshot`: it is a bounded observation, not a claim that older repository history is empty. A row with unknown evidence says `No confirmed activity · U unknown`, so it is not presented as a confirmed empty Scope. Each refresh fetches at most the newest 100 events per repository and retains the newest 500 unique events globally, so the snapshot does not represent complete history.
+Scope row with zero confirmed activity and zero unknowns says
+`No activity in retained snapshot`: it is a bounded observation, not a claim
+that older repository history is empty. A row with unknown evidence says
+`No confirmed activity · U unknown`, so it is not presented as a confirmed
+empty Scope. Each refresh fetches at most the newest 100 events per repository
+and retains the newest 500 unique events globally, so the snapshot does not
+represent complete history.
 The PR-related count is labeled `PR event`/`PR events` (compactly `PR evt`/
 `PR evts`): it counts each pull-request event, review, and pull-request comment
 separately, even when they refer to the same PR. An unrelated issue comment is
@@ -60,7 +85,7 @@ extract it, and run `orgtop`.
 brew install fmueller/tap/orgtop
 ```
 
-**GitHub CLI extension** (all six platforms):
+**GitHub CLI extension** (Linux, macOS, and Windows; amd64 and arm64):
 
 ```bash
 gh extension install fmueller/gh-orgtop
@@ -71,7 +96,7 @@ gh orgtop --repo acme/widget
 it resolves a token by the same precedence a direct `orgtop` launch uses. The
 GitHub CLI installs the executable under its own name rather than adding
 `orgtop` to `PATH`; the archive and Homebrew routes install the ordinary
-`orgtop` command.
+`orgtop` command. Extension help and usage show the command as `gh orgtop`.
 
 Or install with Go:
 
@@ -79,8 +104,9 @@ Or install with Go:
 go install github.com/fmueller/orgtop/cmd/orgtop@latest
 ```
 
-A `go install` build reports `dev` for `--version`; only release archives carry
-the tag. Build from source with `task build` or `go build ./cmd/orgtop`; see
+A `go install` build reports `dev` for `--version`; the archive, Homebrew, and
+extension binaries carry the release version. Build from source with `task build`
+or `go build ./cmd/orgtop`; see
 [CONTRIBUTING.md](CONTRIBUTING.md) for the development setup.
 
 ### Verifying a download
@@ -233,7 +259,7 @@ ends flag input.
 
 ```console
 $ orgtop --version
-orgtop 0.1.0
+orgtop <version>
 ```
 
 ### Authentication
