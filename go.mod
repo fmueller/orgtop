@@ -9,7 +9,7 @@ require (
 	github.com/charmbracelet/x/ansi v0.11.9
 	golang.org/x/sys v0.49.0
 	gopkg.in/yaml.v3 v3.0.1
-	modernc.org/sqlite v1.61.0
+	modernc.org/sqlite v1.61.1
 )
 
 require (
